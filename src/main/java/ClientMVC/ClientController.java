@@ -9,5 +9,16 @@ public class ClientController {
         this.vw = view;
     }
 
+    private void setupListeners(){
+        vw.getSendButton().setOnAction(event -> {
+            String textToSend = vw.getMessageField().getText();
+            if(!textToSend.isEmpty()){
+                mdl.sendMSG(textToSend);
+                vw.getMessageField().clear();
+            }
+        });
+    }
+    private void sendMSG(String msg){
 
+    }
 }
