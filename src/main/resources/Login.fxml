@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.*?>
+
+<AnchorPane xmlns:fx="http://javafx.com/fxml" fx:controller="ClientMVC.LoginController"
+            prefWidth="400" prefHeight="250">
+    <children>
+        <VBox spacing="15" alignment="CENTER" layoutX="50" layoutY="40" prefWidth="300">
+            <Label text="Chat App Login" style="-fx-font-size: 20px; -fx-font-weight: bold;" />
+            <TextField fx:id="usernameField" promptText="Username" />
+            <PasswordField fx:id="passwordField" promptText="Password" />
+            <Button text="Login" onAction="#handleLoginButton" prefWidth="100" />
+            <Button text="or" prefWidth="40" />
+            <Button text="Signup" onAction="#handleLoginButton" prefWidth="100" />
+        </VBox>
+    </children>
+</AnchorPane>
