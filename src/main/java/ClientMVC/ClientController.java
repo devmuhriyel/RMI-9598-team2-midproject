@@ -7,14 +7,17 @@ public class ClientController {
     public ClientController(ClientModel model, ClientView view) {
         this.mdl = model;
         this.vw = view;
+
+        setupListeners();
     }
 
     private void setupListeners(){
         vw.getSendButton().setOnAction(event -> {
+            System.out.println("Send");
             String textToSend = vw.getMessageField().getText();
             if(!textToSend.isEmpty()){
                 mdl.sendMSG(textToSend);
-                vw.getMessageField().clear();
+                vw.getMessageField().setText("");
             }
         });
     }

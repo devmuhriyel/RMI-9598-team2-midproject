@@ -18,25 +18,19 @@ public class ClientView extends Application {
     @Override
     public void start(Stage stage){
         try {
-            // Create an FXMLLoader instance
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/ClientView.fxml"));
-            Parent root = loader.load();
-
-            // Access nodes by fx:id
-            sendButton = (Button) root.lookup("#sendButton");
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/ClientView.fxml"));            Parent root = loader.load();
+            root = loader.load();
+            sendButton = (Button) root.lookup("#sendMSG");
             messageField = (TextField) root.lookup("#messageField");
             messagesArea = (VBox) root.lookup("#messagesArea");
 
-            // Set up stage
             Image icon = new Image("SampleIcon.png");
             stage.getIcons().add(icon);
             stage.setTitle("Client Application");
             stage.setResizable(false);
-
             Scene scene = new Scene(root);
             stage.setScene(scene);
             stage.show();
-
         } catch (Exception e) {
             e.printStackTrace();
         }
