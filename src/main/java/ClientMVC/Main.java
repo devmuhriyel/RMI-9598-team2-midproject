@@ -15,7 +15,7 @@ public class Main{
         ClientController controller = new ClientController(model, view);
 
         new Thread(model).start();
-        Application.launch(ClientView.class, args);
+        Application.launch(view.getClass(), args);
     }
 
 }
