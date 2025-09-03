@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Hyperlink?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox fx:id="loginRoot" alignment="CENTER" prefHeight="428.0" prefWidth="376.0" spacing="15" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ClientMVC.LoginController">
+    <padding>
+        <Insets bottom="30" left="30" right="30" top="30" />
+    </padding>
+    <style>
+        -fx-background-color: white;
+        -fx-border-radius: 15;
+        -fx-background-radius: 15;
+        -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 4);
+    </style>
+
+    <Label text="Login Form">
+        <font>
+            <Font name="Arial Bold" size="22" />
+        </font>
+    </Label>
+
+    <!-- Tabs for Login/Signup -->
+
+    <!-- Email Field -->
+    <TextField fx:id="emailField" maxWidth="250" promptText="Email Address" />
+
+    <!-- Password Field -->
+    <PasswordField fx:id="passwordField" maxWidth="250" promptText="Password" />
+
+    <!-- Forgot Password -->
+    <Hyperlink fx:id="forgotPasswordLink" style="-fx-text-fill: #3b82f6;" text="Forgot password?" />
+
+    <!-- Login Button -->
+    <Button fx:id="loginButton" maxWidth="250" style="-fx-background-radius: 20; -fx-background-color: linear-gradient(to right, #0f62fe, #3b82f6); -fx-text-fill: white;" text="Login" />
+
+    <!-- Signup Prompt -->
+    <HBox alignment="CENTER">
+        <Label text="Create an account " />
+        <Hyperlink style="-fx-text-fill: #3b82f6;" text="Signup now" />
+    </HBox>
+</VBox>

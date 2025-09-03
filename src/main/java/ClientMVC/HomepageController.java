@@ -21,6 +21,6 @@ public class HomepageController {
 
     @FXML
     private void handleLogoutButton() {
-        MainLogin.loadScene("Login.fxml", "Chat App - Login");
+        ClientMVC.MainLogin.loadScene("Login.fxml", "Chat App - Login");
     }
 }
