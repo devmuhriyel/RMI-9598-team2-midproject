@@ -8,15 +8,28 @@ import java.net.Socket;
 public class Main{
 
     public static void main(String[] args) throws IOException {
-        Socket socket = new Socket("localhost", 1234);
+        new Thread(() -> Application.launch(ClientView.class)).start();
 
-        ClientView view = new ClientView();
-        ClientModel model = new ClientModel(socket, "User123");
-        ClientController controller = new ClientController(model, view);
+        // Wait for ClientView instance to be ready
+        while (ClientView.getInstance() == null || ClientView.getInstance().getFxController() == null) {
+            try {
+                Thread.sleep(100); // small delay to avoid busy loop
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
 
-        new Thread(model).start();
-        Application.launch(view.getClass(), args);
+        // Now that UI is ready, create the model and controller
+        try {
+            Socket socket = new Socket("localhost", 1234);
+            ClientView view = ClientView.getInstance();
+            ClientModel model = new ClientModel(socket, "User123");
+            new ClientController(model, view, view.getFxController());
+
+            new Thread(model).start();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
-
 }
 

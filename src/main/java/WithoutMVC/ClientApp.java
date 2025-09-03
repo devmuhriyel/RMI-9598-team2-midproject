@@ -72,6 +72,6 @@ public class ClientApp {
 
         ClientView view = new ClientView();
         ClientModel model = new ClientModel(sckt, name);
-        ClientController controller = new ClientController(model, view);
+        ClientController controller = new ClientController(model, view, view.getFxController());
     }
 }

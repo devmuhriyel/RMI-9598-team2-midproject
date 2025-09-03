@@ -1,4 +1,6 @@
-package WithoutMVC;
+package Server;
+
+import WithoutMVC.ClientThread;
 
 import java.io.IOException;
 import java.net.ServerSocket;
