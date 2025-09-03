@@ -15,27 +15,32 @@ public class ClientView extends Application {
     private Button sendButton;
     private TextField messageField;
     private VBox messagesArea;
+    private FXController fxController;
+    private static ClientView instance;
+
+    public ClientView() {
+        instance = this; // assign during construction
+    }
+
     @Override
     public void start(Stage stage){
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/ClientView.fxml"));            Parent root = loader.load();
-            root = loader.load();
-            sendButton = (Button) root.lookup("#sendMSG");
-            messageField = (TextField) root.lookup("#messageField");
-            messagesArea = (VBox) root.lookup("#messagesArea");
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/ClientView.fxml"));
+            Parent root = loader.load();
 
-            Image icon = new Image("SampleIcon.png");
-            stage.getIcons().add(icon);
+            fxController = loader.getController(); // Get the FXController instance
+
             stage.setTitle("Client Application");
-            stage.setResizable(false);
-            Scene scene = new Scene(root);
-            stage.setScene(scene);
+            stage.setScene(new Scene(root));
             stage.show();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    public FXController getFxController() {
+        return fxController;
+    }
     public Button getSendButton() {
         return sendButton;
     }
@@ -44,5 +49,8 @@ public class ClientView extends Application {
     }
     public VBox getMessagesArea() {
         return messagesArea;
+    }
+    public static ClientView getInstance() {
+        return instance;
     }
 }
