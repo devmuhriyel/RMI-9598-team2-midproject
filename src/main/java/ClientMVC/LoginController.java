@@ -1,42 +1,55 @@
 package ClientMVC;
 
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 
 public class LoginController {
 
     @FXML
-    private TextField usernameField;
+    private TextField emailField;
 
     @FXML
     private PasswordField passwordField;
 
     @FXML
-    private void handleLoginButton() {
-        String username = usernameField.getText();
+    private Button loginButton;
+
+    @FXML
+    private Hyperlink forgotPasswordLink;
+
+    @FXML
+    private ToggleButton loginTab;
+
+    @FXML
+    private ToggleButton signupTab;
+
+    @FXML
+    private void initialize() {
+        loginButton.setOnAction(e -> handleLogin());
+    }
+
+    private void handleLogin() {
+        String email = emailField.getText();
         String password = passwordField.getText();
 
-        if (username.isEmpty() || password.isEmpty()) {
-            showAlert("Error", "Please enter username and password.");
+        if (email.isEmpty() || password.isEmpty()) {
+            showAlert("Please enter both email and password.");
             return;
         }
 
-        // Dummy login validation
-        if (username.equals("admin") && password.equals("password")) {
-            showAlert("Success", "Login successful! Connecting to chat...");
-            // TODO: Load your chat window here
+        // Simulate login
+        if (email.equals("test@example.com") && password.equals("password")) {
+            showAlert("Login successful!");
         } else {
-            showAlert("Login Failed", "Invalid username or password.");
+            showAlert("Invalid credentials.");
         }
     }
 
-    private void showAlert(String title, String message) {
+    private void showAlert(String msg) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
+        alert.setTitle("Login");
         alert.setHeaderText(null);
-        alert.setContentText(message);
+        alert.setContentText(msg);
         alert.showAndWait();
     }
 }

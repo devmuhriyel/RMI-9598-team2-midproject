@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Hyperlink?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox fx:id="root" alignment="CENTER" spacing="15.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/24.0.1" fx:controller="ClientMVC.SignupController">
+    <padding>
+        <Insets bottom="30" left="30" right="30" top="30" />
+    </padding>
+    <style>
+        -fx-background-color: white;
+        -fx-border-radius: 10;
+        -fx-background-radius: 10;
+    </style>
+
+    <!-- Title -->
+    <Label text="Create account">
+        <font>
+            <Font name="Arial Bold" size="24" />
+        </font>
+    </Label>
+
+    <!-- Sign in prompt -->
+    <HBox alignment="CENTER" spacing="5">
+        <Label text="Already have account?" />
+        <Hyperlink text="Sign in" />
+    </HBox>
+
+    <!-- Username Field -->
+    <TextField fx:id="usernameField" maxWidth="300" promptText="Username" />
+
+    <!-- Name Fields -->
+    <HBox alignment="CENTER" spacing="10">
+        <TextField fx:id="firstNameField" maxWidth="145" promptText="First name" />
+        <TextField fx:id="lastNameField" maxWidth="145" promptText="Last name" />
+    </HBox>
+
+    <!-- Email Field -->
+    <TextField fx:id="emailField" maxWidth="300" promptText="E-mail" />
+
+    <!-- Sign Up Button -->
+    <Button fx:id="signupButton" maxWidth="300" style="-fx-background-color: #4da6ff; -fx-text-fill: white;" text="Sign up" />
+
+    <!-- Terms Checkbox -->
+    <HBox alignment="CENTER" spacing="5">
+        <CheckBox fx:id="termsCheckbox" text="I have read and agree to the" />
+        <Hyperlink text="Terms of Service" />
+    </HBox>
+
+</VBox>
