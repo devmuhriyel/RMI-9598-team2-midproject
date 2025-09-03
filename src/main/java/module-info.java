@@ -9,6 +9,7 @@ module org.chatSocketProgramming.it2229598_prelims {
     requires org.kordamp.ikonli.javafx;
     requires org.kordamp.bootstrapfx.core;
     requires eu.hansolo.tilesfx;
+    requires javafx.graphics;
 
     opens ClientMVC to javafx.graphics, javafx.fxml;
     exports org.chatSocketProgramming.it2229598_prelims;
