@@ -15,20 +15,18 @@ public class ClientModel implements Runnable {
 
     public ClientModel(Socket socket, String username) throws IOException {
         this.socket = socket;
+        this.name = username;
         this.readMSG = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         this.writeMSG = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-        clients.add(this);
-        for (ClientModel c : clients) {
-            c.writeMSG.write("SERVER: " + this.name + " has connected to the chat");
-            c.writeMSG.newLine();
-            c.writeMSG.flush();
-        }
+
+        writeMSG.write(name);
+        writeMSG.newLine();
+        writeMSG.flush();
     }
 
-    public void sendMSG(String message) {
+    public void sendMSG(String msg) {
         try {
-
-            writeMSG.write(message);
+            writeMSG.write(name + ": " + msg);
             writeMSG.newLine();
             writeMSG.flush();
         } catch (IOException e) {
@@ -36,10 +34,7 @@ public class ClientModel implements Runnable {
         }
     }
 
-    public void setMessageListener(Consumer<String> listener) {
-        this.messageListener = listener;
-    }
-
+    // ✅ background thread for receiving
     @Override
     public void run() {
         try {
@@ -52,5 +47,9 @@ public class ClientModel implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void setMessageListener(Consumer<String> listener) {
+        this.messageListener = listener;
     }
 }

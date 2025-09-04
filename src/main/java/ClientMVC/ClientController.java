@@ -1,6 +1,5 @@
 package ClientMVC;
 
-import javafx.collections.FXCollections;
 
 public class ClientController {
     private ClientModel mdl;
@@ -13,20 +12,22 @@ public class ClientController {
         this.fController = uiElements;
 
         setupListeners();
+        mdl.setMessageListener(msg -> {
+            javafx.application.Platform.runLater(() -> {
+                fController.addMessage(msg);
+            });
+        });
     }
 
     private void setupListeners(){
-        fController.setSendButtonListener(() -> {
-            System.out.println("Send button clicked!");
-            String textToSend = fController.getMessageField().getText();
-            if (!textToSend.isEmpty()) {
-                mdl.sendMSG(textToSend);
-                fController.addMessage("You: " + textToSend);
-                fController.getMessageField().clear();
-            }
-        });
+        fController.setSendButtonListener(() -> sendMSG());
     }
-    private void sendMSG(String msg){
 
+    private void sendMSG(){
+        String textToSend = fController.getMessageField().getText();
+        if (!textToSend.isEmpty()) {
+            mdl.sendMSG(textToSend);
+            fController.getMessageField().clear();
+        }
     }
 }

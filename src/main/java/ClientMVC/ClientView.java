@@ -7,7 +7,6 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
-import javafx.scene.image.Image;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
@@ -19,7 +18,7 @@ public class ClientView extends Application {
     private static ClientView instance;
 
     public ClientView() {
-        instance = this; // assign during construction
+        instance = this;
     }
 
     @Override
@@ -27,9 +26,7 @@ public class ClientView extends Application {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/ClientView.fxml"));
             Parent root = loader.load();
-
-            fxController = loader.getController(); // Get the FXController instance
-
+            fxController = loader.getController();
             stage.setTitle("Client Application");
             stage.setScene(new Scene(root));
             stage.show();

@@ -37,7 +37,8 @@ public class FXController {
     }
 
     public void setSendButtonListener(Runnable sendButtonListener) {
-        sendButton.setOnAction(event -> sendButtonListener.run());    }
+        sendButton.setOnAction(event -> sendButtonListener.run());
+    }
     public TextField getMessageField() {
         return messageField;
     }
