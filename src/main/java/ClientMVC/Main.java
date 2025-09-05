@@ -1,5 +1,8 @@
 package ClientMVC;
 
+import ClientMVC.ClientController.ClientController;
+import ClientMVC.ClientModel.ClientModel;
+import ClientMVC.ClientView.ClientView;
 import javafx.application.Application;
 
 import java.io.IOException;

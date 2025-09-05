@@ -1,4 +1,4 @@
-package ClientMVC;
+package ClientMVC.ClientView;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -7,7 +7,6 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
-import javafx.scene.image.Image;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
@@ -15,7 +14,7 @@ public class ClientView extends Application {
     private Button sendButton;
     private TextField messageField;
     private VBox messagesArea;
-    private FXController fxController;
+    private ClientViewController fxController;
     private static ClientView instance;
 
     public ClientView() {
@@ -38,7 +37,7 @@ public class ClientView extends Application {
         }
     }
 
-    public FXController getFxController() {
+    public ClientViewController getFxController() {
         return fxController;
     }
     public Button getSendButton() {

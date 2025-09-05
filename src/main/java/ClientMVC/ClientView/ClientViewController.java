@@ -1,4 +1,4 @@
-package ClientMVC;
+package ClientMVC.ClientView;
 
 
 import javafx.fxml.FXML;
@@ -7,7 +7,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 
 
-public class FXController {
+public class ClientViewController {
 
     @FXML
     private Button sendButton;
@@ -37,15 +37,14 @@ public class FXController {
     }
 
     public void setSendButtonListener(Runnable sendButtonListener) {
-        sendButton.setOnAction(event -> sendButtonListener.run());    }
+        sendButton.setOnAction(event -> sendButtonListener.run());
+    }
     public TextField getMessageField() {
         return messageField;
     }
-
     public VBox getMessagesArea() {
         return messagesArea;
     }
-
     public Button getSendButton() {
         return sendButton;
     }

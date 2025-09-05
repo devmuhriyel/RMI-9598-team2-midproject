@@ -1,13 +1,15 @@
-package ClientMVC;
+package ClientMVC.ClientController;
 
-import javafx.collections.FXCollections;
+import ClientMVC.ClientModel.ClientModel;
+import ClientMVC.ClientView.ClientView;
+import ClientMVC.ClientView.ClientViewController;
 
 public class ClientController {
     private ClientModel mdl;
     private ClientView vw;
-    private FXController fController;
+    private ClientViewController fController;
 
-    public ClientController(ClientModel model, ClientView view, FXController uiElements) {
+    public ClientController(ClientModel model, ClientView view, ClientViewController uiElements) {
         this.mdl = model;
         this.vw = view;
         this.fController = uiElements;
