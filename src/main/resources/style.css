@@ -1,51 +1,32 @@
-/* IP Address Input */
-#ipAddressInput {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #4a90e2;
-    -fx-border-radius: 8;
-    -fx-background-radius: 8;
-    -fx-padding: 6 10 6 10;
+/* Panels + controls the same color */
+#leftFrame, #inputFrame,
+#ipAddressInput, #portInput, #button-style {
+    /* color of background */
+    -fx-background-color: #202020;
+}
+
+/* TextFields base */
+#ipAddressInput, #portInput {
+    -fx-background-radius: 14;
+    -fx-border-radius: 14;
+    -fx-background-insets: 0;
+    -fx-padding: 10 14;
+    -fx-text-fill: #e8e8e8;
+    -fx-prompt-text-fill: rgba(232,232,232,0.45);
+    -fx-cursor: text;
+}
+
+/* Button base */
+#button-style {
+    -fx-background-radius: 500;
+    -fx-pref-width: 35;
+    -fx-pref-height: 35;
+    -fx-text-fill: #e8e8e8;
     -fx-font-size: 14px;
-    -fx-text-fill: #333333;
-    -fx-prompt-text-fill: #aaaaaa;
-    -fx-effect: dropshadow(one-pass-box, rgba(0,0,0,0.15), 4, 0, 0, 2);
-}
-
-#ipAddressInput:focused {
-    -fx-border-color: #0078d7;
-    -fx-border-width: 2;
-}
-
-/* Port Input */
-#portInput {
-    -fx-background-color: #ffffff;
-    -fx-border-color: #4a90e2;
-    -fx-border-radius: 8;
-    -fx-background-radius: 8;
-    -fx-padding: 6 10 6 10;
-    -fx-font-size: 14px;
-    -fx-text-fill: #333333;
-    -fx-prompt-text-fill: #aaaaaa;
-    -fx-effect: dropshadow(one-pass-box, rgba(0,0,0,0.15), 4, 0, 0, 2);
-}
-
-#portInput:focused {
-    -fx-border-color: #0078d7;
-    -fx-border-width: 2;
-}
-
-/* Connect Button */
-#connectButton {
-    -fx-background-color: #4a90e2;
-    -fx-text-fill: #ffffff;
-    -fx-font-size: 14px;
-    -fx-padding: 8 16;
-    -fx-background-radius: 8;
     -fx-cursor: hand;
-    -fx-effect: dropshadow(one-pass-box, rgba(0,0,0,0.2), 4, 0, 0, 2);
 }
 
-#connectButton:hover {
-    -fx-background-color: #0078d7;
+/* Optional: subtle hover scale handled in code; color tweak only */
+#button-style:hover {
+    -fx-background-color: #232323;
 }
-
