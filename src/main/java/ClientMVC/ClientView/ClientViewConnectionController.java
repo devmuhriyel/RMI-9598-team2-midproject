@@ -1,5 +1,7 @@
-package Client.View;
+package ClientMVC.ClientView;
 
+import ClientMVC.ClientController.ClientControllerConnection;
+import ClientMVC.NetworkManager;
 import javafx.animation.ScaleTransition;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -7,10 +9,9 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.effect.InnerShadow;
-import javafx.scene.layout.AnchorPane;
-import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
+import javafx.scene.text.TextAlignment;
 import javafx.util.Duration;
 
 public class ClientViewConnectionController {
@@ -31,6 +32,7 @@ public class ClientViewConnectionController {
     private TextField portTextField;
     @FXML
     private Label invalidInputLabel, connectedLabel;
+    private NetworkManager networkManager;
 
     @FXML
     public void initialize() {
@@ -114,5 +116,80 @@ public class ClientViewConnectionController {
     public Label getInvalidInputLabel() {
         return  invalidInputLabel;
     }
+
+
+    //Flores
+
+    // Getters so the MVC Controller can use them
+    public String getIpAddress() {
+        return ipAddressTextField.getText();
+    }
+
+    public String getPort() {
+        return portTextField.getText();
+    }
+
+    public Button getConnectButton() {
+        return connectButton;
+    }
+
+    // This method is just a hook — actual logic is in MVC Controller
+    @FXML
+    private void onConnect() {
+        // Delegates handling to MVC Controller later
+        if (onConnectHandler != null) {
+            onConnectHandler.run();
+        }
+    }
+
+    // Trick: let MVC Controller inject its handler
+    private Runnable onConnectHandler;
+    public void setOnConnectHandler(Runnable handler) {
+        this.onConnectHandler = handler;
+    }
+
+    private ClientControllerConnection controller;
+
+    public void setController(ClientControllerConnection controller) {
+        this.controller = controller;
+    }
+
+    @FXML
+    private void handleConnect() {
+        String ip = ipAddressTextField.getText();
+
+        int port;
+        try {
+            port = Integer.parseInt(portTextField.getText());
+        } catch (NumberFormatException e) {
+            invalidInputLabel(statusLabel); // show invalid input error
+            return;
+        }
+
+        if (controller != null) {
+            boolean success = controller.connectToServer(ip, port);
+            if (success) {
+                // Connected
+                statusLabel.setText("Connected Successfully...");
+                statusLabel.setTextFill(Color.web("#A1D8B5")); // green shade
+                statusLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+                statusLabel.setTextAlignment(TextAlignment.CENTER);
+            } else {
+                // Failed
+                statusLabel.setText("Invalid IP/PORT...");
+                statusLabel.setTextFill(Color.web("#D91B24")); // red shade
+                statusLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+                statusLabel.setTextAlignment(TextAlignment.CENTER);
+            }
+        } else {
+            statusLabel.setText("Controller not set!");
+        }
+    }
+
+
+    public void setNetworkManager(NetworkManager networkManager) {
+        this.networkManager = networkManager;
+    }
+
 }
 

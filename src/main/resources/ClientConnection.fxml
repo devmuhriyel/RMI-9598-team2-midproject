@@ -68,12 +68,12 @@
                         <Font name="HP Simplified Jpan Regular" size="12.0" />
                      </font>
                   </Label>
-                  <Button id="button-style" fx:id="connectButton" layoutX="89.0" layoutY="183.0" mnemonicParsing="false" prefHeight="22.0" prefWidth="24.0" stylesheets="@style.css" text="&gt;" textAlignment="CENTER">
+                  <Button id="button-style" fx:id="connectButton" layoutX="89.0" layoutY="183.0" mnemonicParsing="false" onAction="#handleConnect" prefHeight="22.0" prefWidth="24.0" stylesheets="@style.css" text="&gt;">
                      <font>
                         <Font name="Baskerville Old Face" size="12.0" />
                      </font>
                   </Button>
-                  <Label fx:id="statusLabel" layoutX="103.0" layoutY="233.0" prefHeight="17.0" prefWidth="0.0" text="..." textFill="WHITE">
+                  <Label fx:id="statusLabel" alignment="CENTER" layoutX="11.0" layoutY="233.0" prefHeight="24.0" prefWidth="195.0" textAlignment="JUSTIFY" textFill="WHITE">
                      <font>
                         <Font name="HP Simplified Jpan Regular" size="12.0" />
                      </font></Label>
