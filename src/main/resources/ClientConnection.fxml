@@ -13,13 +13,13 @@
 <?import javafx.scene.paint.Color?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane prefHeight="343.0" prefWidth="557.0" snapToPixel="false" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Client.View.ClientViewConnectionController">
+<AnchorPane prefHeight="343.0" prefWidth="557.0" snapToPixel="false" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ClientMVC.ClientView.ClientViewConnectionController">
    <children>
       <AnchorPane fx:id="connectionFrame" prefHeight="326.0" prefWidth="561.0">
          <children>
             <AnchorPane fx:id="leftFrame" prefHeight="406.0" prefWidth="213.0" style="-fx-background-color: #202020;">
                <children>
-                  <ImageView fitHeight="343.0" fitWidth="213.0" opacity="0.05" pickOnBounds="true">
+                  <ImageView fitHeight="406.0" fitWidth="213.0" opacity="0.05" pickOnBounds="true">
                      <image>
                         <Image url="@Images/connectionImage3.jpg" />
                      </image>
@@ -68,11 +68,15 @@
                         <Font name="HP Simplified Jpan Regular" size="12.0" />
                      </font>
                   </Label>
-                  <Button id="button-style" fx:id="connectButton" layoutX="84.0" layoutY="210.0" mnemonicParsing="false" prefHeight="22.0" prefWidth="24.0" stylesheets="@style.css" text="&gt;" textAlignment="CENTER">
+                  <Button id="button-style" fx:id="connectButton" layoutX="89.0" layoutY="183.0" mnemonicParsing="false" prefHeight="22.0" prefWidth="24.0" stylesheets="@style.css" text="&gt;" textAlignment="CENTER">
                      <font>
                         <Font name="Baskerville Old Face" size="12.0" />
                      </font>
                   </Button>
+                  <Label fx:id="statusLabel" layoutX="103.0" layoutY="233.0" prefHeight="17.0" prefWidth="0.0" text="..." textFill="WHITE">
+                     <font>
+                        <Font name="HP Simplified Jpan Regular" size="12.0" />
+                     </font></Label>
                </children>
             </AnchorPane>
          </children>
