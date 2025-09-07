@@ -5,9 +5,12 @@ import WithoutMVC.ClientThread;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Scanner;
 
 public class ChatServer {
+
     private ServerSocket serverSocket;
+    private boolean running = true;
 
     public ChatServer(ServerSocket serverSckt) {
         this.serverSocket = serverSckt;
@@ -28,19 +31,32 @@ public class ChatServer {
         }
     }
 
-    public void close(){
-        try{
-            while(serverSocket != null){
+    public void stop() {
+        running = false;
+        try {
+            if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
             }
-        } catch(IOException e){
+            System.out.println("Server stopped.");
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+
+    //TYPE EXIT IF CLOSEEEE OR PWEDE NAMAN YUNG STOP BUTTON (Wala maangas lang kaya i added it :>)
     public static void main(String[] args) throws IOException {
         ServerSocket serverSocket = new ServerSocket(1234);
         ChatServer chatServer = new ChatServer(serverSocket);
         chatServer.start();
+
+        Scanner scanner = new Scanner(System.in);
+        while (true) {
+            String command = scanner.nextLine();
+            if (command.equalsIgnoreCase("exit")) {
+                chatServer.stop();
+                break;
+            }
+        }
     }
 }

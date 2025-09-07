@@ -1,8 +1,8 @@
 package WithoutMVC;
 
-import ClientMVC.ClientController;
-import ClientMVC.ClientModel;
-import ClientMVC.ClientView;
+import ClientMVC.ClientController.ClientController;
+import ClientMVC.ClientModel.ClientModel;
+import ClientMVC.ClientView.ClientView;
 
 import java.io.*;
 import java.net.Socket;

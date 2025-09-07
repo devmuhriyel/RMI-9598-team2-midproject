@@ -1,4 +1,4 @@
-package ClientMVC;
+package ClientMVC.ClientView;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
@@ -21,6 +21,6 @@ public class HomepageController {
 
     @FXML
     private void handleLogoutButton() {
-        ClientMVC.MainLogin.loadScene("Login.fxml", "Chat App - Login");
+        MainLogin.loadScene("Login.fxml", "Chat App - Login");
     }
 }

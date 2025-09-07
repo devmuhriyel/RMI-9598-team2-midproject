@@ -1,11 +1,20 @@
 package ClientMVC;
 
+import ClientMVC.ClientController.ClientController;
+import ClientMVC.ClientModel.ClientModel;
+import ClientMVC.ClientView.ClientView;
+import ClientMVC.ClientView.ClientViewConnection;
+import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.stage.Stage;
+
+
+import java.io.IOException;
 import java.net.Socket;
 
-public class Main {
-    public static void main(String[] args) {
+public class Main{
+
+    public static void main(String[] args) throws IOException {
         //Start JavaFX on an FX thread
         Platform.startup(() -> {
             try {
@@ -21,5 +30,16 @@ public class Main {
                 e.printStackTrace();
             }
         });
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                new Thread(() -> Application.launch(ClientViewConnection.class, args));
+            }
+        }).start();
+
+        Application.launch(ClientViewConnection.class, args);
     }
+
 }
+

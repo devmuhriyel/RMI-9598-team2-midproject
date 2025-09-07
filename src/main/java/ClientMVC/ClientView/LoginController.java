@@ -1,4 +1,4 @@
-package ClientMVC;
+package ClientMVC.ClientView;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
