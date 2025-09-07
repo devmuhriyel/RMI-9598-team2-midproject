@@ -7,6 +7,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.effect.InnerShadow;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
@@ -16,42 +17,34 @@ public class ClientViewConnectionController {
 
     @FXML
     private Text applicationName;
-
     @FXML
     private Button connectButton;
-
-    @FXML
-    private Pane inputFrame;
-
     @FXML
     private Label ipAddressLabel;
-
-    @FXML
-    private TextField ipAddressTextField;
-
-    @FXML
-    private Pane leftFrame;
-
     @FXML
     private Label portLabel;
-
+    @FXML
+    private Label statusLabel;
+    @FXML
+    private TextField ipAddressTextField;
     @FXML
     private TextField portTextField;
+    @FXML
+    private Label invalidInputLabel, connectedLabel;
 
     @FXML
     public void initialize() {
-        // Inner (sunken) shadow for TextFields
-        applyInsetNeumorphism(ipAddressTextField);
-        applyInsetNeumorphism(portTextField);
+        applyInsetShadow(portTextField);
+        applyInsetShadow(ipAddressTextField);
 
         // Raised (drop) shadow for the button
-        applyRaisedNeumorphism(connectButton);
+        applyRaisedShadow(connectButton);
 
         // Nice hover micro-interaction (optional)
         addHoverScale(connectButton, 1.05);
     }
 
-    private void applyInsetNeumorphism(TextField tf) {
+    private void applyInsetShadow(TextField tf) {
         // Dark inner shadow bottom-right
         InnerShadow innerDark = new InnerShadow();
         innerDark.setRadius(10);
@@ -71,7 +64,7 @@ public class ClientViewConnectionController {
         tf.setEffect(innerLight);
     }
 
-    private void applyRaisedNeumorphism(Button btn) {
+    private void applyRaisedShadow(Button btn) {
         // Dark drop shadow bottom-right
         DropShadow dark = new DropShadow();
         dark.setRadius(18);
@@ -100,6 +93,26 @@ public class ClientViewConnectionController {
 
         btn.setOnMouseEntered(e -> enter.playFromStart());
         btn.setOnMouseExited(e -> exit.playFromStart());
+    }
+
+    private void invalidInputLabel (Label statusLabel) {
+        statusLabel.setText("Invalid IP/PORT...");
+        statusLabel.setTextFill(Color.web("#A1D8B5"));
+        statusLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+    }
+
+    private void connectedLabel (Label statusLabel) {
+        statusLabel.setText("Connected Successfully...");
+        statusLabel.setTextFill(Color.web("#D91B24"));
+        statusLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+    }
+
+    public Label getStatusLabel() {
+        return connectedLabel;
+    }
+
+    public Label getInvalidInputLabel() {
+        return  invalidInputLabel;
     }
 }
 
