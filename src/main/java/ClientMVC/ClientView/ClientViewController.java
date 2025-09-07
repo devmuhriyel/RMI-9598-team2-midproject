@@ -17,6 +17,8 @@ public class ClientViewController {
     private VBox messagesArea;
     private Runnable sendButtonListener;
 
+
+
     @FXML
     public void initialize() {
         System.out.println("FXController initialized");
