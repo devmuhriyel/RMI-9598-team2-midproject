@@ -1,4 +1,4 @@
-package ClientMVC.ClientView;
+package ClientMVC.ClientView.Connection;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -6,11 +6,11 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
-public class ClientViewConnection extends Application {
-    private ClientViewConnectionController jfxController;
-    private static ClientViewConnection instance;
+public class ConnectionView extends Application {
+    private ConnectionJFXController jfxController;
+    private static ConnectionView instance;
 
-    public ClientViewConnection() {
+    public ConnectionView() {
         instance = this;
     }
 
@@ -30,11 +30,11 @@ public class ClientViewConnection extends Application {
         }
     }
 
-    public ClientViewConnectionController getFxController() {
+    public ConnectionJFXController getFxController() {
         return jfxController;
     }
 
-    public static ClientViewConnection getInstance() {
+    public static ConnectionView getInstance() {
         return instance;
     }
 }

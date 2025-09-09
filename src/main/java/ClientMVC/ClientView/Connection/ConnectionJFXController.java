@@ -1,4 +1,4 @@
-package ClientMVC.ClientView;
+package ClientMVC.ClientView.Connection;
 
 import javafx.animation.ScaleTransition;
 import javafx.fxml.FXML;
@@ -11,7 +11,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.util.Duration;
 
-public class ClientViewConnectionController {
+public class ConnectionJFXController {
 
     @FXML
     private Text applicationName;

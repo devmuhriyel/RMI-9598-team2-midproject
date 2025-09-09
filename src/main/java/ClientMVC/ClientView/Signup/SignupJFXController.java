@@ -1,9 +1,9 @@
-package ClientMVC.ClientView;
+package ClientMVC.ClientView.Signup;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 
-public class SignupController {
+public class SignupJFXController {
 
     @FXML
     private TextField usernameField;

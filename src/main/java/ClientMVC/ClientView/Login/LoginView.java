@@ -1,7 +1,5 @@
-package ClientMVC.ClientView;
+package ClientMVC.ClientView.Login;
 
-import ClientMVC.ClientView.Connection.ConnectionJFXController;
-import ClientMVC.ClientView.Connection.ConnectionView;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;

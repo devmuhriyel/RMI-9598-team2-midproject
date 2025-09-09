@@ -17,6 +17,7 @@ public class ClientModel implements Runnable {
         this.socket = socket;
         this.readMSG = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         this.writeMSG = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+        this.name = username;
         clients.add(this);
         for (ClientModel c : clients) {
             c.writeMSG.write("SERVER: " + this.name + " has connected to the chat");

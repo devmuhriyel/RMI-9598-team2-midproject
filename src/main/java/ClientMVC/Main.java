@@ -2,8 +2,8 @@ package ClientMVC;
 
 import ClientMVC.ClientController.ClientController;
 import ClientMVC.ClientModel.ClientModel;
-import ClientMVC.ClientView.ClientView;
-import ClientMVC.ClientView.ClientViewConnection;
+import ClientMVC.ClientView.Chat.ClientView;
+import ClientMVC.ClientView.Connection.ConnectionView;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.stage.Stage;
@@ -23,7 +23,7 @@ public class Main{
                 view.start(stage);
                 Socket socket = new Socket("localhost", 1234);
                 ClientModel model = new ClientModel(socket, "User" + (int)(Math.random()*1000));
-                new ClientController(model, view, view.getFxController());
+                new ClientController(model, view, view.getFXController());
                 new Thread(model, "Client-Receiver").start();
 
             } catch (Exception e) {
@@ -35,11 +35,11 @@ public class Main{
         new Thread(new Runnable() {
             @Override
             public void run() {
-                new Thread(() -> Application.launch(ClientViewConnection.class, args));
+                new Thread(() -> Application.launch(ConnectionView.class, args));
             }
         }).start();
 
-        Application.launch(ClientViewConnection.class, args);
+        Application.launch(ConnectionView.class, args);
     }
 
 }

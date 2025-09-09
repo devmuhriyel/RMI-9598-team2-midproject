@@ -1,4 +1,4 @@
-package ClientMVC.ClientView;
+package ClientMVC.ClientView.Chat;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -14,7 +14,7 @@ public class ClientView extends Application {
     private Button sendButton;
     private TextField messageField;
     private VBox messagesArea;
-    private ClientViewController clientViewController;
+    private ClientJFXController clientJFXController;
     private static ClientView instance;
 
     public ClientView() {
@@ -26,7 +26,7 @@ public class ClientView extends Application {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/ClientView.fxml"));
             Parent root = loader.load();
-            clientViewController = loader.getController();
+            clientJFXController = loader.getController();
             stage.setTitle("Client Application");
             stage.setScene(new Scene(root));
             stage.show();
@@ -35,8 +35,8 @@ public class ClientView extends Application {
         }
     }
 
-    public ClientViewController getFxController() {
-        return clientViewController;
+    public ClientJFXController getFXController() {
+        return clientJFXController;
     }
     public Button getSendButton() {
         return sendButton;

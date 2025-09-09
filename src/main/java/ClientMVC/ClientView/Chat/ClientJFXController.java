@@ -1,4 +1,4 @@
-package ClientMVC.ClientView;
+package ClientMVC.ClientView.Chat;
 
 
 import javafx.fxml.FXML;
@@ -7,7 +7,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 
 
-public class ClientViewController {
+public class ClientJFXController {
 
     @FXML
     private Button sendButton;

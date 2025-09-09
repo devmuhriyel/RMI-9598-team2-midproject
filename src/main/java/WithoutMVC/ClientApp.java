@@ -2,7 +2,7 @@ package WithoutMVC;
 
 import ClientMVC.ClientController.ClientController;
 import ClientMVC.ClientModel.ClientModel;
-import ClientMVC.ClientView.ClientView;
+import ClientMVC.ClientView.Chat.ClientView;
 
 import java.io.*;
 import java.net.Socket;

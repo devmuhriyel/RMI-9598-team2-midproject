@@ -9,7 +9,7 @@ import javafx.stage.Stage;
 import java.io.*;
 import java.net.Socket;
 
-public class ClientModelConnection{
+public class ConnectionModel {
     private Socket socket;
     private BufferedReader in;
     private PrintWriter out;

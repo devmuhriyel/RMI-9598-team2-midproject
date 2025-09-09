@@ -1,21 +1,16 @@
 package ClientMVC.ClientController;
 
-import ClientMVC.ClientView.ClientViewConnection;
+import ClientMVC.ClientView.Connection.ConnectionView;
 import ClientMVC.ClientView.LoginController;
-import ClientMVC.ClientModel.ClientModelConnection;
-import ClientMVC.ClientView.ClientViewConnectionController;
-import ClientMVC.NetworkManager;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.stage.Stage;
+import ClientMVC.ClientModel.ConnectionModel;
+import ClientMVC.ClientView.Connection.ConnectionJFXController;
 
-public class ClientControllerConnection {
-    private final ClientViewConnectionController connectionJFXController;
-    private final ClientModelConnection model;
-    private final ClientViewConnection view;
+public class ConnectionController {
+    private final ConnectionJFXController connectionJFXController;
+    private final ConnectionModel model;
+    private final ConnectionView view;
 
-    public ClientControllerConnection(ClientModelConnection model, ClientViewConnection view, ClientViewConnectionController jfxController) {
+    public ConnectionController(ConnectionModel model, ConnectionView view, ConnectionJFXController jfxController) {
         this.view = view;
         this.model = model;
         this.connectionJFXController = jfxController;
