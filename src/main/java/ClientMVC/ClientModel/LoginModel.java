@@ -1,6 +1,8 @@
 package ClientMVC.ClientModel;
 
 import ClientMVC.ClientController.ClientController;
+
+
 import ClientMVC.ClientView.Chat.ClientView;
 import javafx.application.Platform;
 import javafx.stage.Stage;
