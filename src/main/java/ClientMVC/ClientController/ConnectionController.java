@@ -1,7 +1,7 @@
 package ClientMVC.ClientController;
 
 import ClientMVC.ClientView.Connection.ConnectionView;
-import ClientMVC.ClientView.LoginController;
+
 import ClientMVC.ClientModel.ConnectionModel;
 import ClientMVC.ClientView.Connection.ConnectionJFXController;
 

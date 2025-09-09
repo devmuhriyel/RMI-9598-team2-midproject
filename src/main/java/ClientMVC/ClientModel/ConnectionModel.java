@@ -1,8 +1,7 @@
 package ClientMVC.ClientModel;
 
-import ClientMVC.ClientController.MainLoginController;
-import ClientMVC.ClientView.LoginController;
-import ClientMVC.ClientView.MainLogin;
+import ClientMVC.ClientController.LoginController;
+import ClientMVC.ClientView.Login.LoginView;
 import javafx.application.Platform;
 import javafx.stage.Stage;
 
@@ -30,10 +29,10 @@ public class ConnectionModel {
             this.connected = true;
             Platform.startup(() -> {
                 try{
-                    MainLogin lView = new MainLogin();
+                    LoginView lView = new LoginView();
                     Stage stage = new Stage();
                     lView.start(stage);
-                    MainLoginModel lModel = new MainLoginModel(getSocket());
+                    LoginModel lModel = new LoginModel(getSocket());
                     new LoginController(lView, lModel, lView.getFXController());
                     new Thread(lModel, "Logged In").start();
                 } catch (Exception e) {
