@@ -1,35 +1,49 @@
 package ClientMVC.ClientController;
 
+import ClientMVC.ClientView.ClientViewConnection;
+import ClientMVC.ClientView.LoginController;
+import ClientMVC.ClientModel.ClientModelConnection;
 import ClientMVC.ClientView.ClientViewConnectionController;
 import ClientMVC.NetworkManager;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
 
 public class ClientControllerConnection {
+    private final ClientViewConnectionController connectionJFXController;
+    private final ClientModelConnection model;
+    private final ClientViewConnection view;
 
-    private final ClientViewConnectionController view;
-    private final NetworkManager network;
-
-    public ClientControllerConnection(ClientViewConnectionController view, NetworkManager network) {
+    public ClientControllerConnection(ClientModelConnection model, ClientViewConnection view, ClientViewConnectionController jfxController) {
         this.view = view;
-        this.network = network;
+        this.model = model;
+        this.connectionJFXController = jfxController;
 
-        // Wire the view back to this controller
-        view.setController(this);
+        setupListeners();
+    }
+
+    private void setupListeners(){
+        connectionJFXController.setConnectButtonListener(() -> {
+            connectToServer(connectionJFXController.getIpAddress(), connectionJFXController.getPort());
+        });
     }
 
     public boolean connectToServer(String ip, int port) {
-        return network.connect(ip, port);
-    }
+        boolean success = model.connect(ip, port);
 
-    private void handleConnect() {
-        String ip = view.getIpAddress();
-        String port = view.getPort();
+        if (success) {
+            System.out.println("[DEBUG] Connected to server " + ip + ":" + port);
 
-        try {
-            network.connect(ip, Integer.parseInt(port));
-            view.getStatusLabel().setText("Connected successfully!");
-        } catch (Exception e) {
-            view.getStatusLabel().setText("Failed: " + e.getMessage());
+        } else {
+            System.out.println("[DEBUG] Failed to connect to server " + ip + ":" + port);
+            connectionJFXController.getStatusLabel().setText("Connection failed.");
         }
+
+        return success;
     }
+
+
 }
+
 
