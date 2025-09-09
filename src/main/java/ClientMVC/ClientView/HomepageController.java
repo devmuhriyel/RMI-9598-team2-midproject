@@ -1,5 +1,6 @@
 package ClientMVC.ClientView;
 
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 
@@ -17,6 +18,9 @@ public class HomepageController {
     private void handleStartChatButton() {
         // TODO: Navigate to chat screen
         System.out.println("Navigating to chat screen...");
+    }
+
+    public void handleLogoutButton(ActionEvent actionEvent) {
     }
 
 //    @FXML

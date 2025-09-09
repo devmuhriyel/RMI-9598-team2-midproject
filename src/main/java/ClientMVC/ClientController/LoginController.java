@@ -4,6 +4,7 @@ import ClientMVC.ClientModel.LoginModel;
 import ClientMVC.ClientView.Login.LoginJFXController;
 import ClientMVC.ClientView.Login.LoginView;
 
+
 public class LoginController {
     private final LoginJFXController loginJFXController;
     private final LoginView view;
@@ -26,7 +27,7 @@ public class LoginController {
             if (success) {
                 System.out.println("[DEBUG] Sent login request for user: " + username);
             } else {
-                loginJFXController.showAlert("❌ Failed to send login request.");
+                loginJFXController.showAlert(" Failed to send login request.");
             }
         });
 
@@ -35,9 +36,9 @@ public class LoginController {
             // Run on UI thread to safely update UI
             javafx.application.Platform.runLater(() -> {
                 if (msg.equals("LOGIN_SUCCESS")) {
-                    loginJFXController.showAlert("✅ Login successful!");
+                    loginJFXController.showAlert(" Login successful!");
                 } else if (msg.equals("LOGIN_FAILED")) {
-                    loginJFXController.showAlert("❌ Invalid credentials.");
+                    loginJFXController.showAlert(" Invalid credentials.");
                 } else {
                     System.out.println("[SERVER MESSAGE] " + msg);
                 }
