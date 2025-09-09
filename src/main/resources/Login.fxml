@@ -10,7 +10,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<VBox fx:id="loginRoot" alignment="CENTER" prefHeight="428.0" prefWidth="376.0" spacing="15" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ClientMVC.ClientView.LoginController">
+<VBox fx:id="loginRoot" alignment="CENTER" prefHeight="428.0" prefWidth="376.0" spacing="15" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ClientMVC.ClientView.LoginJFXController">
     <padding>
         <Insets bottom="30" left="30" right="30" top="30" />
     </padding>

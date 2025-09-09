@@ -19,8 +19,8 @@ public class HomepageController {
         System.out.println("Navigating to chat screen...");
     }
 
-    @FXML
-    private void handleLogoutButton() {
-        MainLogin.loadScene("Login.fxml", "Chat App - Login");
-    }
+//    @FXML
+//    private void handleLogoutButton() {
+//        LoginView.loadScene("Login.fxml", "Chat App - Login");
+//    }
 }
