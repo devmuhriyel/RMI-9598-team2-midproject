@@ -30,7 +30,7 @@ public class ConnectionView extends Application {
         }
     }
 
-    public ConnectionJFXController getFxController() {
+    public ConnectionJFXController getFXController() {
         return jfxController;
     }
 

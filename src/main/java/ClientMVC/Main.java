@@ -1,10 +1,8 @@
 package ClientMVC;
 
-import ClientMVC.ClientController.ClientController;
-import ClientMVC.ClientController.LoginController;
-import ClientMVC.ClientModel.ClientModel;
-import ClientMVC.ClientModel.LoginModel;
-import ClientMVC.ClientView.Login.LoginView;
+import ClientMVC.ClientController.ConnectionController;
+import ClientMVC.ClientModel.ConnectionModel;
+import ClientMVC.ClientView.Connection.ConnectionView;
 import javafx.application.Platform;
 import javafx.stage.Stage;
 
@@ -18,14 +16,12 @@ public class Main{
         //Start JavaFX on an FX thread
         Platform.startup(() -> {
             try {
-                LoginView view = new LoginView();
+                ConnectionView view = new ConnectionView();
                 Stage stage = new Stage();
                 view.start(stage);
                 Socket socket = new Socket("localhost", 1234);
-                LoginModel model = new LoginModel(socket);
-                new LoginController(view, model, view.getFXController());
-                new Thread(model, "Client-Receiver").start();
-
+                ConnectionModel model = new ConnectionModel();
+                new ConnectionController(model, view, view.getFXController());
             } catch (Exception e) {
                 e.printStackTrace();
             }

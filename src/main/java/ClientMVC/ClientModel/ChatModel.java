@@ -5,21 +5,21 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 
-public class ClientModel implements Runnable {
+public class ChatModel implements Runnable {
     private final Socket socket;
     private final BufferedReader readMSG;
     private final BufferedWriter writeMSG;
     private Consumer<String> messageListener;
     private String name;
-    private static ArrayList<ClientModel> clients = new ArrayList<ClientModel>();
+    private static ArrayList<ChatModel> clients = new ArrayList<ChatModel>();
 
-    public ClientModel(Socket socket, String username) throws IOException {
+    public ChatModel(Socket socket, String username) throws IOException {
         this.socket = socket;
         this.readMSG = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         this.writeMSG = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
         this.name = username;
         clients.add(this);
-        for (ClientModel c : clients) {
+        for (ChatModel c : clients) {
             c.writeMSG.write("SERVER: " + this.name + " has connected to the chat");
             c.writeMSG.newLine();
             c.writeMSG.flush();

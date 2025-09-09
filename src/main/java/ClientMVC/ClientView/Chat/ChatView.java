@@ -10,14 +10,14 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-public class ClientView extends Application {
+public class ChatView extends Application {
     private Button sendButton;
     private TextField messageField;
     private VBox messagesArea;
     private ClientJFXController clientJFXController;
-    private static ClientView instance;
+    private static ChatView instance;
 
-    public ClientView() {
+    public ChatView() {
         instance = this;
     }
 
@@ -47,7 +47,7 @@ public class ClientView extends Application {
     public VBox getMessagesArea() {
         return messagesArea;
     }
-    public static ClientView getInstance() {
+    public static ChatView getInstance() {
         return instance;
     }
 }

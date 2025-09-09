@@ -27,8 +27,8 @@ public class ConnectionModel {
             this.ip = ip;
             this.port = port;
             this.connected = true;
-            Platform.startup(() -> {
-                try{
+            Platform.runLater(() -> {
+                try {
                     LoginView lView = new LoginView();
                     Stage stage = new Stage();
                     lView.start(stage);

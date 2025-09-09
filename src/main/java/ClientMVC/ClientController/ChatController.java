@@ -1,16 +1,16 @@
 package ClientMVC.ClientController;
 
 
-import ClientMVC.ClientModel.ClientModel;
-import ClientMVC.ClientView.Chat.ClientView;
+import ClientMVC.ClientModel.ChatModel;
+import ClientMVC.ClientView.Chat.ChatView;
 import ClientMVC.ClientView.Chat.ClientJFXController;
 
-public class ClientController {
-    private ClientModel mdl;
-    private ClientView vw;
+public class ChatController {
+    private ChatModel mdl;
+    private ChatView vw;
     private ClientJFXController clientJFXController;
 
-    public ClientController(ClientModel model, ClientView view, ClientJFXController uiElements) {
+    public ChatController(ChatModel model, ChatView view, ClientJFXController uiElements) {
         this.mdl = model;
         this.vw = view;
         this.clientJFXController = uiElements;
