@@ -31,13 +31,13 @@ public class LoginModel implements Runnable {
             writeMSG.write(message);
             writeMSG.newLine();
             writeMSG.flush();
-            Platform.startup(() -> {
-                try{
-                    ClientView cView = new ClientView();
+            Platform.runLater(() -> {
+                try {
+                    ChatView cView = new ChatView();
                     Stage stage = new Stage();
                     cView.start(stage);
-                    ClientModel cModel = new ClientModel(getSocket(), username);
-                    new ClientController(cModel, cView, cView.getFXController());
+                    ChatModel cModel = new ChatModel(getSocket(), username);
+                    new ChatController(cModel, cView, cView.getFXController());
                     new Thread(cModel, "Logged In").start();
                 } catch (Exception e) {
                     e.printStackTrace();
