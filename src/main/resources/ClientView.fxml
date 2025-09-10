@@ -4,36 +4,20 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.effect.DropShadow?>
-<?import javafx.scene.image.Image?>
-<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.paint.Color?>
 <?import javafx.scene.text.Font?>
 
-<Pane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="500.0" prefWidth="772.0" style="-fx-background-color: #133250;" stylesheets="@style.css" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ClientMVC.ClientView.Chat.ClientJFXController">
+<Pane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="506.0" prefWidth="507.0" style="-fx-background-color: #010104;" stylesheets="@style.css" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ClientMVC.ClientView.Chat.ClientJFXController">
    <children>
-      <ImageView fitHeight="508.0" fitWidth="772.0" layoutX="-1.0" layoutY="-2.0" pickOnBounds="true">
-         <image>
-            <Image url="@Images/connectionImage.jpg" />
-         </image>
-      </ImageView>
       <ScrollPane hbarPolicy="NEVER" layoutX="17.0" layoutY="59.0" prefHeight="372.0" prefWidth="473.0">
          <content>
-            <VBox fx:id="messagesArea" prefHeight="378.0" prefWidth="866.0" style="-fx-background-color: #111112;" stylesheets="@style.css">
-               <children>
-                  <ImageView fitHeight="375.0" fitWidth="870.0" opacity="0.44" pickOnBounds="true">
-                     <image>
-                        <Image url="@Images/bg.jpg" />
-                     </image>
-                  </ImageView>
-               </children>
-            </VBox>
+            <VBox fx:id="messagesArea" prefHeight="378.0" prefWidth="866.0" style="-fx-background-color: #020024;" stylesheets="@style.css" />
          </content>
       </ScrollPane>
-      <Button fx:id="sendButton" layoutX="414.0" layoutY="442.0" mnemonicParsing="false" prefHeight="46.0" prefWidth="76.0" style="-fx-background-color: #BCF7F0;" stylesheets="@style.css" text="Send">
+      <Button fx:id="sendButton" layoutX="414.0" layoutY="442.0" mnemonicParsing="false" prefHeight="46.0" prefWidth="76.0" style="-fx-background-color: dedcff;" stylesheets="@style.css" text="Send">
          <effect>
             <DropShadow>
                <color>
@@ -41,8 +25,8 @@
                </color>
             </DropShadow>
          </effect></Button>
-      <TextField fx:id="messageField" layoutX="75.0" layoutY="442.0" prefHeight="46.0" prefWidth="328.0" stylesheets="@style.css" />
-      <Button fx:id="sendButton1" layoutX="17.0" layoutY="442.0" mnemonicParsing="false" prefHeight="46.0" prefWidth="50.0" style="-fx-background-color: #BCF7F0;" stylesheets="@style.css" text="📎">
+      <TextField fx:id="messageField" layoutX="75.0" layoutY="442.0" prefHeight="46.0" prefWidth="328.0" style="-fx-background-color: #4a4a4a;" stylesheets="@style.css" />
+      <Button fx:id="sendButton1" layoutX="17.0" layoutY="442.0" mnemonicParsing="false" prefHeight="46.0" prefWidth="50.0" style="-fx-background-color: dedcff;" stylesheets="@style.css" text="📎">
          <font>
             <Font size="21.0" />
          </font>
@@ -54,16 +38,7 @@
             </DropShadow>
          </effect>
       </Button>
-      <Button fx:id="sendButton211" layoutX="674.0" layoutY="20.0" mnemonicParsing="false" prefHeight="28.0" prefWidth="83.0" style="-fx-background-color: #8D4A39;" stylesheets="@style.css" text="Requests" textFill="WHITE">
-         <effect>
-            <DropShadow>
-               <color>
-                  <Color red="0.4407407343387604" green="0.8695061802864075" blue="1.0" />
-               </color>
-            </DropShadow>
-         </effect>
-      </Button>
-      <Button fx:id="sendButton22" layoutX="17.0" layoutY="11.0" mnemonicParsing="false" prefHeight="28.0" prefWidth="41.0" style="-fx-background-radius: 100;" stylesheets="@style.css" text="👤">
+      <Button fx:id="sendButton22" layoutX="17.0" layoutY="11.0" mnemonicParsing="false" prefHeight="28.0" prefWidth="41.0" style="-fx-background-radius: 100; -fx-background-color: dedcff;" stylesheets="@style.css" text="🔙">
          <font>
             <Font size="16.0" />
          </font>
@@ -75,54 +50,10 @@
             </DropShadow>
          </effect>
       </Button>
-      <Label layoutX="240.0" layoutY="22.0" prefHeight="21.0" prefWidth="50.0" text="Jessica" textFill="WHITE">
+      <Label layoutX="240.0" layoutY="22.0" prefHeight="21.0" prefWidth="50.0" text="Person" textFill="WHITE">
          <font>
             <Font size="14.0" />
          </font>
       </Label>
-      <ScrollPane hbarPolicy="NEVER" layoutX="519.0" layoutY="96.0" prefHeight="392.0" prefWidth="236.0">
-         <content>
-            <VBox fx:id="messagesArea1" prefHeight="400.0" prefWidth="234.0" style="-fx-background-color: #111112;" stylesheets="@style.css">
-               <effect>
-                  <DropShadow>
-                     <color>
-                        <Color green="0.800000011920929" blue="1.0" />
-                     </color>
-                  </DropShadow>
-               </effect>
-            </VBox>
-         </content>
-      </ScrollPane>
-      <TextField layoutX="517.0" layoutY="61.0" prefHeight="25.0" prefWidth="183.0" />
-      <Button fx:id="sendButton221" layoutX="709.0" layoutY="58.0" mnemonicParsing="false" prefHeight="28.0" prefWidth="50.0" style="-fx-background-color: #BCF7F0#BCF7F0;" stylesheets="@style.css" text="🔍">
-         <font>
-            <Font size="15.0" />
-         </font>
-         <effect>
-            <DropShadow>
-               <color>
-                  <Color red="0.5099999904632568" green="0.8936675190925598" blue="1.0" />
-               </color>
-            </DropShadow>
-         </effect>
-      </Button>
-      <ToggleButton layoutX="519.0" layoutY="22.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="50.0" text="All">
-         <effect>
-            <DropShadow>
-               <color>
-                  <Color red="1.0" green="0.5111111402511597" blue="0.5111111402511597" />
-               </color>
-            </DropShadow>
-         </effect>
-      </ToggleButton>
-      <ToggleButton layoutX="580.0" layoutY="22.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="76.0" text="Group">
-         <effect>
-            <DropShadow>
-               <color>
-                  <Color red="1.0" green="0.5111111402511597" blue="0.5111111402511597" />
-               </color>
-            </DropShadow>
-         </effect>
-      </ToggleButton>
    </children>
 </Pane>
