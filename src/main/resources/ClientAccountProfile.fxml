@@ -11,6 +11,7 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.paint.Color?>
+<?import javafx.scene.text.Font?>
 
 <AnchorPane fx:id="accountRoot" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ClientMVC.ClientView.FXController.ClientViewAccountProfileController">
    <children>
@@ -52,7 +53,7 @@
             <Insets />
          </opaqueInsets>
       </VBox>
-      <AnchorPane fx:id="leftFrame" layoutX="210.0" prefHeight="400.0" prefWidth="389.0" style="-fx-background-color: #111112 #111112;">
+      <AnchorPane fx:id="leftFrame" layoutX="210.0" prefHeight="400.0" prefWidth="389.0" style="-fx-background-color: #010104;">
          <children>
             <Label fx:id="nameLabel1" alignment="CENTER" layoutX="24.0" layoutY="139.0" prefHeight="18.0" prefWidth="70.0" text="Username" textAlignment="CENTER" textFill="WHITE" />
             <TextField id="ipAddressInput" fx:id="ipAddressTextField" layoutX="116.0" layoutY="129.0" prefHeight="38.0" prefWidth="220.0" promptText="127.0.0.1" stylesheets="@style.css" text="User1" />
@@ -61,11 +62,11 @@
             <TextField id="ipAddressInput" fx:id="ipAddressTextField1" layoutX="116.0" layoutY="26.0" prefHeight="38.0" prefWidth="220.0" promptText="127.0.0.1" stylesheets="@style.css" text="User1" />
             <Label fx:id="nameLabel131" alignment="CENTER" layoutX="24.0" layoutY="86.0" prefHeight="18.0" prefWidth="70.0" text="Last Name" textAlignment="CENTER" textFill="WHITE" />
             <TextField id="ipAddressInput" fx:id="ipAddressTextField11" layoutX="116.0" layoutY="76.0" prefHeight="38.0" prefWidth="220.0" promptText="127.0.0.1" stylesheets="@style.css" text="User1" />
-            <Button fx:id="profileButton1" contentDisplay="CENTER" layoutX="149.0" layoutY="340.0" mnemonicParsing="false" text="Update Profile">
+            <Button fx:id="profileButton1" alignment="CENTER" layoutX="145.0" layoutY="334.0" mnemonicParsing="false" prefHeight="38.0" prefWidth="98.0" style="-fx-background-color: dedcff;" stylesheets="@style.css" text="Update Profile">
                <effect>
                   <DropShadow>
                      <color>
-                        <Color red="0.05000000074505806" blue="1.0" />
+                        <Color red="1.0" green="1.0" blue="1.0" />
                      </color>
                   </DropShadow>
                </effect></Button>
@@ -75,5 +76,10 @@
             <Label fx:id="nameLabel1221" alignment="CENTER" layoutX="21.0" layoutY="291.0" prefHeight="18.0" prefWidth="98.0" text="Confirm Password" textAlignment="CENTER" textFill="WHITE" />
             <PasswordField layoutX="133.0" layoutY="287.0" />
          </children></AnchorPane>
+      <Button fx:id="sendButton22" alignment="CENTER" layoutX="27.0" layoutY="21.0" mnemonicParsing="false" prefHeight="28.0" prefWidth="41.0" style="-fx-background-radius: 100; -fx-background-color: dedcff;" stylesheets="@style.css" text="🔙">
+         <font>
+            <Font size="16.0" />
+         </font>
+      </Button>
    </children>
 </AnchorPane>
