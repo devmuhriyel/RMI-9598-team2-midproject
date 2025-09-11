@@ -1,10 +1,6 @@
 package ClientMVC.ClientModel;
 
-import ClientMVC.ClientController.ChatController;
-import ClientMVC.ClientView.Chat.ChatView;
 import javafx.application.Platform;
-import javafx.stage.Stage;
-
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -25,34 +21,17 @@ public class LoginModel implements Runnable {
         clients.add(this);
     }
 
-    public boolean login(String username, String password) {
+    //MVC METHODS
+    public void login(String username, String password) {
         try {
-            String message = "LOGIN:" + username + ":" + password;
+            String message = "<Request><type>LOGIN</type><content>" + username + "waw" + password + "</content></Request>";
             writeMSG.write(message);
             writeMSG.newLine();
             writeMSG.flush();
-            Platform.runLater(() -> {
-                try {
-                    ChatView cView = new ChatView();
-                    Stage stage = new Stage();
-                    cView.start(stage);
-                    ChatModel cModel = new ChatModel(getSocket(), username);
-                    new ChatController(cModel, cView, cView.getFXController());
-                    new Thread(cModel, "Logged In").start();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            });
-
-            return true;
+            name = username;
         } catch (IOException e) {
             e.printStackTrace();
-            return false;
         }
-    }
-
-    public void setMessageListener(Consumer<String> listener) {
-        this.messageListener = listener;
     }
 
     @Override
@@ -60,8 +39,14 @@ public class LoginModel implements Runnable {
         try {
             String msg;
             while ((msg = readMSG.readLine()) != null) {
-                if (messageListener != null) {
-                    messageListener.accept(msg);
+                System.out.println("Received: " + msg);
+                if (msg.trim().startsWith("<")) {
+                    if (messageListener != null) {
+                        String finalMsg = msg.trim();
+                        Platform.runLater(() -> messageListener.accept(finalMsg));
+                    }
+                } else {
+                    System.out.println("Server message: " + msg);
                 }
             }
         } catch (IOException e) {
@@ -69,7 +54,14 @@ public class LoginModel implements Runnable {
         }
     }
 
-    private Socket getSocket() {
+    //SETTERS AND GETTERS
+    public void setMessageListener(Consumer<String> listener) {
+        this.messageListener = listener;
+    }
+    public Socket getSocket() {
         return socket;
+    }
+    public String getUsername() {
+        return name;
     }
 }

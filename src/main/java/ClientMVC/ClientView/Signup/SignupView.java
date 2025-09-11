@@ -10,7 +10,7 @@ public class SignupView extends Application {
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        Parent root = FXMLLoader.load(SignupView.class.getResource("/Signup.fxml"));
+        Parent root = FXMLLoader.load(SignupView.class.getResource("/FXMLFiles/Signup.fxml"));
         Scene scene = new Scene(root, 400, 450);
         primaryStage.setTitle("Sign Up");
         primaryStage.setScene(scene);

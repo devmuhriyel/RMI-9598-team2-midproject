@@ -1,6 +1,7 @@
 package ClientMVC.ClientView.Login;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -15,7 +16,7 @@ public class LoginView extends Application {
     @Override
     public void start(Stage stage) throws Exception {
         primaryStage = stage;
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/Login.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/Login.fxml"));
         Parent root = loader.load();
         jfxController = loader.getController();
         primaryStage.setTitle("Login");
@@ -24,11 +25,16 @@ public class LoginView extends Application {
         primaryStage.show();
     }
 
-    public LoginJFXController getFXController() {
-        return jfxController;
+    //MVC METHODS
+    public void login(){
+        Platform.runLater(() -> {
+            Stage stage =  (Stage) jfxController.getLoginButton().getScene().getWindow();
+            stage.close();
+        });
     }
 
-    public static LoginView getInstance() {
-        return instance;
+    //SETTERS AND GETTERS
+    public LoginJFXController getFXController() {
+        return jfxController;
     }
 }

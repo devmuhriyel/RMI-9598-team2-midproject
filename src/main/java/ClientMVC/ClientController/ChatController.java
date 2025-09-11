@@ -3,35 +3,35 @@ package ClientMVC.ClientController;
 
 import ClientMVC.ClientModel.ChatModel;
 import ClientMVC.ClientView.Chat.ChatView;
-import ClientMVC.ClientView.Chat.ClientJFXController;
+import ClientMVC.ClientView.Chat.ChatJFXController;
 
 public class ChatController {
     private ChatModel mdl;
     private ChatView vw;
-    private ClientJFXController clientJFXController;
+    private ChatJFXController chatJFXController;
 
-    public ChatController(ChatModel model, ChatView view, ClientJFXController uiElements) {
+    public ChatController(ChatModel model, ChatView view, ChatJFXController uiElements) {
         this.mdl = model;
         this.vw = view;
-        this.clientJFXController = uiElements;
+        this.chatJFXController = uiElements;
 
         setupListeners();
         mdl.setMessageListener(msg -> {
             javafx.application.Platform.runLater(() -> {
-                clientJFXController.addMessage(msg);
+                chatJFXController.addMessage(msg);
             });
         });
     }
 
     private void setupListeners(){
-        clientJFXController.setSendButtonListener(() -> sendMSG());
+        chatJFXController.setSendButtonListener(() -> sendMSG());
     }
 
     private void sendMSG(){
-        String textToSend = clientJFXController.getMessageField().getText();
+        String textToSend = chatJFXController.getMessageField().getText();
         if (!textToSend.isEmpty()) {
             mdl.sendMSG(textToSend);
-            clientJFXController.getMessageField().clear();
+            chatJFXController.getMessageField().clear();
         }
     }
 }

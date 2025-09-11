@@ -3,27 +3,24 @@ package Server;
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
 public class ClientThread implements Runnable {
     private Socket socket;
     private BufferedReader readMSG;
     private BufferedWriter writeMSG;
     private String name;
-    private static ArrayList<ClientThread> clients = new ArrayList<>();
+    private static final ArrayList<ClientThread> clients = new ArrayList<>();
+    private ServerXMLHandler xmlHandler = new ServerXMLHandler();
 
-    private static final Map<String, String> userDatabase = new HashMap<>();
-    static {
-        userDatabase.put("testuser", "password");
-        userDatabase.put("alice", "12345");
-        userDatabase.put("bob", "qwerty");
-    }
     public ClientThread(Socket socket) {
         try {
             this.socket = socket;
             this.writeMSG = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             this.readMSG = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+            synchronized (clients) {
+                clients.add(this);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -32,47 +29,43 @@ public class ClientThread implements Runnable {
     @Override
     public void run() {
         try {
-            // 🔑 Step 1: wait for login message
-            String firstMsg = readMSG.readLine();
-            if (firstMsg != null && firstMsg.startsWith("LOGIN:")) {
-                String[] parts = firstMsg.split(":");
-                if (parts.length == 3) {
-                    String username = parts[1];
-                    String password = parts[2];
+            String xmlMsg;
+            while ((xmlMsg = readMSG.readLine()) != null) {
+                System.out.println("Received XML: " + xmlMsg);
+                String reply = xmlHandler.readMessage(xmlMsg);
 
-                    if (authenticate(username, password)) {
-                        this.name = username;
-                        sendMessage("LOGIN_SUCCESS");
-                        System.out.println("User logged in: " + username);
+                switch (reply) {
+                    case "LOGIN_SUCCESS":
+                        this.name = extractUsername(xmlMsg); // store logged-in username
+                        sendMessage("<Response><reply>LOGIN_SUCCESS</reply><body>Welcome " + name + "!</body></Response>");
+                        broadcast("SERVER: " + name + " has joined the chat.");
+                        break;
 
-                        synchronized (clients) {
-                            clients.add(this);
-                        }
-                        broadcast("SERVER: " + username + " has connected.");
-                    } else {
-                        sendMessage("LOGIN_FAILED");
-                        socket.close();
-                        return; // end thread
-                    }
-                } else {
-                    sendMessage("LOGIN_FAILED");
-                    socket.close();
-                    return;
+                    case "LOGIN_FAILED":
+                        sendMessage("<Response status=\"LOGIN_FAILED\"><body>Invalid username or password</body></Response>");
+                        break;
+
+                    case "REGISTER_SUCCESS":
+                        sendMessage("<Response status=\"REGISTER_SUCCESS\"><body>Registration successful</body></Response>");
+                        break;
+
+                    case "REGISTER_FAILED":
+                        sendMessage("<Response status=\"REGISTER_FAILED\"><body>Registration failed</body></Response>");
+                        break;
+
+                    case "SEND_MESSAGE":
+                        // TODO: build chat message from xmlMsg
+                        String chat = name + ": " + extractBody(xmlMsg);
+                        broadcast("<Response status=\"MESSAGE\"><body>" + chat + "</body></Response>");
+                        break;
+
+                    default:
+                        sendMessage("<Response status=\"ERROR\"><body>Unknown request</body></Response>");
+                        break;
                 }
-            } else {
-                sendMessage("LOGIN_FAILED");
-                socket.close();
-                return;
             }
-
-            // 🔑 Step 2: handle chat messages
-            String msgFromClient;
-            while ((msgFromClient = readMSG.readLine()) != null) {
-                broadcast(this.name + ": " + msgFromClient);
-            }
-
-        } catch (IOException e) {
-            // client disconnected
+        } catch (Exception e) {
+            e.printStackTrace();
         } finally {
             try {
                 logOut();
@@ -82,40 +75,59 @@ public class ClientThread implements Runnable {
         }
     }
 
+    // Broadcasts message to all connected clients
     private void broadcast(String message) {
         synchronized (clients) {
-            for (ClientThread c : clients) {
+            for (ClientThread c : new ArrayList<>(clients)) {
                 try {
                     c.writeMSG.write(message);
                     c.writeMSG.newLine();
                     c.writeMSG.flush();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    try {
+                        c.logOut();
+                    } catch (IOException ignored) {}
                 }
             }
         }
     }
 
-    private boolean authenticate(String username, String password) {
-        return userDatabase.containsKey(username) &&
-                userDatabase.get(username).equals(password);
-    }
-
+    // Sends a direct message to this client
     private void sendMessage(String msg) {
         try {
-            writeMSG.write(msg);
+            writeMSG.write(msg.trim());
             writeMSG.newLine();
             writeMSG.flush();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Failed to send message to " + name);
         }
     }
 
+    // Extract username from <content> (split by "waw")
+    private String extractUsername(String xmlMsg) throws Exception {
+        javax.xml.parsers.DocumentBuilderFactory factory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+        javax.xml.parsers.DocumentBuilder builder = factory.newDocumentBuilder();
+        org.w3c.dom.Document doc = builder.parse(new ByteArrayInputStream(xmlMsg.getBytes("UTF-8")));
+        String[] content = doc.getElementsByTagName("content").item(0).getTextContent().split("waw");
+        return content[0]; // username
+    }
+
+    // Extract message body from <body> (for SEND_MESSAGE)
+    private String extractBody(String xmlMsg) throws Exception {
+        javax.xml.parsers.DocumentBuilderFactory factory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+        javax.xml.parsers.DocumentBuilder builder = factory.newDocumentBuilder();
+        org.w3c.dom.Document doc = builder.parse(new ByteArrayInputStream(xmlMsg.getBytes("UTF-8")));
+        return doc.getElementsByTagName("body").item(0).getTextContent();
+    }
+
+    // Logout and notify others
     public void logOut() throws IOException {
         synchronized (clients) {
             clients.remove(this);
         }
-        broadcast("SERVER: " + this.name + " has disconnected.");
+        if (name != null) {
+            broadcast("SERVER: " + this.name + " has disconnected.");
+        }
         socket.close();
     }
 }

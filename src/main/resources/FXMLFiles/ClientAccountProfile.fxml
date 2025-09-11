@@ -15,7 +15,7 @@
          <children>
             <ImageView fitHeight="150.0" fitWidth="200.0" pickOnBounds="true" preserveRatio="true">
                <image>
-                  <Image url="@Images/variety-logo/black_on_trans.png" />
+                  <Image url="@../Images/variety-logo/black_on_trans.png" />
                </image>
                <VBox.margin>
                   <Insets bottom="15.0" top="-30.0" />
@@ -52,15 +52,15 @@
       <AnchorPane fx:id="leftFrame" layoutX="210.0" prefHeight="400.0" prefWidth="389.0" style="-fx-background-color: #111112 #111112;">
          <children>
             <Label fx:id="nameLabel1" alignment="CENTER" layoutX="24.0" layoutY="139.0" prefHeight="18.0" prefWidth="70.0" text="Username" textAlignment="CENTER" textFill="WHITE" />
-            <TextField id="ipAddressInput" fx:id="ipAddressTextField" layoutX="116.0" layoutY="129.0" prefHeight="38.0" prefWidth="220.0" promptText="127.0.0.1" styleClass="input-invalid" stylesheets="@style.css" text="User1" />
+            <TextField id="ipAddressInput" fx:id="ipAddressTextField" layoutX="116.0" layoutY="129.0" prefHeight="38.0" prefWidth="220.0" promptText="127.0.0.1" styleClass="input-invalid" stylesheets="@../style.css" text="User1" />
             <Label fx:id="nameLabel12" alignment="CENTER" layoutX="24.0" layoutY="230.0" prefHeight="18.0" prefWidth="70.0" text="Password" textAlignment="CENTER" textFill="WHITE" />
             <Label fx:id="nameLabel13" alignment="CENTER" layoutX="24.0" layoutY="36.0" prefHeight="18.0" prefWidth="70.0" text="First Name" textAlignment="CENTER" textFill="WHITE" />
-            <TextField id="ipAddressInput" fx:id="ipAddressTextField1" layoutX="116.0" layoutY="26.0" prefHeight="38.0" prefWidth="220.0" promptText="127.0.0.1" styleClass="input-invalid" stylesheets="@style.css" text="User1" />
+            <TextField id="ipAddressInput" fx:id="ipAddressTextField1" layoutX="116.0" layoutY="26.0" prefHeight="38.0" prefWidth="220.0" promptText="127.0.0.1" styleClass="input-invalid" stylesheets="@../style.css" text="User1" />
             <Label fx:id="nameLabel131" alignment="CENTER" layoutX="24.0" layoutY="86.0" prefHeight="18.0" prefWidth="70.0" text="Last Name" textAlignment="CENTER" textFill="WHITE" />
-            <TextField id="ipAddressInput" fx:id="ipAddressTextField11" layoutX="116.0" layoutY="76.0" prefHeight="38.0" prefWidth="220.0" promptText="127.0.0.1" styleClass="input-invalid" stylesheets="@style.css" text="User1" />
+            <TextField id="ipAddressInput" fx:id="ipAddressTextField11" layoutX="116.0" layoutY="76.0" prefHeight="38.0" prefWidth="220.0" promptText="127.0.0.1" styleClass="input-invalid" stylesheets="@../style.css" text="User1" />
             <Button fx:id="profileButton1" contentDisplay="CENTER" layoutX="116.0" layoutY="301.0" mnemonicParsing="false" text="Profile" />
-            <TextField id="ipAddressInput" fx:id="ipAddressTextField2" layoutX="94.0" layoutY="282.0" prefHeight="38.0" prefWidth="220.0" promptText="127.0.0.1" styleClass="input-invalid" stylesheets="@style.css" text="User1" />
-            <TextField id="ipAddressInput" fx:id="ipAddressTextField3" layoutX="116.0" layoutY="220.0" prefHeight="38.0" prefWidth="220.0" promptText="127.0.0.1" styleClass="input-invalid" stylesheets="@style.css" text="User1" />
+            <TextField id="ipAddressInput" fx:id="ipAddressTextField2" layoutX="94.0" layoutY="282.0" prefHeight="38.0" prefWidth="220.0" promptText="127.0.0.1" styleClass="input-invalid" stylesheets="@../style.css" text="User1" />
+            <TextField id="ipAddressInput" fx:id="ipAddressTextField3" layoutX="116.0" layoutY="220.0" prefHeight="38.0" prefWidth="220.0" promptText="127.0.0.1" styleClass="input-invalid" stylesheets="@../style.css" text="User1" />
          </children></AnchorPane>
    </children>
 </AnchorPane>

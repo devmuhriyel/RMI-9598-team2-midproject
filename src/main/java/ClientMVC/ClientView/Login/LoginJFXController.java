@@ -27,7 +27,6 @@ public class LoginJFXController {
 
     @FXML
     private void initialize() {
-        // Delegate click to listener (if set by Controller)
         loginButton.setOnAction(e -> {
             if (loginButtonListener != null) {
                 loginButtonListener.run();
@@ -35,20 +34,16 @@ public class LoginJFXController {
         });
     }
 
-    // --- Listener injection ---
     public void setLoginButtonListener(Runnable listener) {
         this.loginButtonListener = listener;
     }
 
-    // --- Getters for Controller ---
     public String getUsername() {
         return usernameField.getText();
     }
-
     public String getPassword() {
         return passwordField.getText();
     }
-
     public Button getLoginButton() {
         return loginButton;
     }
@@ -65,7 +60,6 @@ public class LoginJFXController {
         return signupTab;
     }
 
-    // Optional: UI feedback helper
     public void showAlert(String msg) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Login");
