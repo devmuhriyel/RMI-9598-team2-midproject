@@ -13,22 +13,17 @@ import java.net.Socket;
 public class Main{
 
     public static void main(String[] args) throws IOException {
-        //Start JavaFX on an FX thread
         Platform.startup(() -> {
             try {
                 ConnectionView view = new ConnectionView();
                 Stage stage = new Stage();
                 view.start(stage);
-                Socket socket = new Socket("localhost", 1234);
                 ConnectionModel model = new ConnectionModel();
                 new ConnectionController(model, view, view.getFXController());
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
-
-        // testing
-
     }
 
 }

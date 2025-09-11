@@ -4,6 +4,8 @@ import ClientMVC.ClientView.Connection.ConnectionView;
 
 import ClientMVC.ClientModel.ConnectionModel;
 import ClientMVC.ClientView.Connection.ConnectionJFXController;
+import javafx.application.Platform;
+import javafx.stage.Stage;
 
 public class ConnectionController {
     private final ConnectionJFXController connectionJFXController;
@@ -18,27 +20,32 @@ public class ConnectionController {
         setupListeners();
     }
 
+    //MVC METHODS
+    public void connect(String ip, int port) {
+        boolean success = model.connect(ip, port);
+        if (success) {
+            view.connect();
+        } else {
+
+
+            //Paayos nito
+
+
+            connectionJFXController.getStatusLabel().setText("Connection failed. Your IP and/or port number is invalid.");
+
+
+
+
+
+        }
+    }
+
+    //LISTENER SETUP
     private void setupListeners(){
         connectionJFXController.setConnectButtonListener(() -> {
-            connectToServer(connectionJFXController.getIpAddress(), connectionJFXController.getPort());
+            connect(connectionJFXController.getIpAddress(), connectionJFXController.getPort());
         });
     }
-
-    public boolean connectToServer(String ip, int port) {
-        boolean success = model.connect(ip, port);
-
-        if (success) {
-            System.out.println("[DEBUG] Connected to server " + ip + ":" + port);
-
-        } else {
-            System.out.println("[DEBUG] Failed to connect to server " + ip + ":" + port);
-            connectionJFXController.getStatusLabel().setText("Connection failed.");
-        }
-
-        return success;
-    }
-
-
 }
 
 

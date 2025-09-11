@@ -14,7 +14,7 @@
          <children>
             <ImageView fitHeight="150.0" fitWidth="200.0" pickOnBounds="true" preserveRatio="true">
                <image>
-                  <Image url="@Images/variety-logo/black_on_trans.png" />
+                  <Image url="@../Images/variety-logo/black_on_trans.png" />
                </image>
                <VBox.margin>
                   <Insets bottom="15.0" top="-30.0" />

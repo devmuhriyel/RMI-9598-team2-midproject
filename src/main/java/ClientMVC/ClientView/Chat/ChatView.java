@@ -14,7 +14,7 @@ public class ChatView extends Application {
     private Button sendButton;
     private TextField messageField;
     private VBox messagesArea;
-    private ClientJFXController clientJFXController;
+    private ChatJFXController chatJFXController;
     private static ChatView instance;
 
     public ChatView() {
@@ -24,9 +24,9 @@ public class ChatView extends Application {
     @Override
     public void start(Stage stage){
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/ClientView.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/ChatView.fxml"));
             Parent root = loader.load();
-            clientJFXController = loader.getController();
+            chatJFXController = loader.getController();
             stage.setTitle("Client Application");
             stage.setScene(new Scene(root));
             stage.show();
@@ -35,19 +35,7 @@ public class ChatView extends Application {
         }
     }
 
-    public ClientJFXController getFXController() {
-        return clientJFXController;
-    }
-    public Button getSendButton() {
-        return sendButton;
-    }
-    public TextField getMessageField() {
-        return messageField;
-    }
-    public VBox getMessagesArea() {
-        return messagesArea;
-    }
-    public static ChatView getInstance() {
-        return instance;
+    public ChatJFXController getFXController() {
+        return chatJFXController;
     }
 }
