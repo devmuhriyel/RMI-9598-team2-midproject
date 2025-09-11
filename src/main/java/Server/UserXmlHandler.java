@@ -12,7 +12,7 @@ public class UserXmlHandler {
     // Temporary location for the XML file.
     private static final String FILE_PATH = "users.xml";
 
-    public static void registerUser(String username, String password) throws Exception {
+    public static void registerUser(String username, String firstname, String lastname, String password) throws Exception {
         File file = new File(FILE_PATH);
 
         // Set up the XML builder used for creating or parsing XML
@@ -38,6 +38,16 @@ public class UserXmlHandler {
         uname.appendChild(doc.createTextNode(username));
         user.appendChild(uname);
 
+        // Add <firstname>
+        Element fname = doc.createElement("firstname");
+        fname.appendChild(doc.createTextNode(firstname));
+        user.appendChild(fname);
+
+        // Add <lastname>
+        Element lname = doc.createElement("lastname");
+        lname.appendChild(doc.createTextNode(lastname));
+        user.appendChild(lname);
+
         // Add <password>
         Element pass = doc.createElement("password");
         pass.appendChild(doc.createTextNode(password));
@@ -49,7 +59,7 @@ public class UserXmlHandler {
         // Save the updated XML document back to the file
         TransformerFactory tf = TransformerFactory.newInstance();
         Transformer transformer = tf.newTransformer();
-        transformer.setOutputProperty(OutputKeys.INDENT, "yes"); // pretty-print the XML
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
         transformer.transform(new DOMSource(doc), new StreamResult(file));
     }
 
