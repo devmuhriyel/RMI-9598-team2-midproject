@@ -28,7 +28,6 @@ public class ChatModel implements Runnable {
 
     public void sendMSG(String message) {
         try {
-
             writeMSG.write(message);
             writeMSG.newLine();
             writeMSG.flush();

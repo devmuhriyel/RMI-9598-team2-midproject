@@ -33,7 +33,6 @@ public class ConnectionJFXController {
         applyRaisedShadow(connectButton);
         addHoverScale(connectButton, 1.05);
 
-        // Delegate click to listener (if set by Controller)
         connectButton.setOnAction(event -> {
             if (connectButtonListener != null) {
                 connectButtonListener.run();
@@ -41,7 +40,6 @@ public class ConnectionJFXController {
         });
     }
 
-    // --- Styling helpers ---
     private void applyInsetShadow(TextField tf) {
         InnerShadow innerDark = new InnerShadow();
         innerDark.setRadius(10);
@@ -97,12 +95,11 @@ public class ConnectionJFXController {
 
     }
 
-    // --- Listener injection ---
+    //SETTERS AND GETTERS
     public void setConnectButtonListener(Runnable listener) {
         this.connectButtonListener = listener;
     }
 
-    // --- Getters for Controller ---
     public String getIpAddress() {
         return ipAddressTextField.getText();
     }
