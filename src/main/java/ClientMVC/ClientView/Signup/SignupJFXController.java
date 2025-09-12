@@ -1,6 +1,6 @@
 package ClientMVC.ClientView.Signup;
 
-import Server.UserXmlHandler; // ✅ import your XML handler
+import Server.ServerXMLHandler; // import your XML handler
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 
@@ -19,7 +19,7 @@ public class SignupJFXController {
     private TextField emailField;
 
     @FXML
-    private PasswordField passwordField; // ✅ add this if you want password input
+    private PasswordField passwordField; //add this if you want password input
 
     @FXML
     private Button signupButton;
@@ -37,7 +37,7 @@ public class SignupJFXController {
         String firstName = firstNameField.getText();
         String lastName = lastNameField.getText();
         String email = emailField.getText();
-        String password = passwordField.getText(); // ✅ collect password
+        String password = passwordField.getText(); // collect password
 
         // Check Terms
         if (!termsCheckbox.isSelected()) {
@@ -54,7 +54,7 @@ public class SignupJFXController {
         // Save user into XML
         try {
             UserXmlHandler.registerUser(username, firstName, lastName, password);
-            showAlert("✅ Signup successful!\nWelcome, " + firstName + "!");
+            showAlert("Signup successful!\nWelcome, " + firstName + "!");
         } catch (Exception e) {
             e.printStackTrace();
             showAlert("Failed to register user.");

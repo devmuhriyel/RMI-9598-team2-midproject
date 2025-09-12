@@ -29,7 +29,7 @@ public class ConnectionModel {
                     "^(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)" +
                             "(\\.(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)){3}$";
 
-            if (ip.matches(ipv4Pattern) && port >= 1 && port <= 65535) {
+            if (ip.matches(ipv4Pattern) && port >= 1024 && port <= 65535) {
                 socket = new Socket(ip, port);
                 in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 out = new PrintWriter(socket.getOutputStream(), true);
