@@ -3,52 +3,143 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.VBox?>
 
 <AnchorPane fx:id="accountRoot" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ClientMVC.ClientView.Account.AccountJFXController">
-   <children>
-      <VBox fx:id="menuFrame" alignment="CENTER" prefHeight="400.0" prefWidth="200.0" spacing="15.0">
-         <children>
-            <ImageView fitHeight="150.0" fitWidth="200.0" pickOnBounds="true" preserveRatio="true">
-               <image>
-                  <Image url="@../Images/variety-logo/black_on_trans.png" />
-               </image>
-               <VBox.margin>
-                  <Insets bottom="15.0" top="-30.0" />
-               </VBox.margin>
-            </ImageView>
-            <Label fx:id="nameLabel" alignment="CENTER" prefHeight="17.0" prefWidth="42.0" text="NAME" textAlignment="CENTER">
-               <VBox.margin>
-                  <Insets />
-               </VBox.margin>
-            </Label>
-            <Button fx:id="profileButton" contentDisplay="CENTER" mnemonicParsing="false" text="Profile">
-               <VBox.margin>
-                  <Insets />
-               </VBox.margin>
-            </Button>
-            <Button fx:id="requestButton" layoutX="1000.0" mnemonicParsing="false" text="Requests">
-               <VBox.margin>
-                  <Insets />
-               </VBox.margin>
-            </Button>
-            <Button fx:id="settingsButton" mnemonicParsing="false" text="Settings">
-               <VBox.margin>
-                  <Insets />
-               </VBox.margin>
-            </Button>
-            <Button fx:id="signoutButton" mnemonicParsing="false" text="Logout" />
-         </children>
-         <padding>
-            <Insets bottom="30.0" left="30.0" right="30.0" top="30.0" />
-         </padding>
-         <opaqueInsets>
-            <Insets />
-         </opaqueInsets>
-      </VBox>
-      <AnchorPane fx:id="rightFrame" layoutX="210.0" prefHeight="400.0" prefWidth="389.0" style="-fx-background-color: #111112 #111112;" />
-   </children>
+    <children>
+        <!-- LEFT SIDEBAR -->
+        <VBox fx:id="menuFrame" alignment="CENTER" prefHeight="400.0" prefWidth="200.0" spacing="15.0">
+            <children>
+                <ImageView fitHeight="150.0" fitWidth="200.0" pickOnBounds="true" preserveRatio="true">
+                    <image>
+                        <Image url="@../Images/variety-logo/black_on_trans.png" />
+                    </image>
+                    <VBox.margin>
+                        <Insets bottom="15.0" top="-30.0" />
+                    </VBox.margin>
+                </ImageView>
+                <Label fx:id="nameLabel" alignment="CENTER" text="NAME" textAlignment="CENTER" />
+                <Button fx:id="profileButton" mnemonicParsing="false" text="Profile" />
+                <Button fx:id="requestButton" mnemonicParsing="false" text="Requests" />
+                <Button fx:id="settingsButton" mnemonicParsing="false" text="Settings" />
+                <Button fx:id="signoutButton" mnemonicParsing="false" text="Logout" />
+            </children>
+            <padding>
+                <Insets bottom="30.0" left="30.0" right="30.0" top="30.0" />
+            </padding>
+        </VBox>
+
+        <!-- RIGHT CONTENT AREA -->
+        <AnchorPane fx:id="rightFrame" layoutX="210.0" prefHeight="400.0" prefWidth="389.0" style="-fx-background-color: #111112;">
+            <children>
+                <!-- ScrollPane for friend requests -->
+                <ScrollPane fx:id="requestScrollPane" fitToWidth="true" prefHeight="400.0" prefWidth="389.0" vbarPolicy="ALWAYS" style="-fx-background: transparent; -fx-background-color: transparent;">
+                    <content>
+                        <VBox fx:id="requestList" alignment="TOP_CENTER" spacing="15.0" prefWidth="370.0" style="-fx-padding: 20;">
+                            <!-- Title -->
+                            <Label style="-fx-font-size: 18px; -fx-text-fill: white; -fx-font-weight: bold;" text="Friend Requests" />
+
+                            <!-- Example Request Card -->
+                            <AnchorPane prefHeight="70.0" prefWidth="350.0" style="-fx-background-color: #222; -fx-background-radius: 8; -fx-padding: 10;">
+                                <children>
+                                    <ImageView fitHeight="50.0" fitWidth="50.0" layoutX="10.0" layoutY="10.0" preserveRatio="true">
+                                        <image>
+                                            <Image url="@../Images/User_icon.png" />
+                                        </image>
+                                    </ImageView>
+                                    <Label layoutX="70.0" layoutY="20.0" style="-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;" text="User Name" />
+                                    <Button layoutX="200.0" layoutY="20.0" style="-fx-background-color: green; -fx-text-fill: white;" text="Accept" />
+                                    <Button layoutX="270.0" layoutY="20.0" style="-fx-background-color: red; -fx-text-fill: white;" text="Decline" />
+                                </children>
+                            </AnchorPane>
+
+                            <!-- Add more request cards here... -->
+
+
+                            <AnchorPane prefHeight="70.0" prefWidth="350.0" style="-fx-background-color: #222; -fx-background-radius: 8; -fx-padding: 10;">
+                                <children>
+                                    <ImageView fitHeight="50.0" fitWidth="50.0" layoutX="10.0" layoutY="10.0" preserveRatio="true">
+                                        <image>
+                                            <Image url="@../Images/User_icon.png" />
+                                        </image>
+                                    </ImageView>
+                                    <Label layoutX="70.0" layoutY="20.0" style="-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;" text="User Name" />
+                                    <Button layoutX="200.0" layoutY="20.0" style="-fx-background-color: green; -fx-text-fill: white;" text="Accept" />
+                                    <Button layoutX="270.0" layoutY="20.0" style="-fx-background-color: red; -fx-text-fill: white;" text="Decline" />
+                                </children>
+                            </AnchorPane>
+
+                            <AnchorPane prefHeight="70.0" prefWidth="350.0" style="-fx-background-color: #222; -fx-background-radius: 8; -fx-padding: 10;">
+                                <children>
+                                    <ImageView fitHeight="50.0" fitWidth="50.0" layoutX="10.0" layoutY="10.0" preserveRatio="true">
+                                        <image>
+                                            <Image url="@../Images/User_icon.png" />
+                                        </image>
+                                    </ImageView>
+                                    <Label layoutX="70.0" layoutY="20.0" style="-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;" text="User Name" />
+                                    <Button layoutX="200.0" layoutY="20.0" style="-fx-background-color: green; -fx-text-fill: white;" text="Accept" />
+                                    <Button layoutX="270.0" layoutY="20.0" style="-fx-background-color: red; -fx-text-fill: white;" text="Decline" />
+                                </children>
+                            </AnchorPane>
+
+
+                            <AnchorPane prefHeight="70.0" prefWidth="350.0" style="-fx-background-color: #222; -fx-background-radius: 8; -fx-padding: 10;">
+                                <children>
+                                    <ImageView fitHeight="50.0" fitWidth="50.0" layoutX="10.0" layoutY="10.0" preserveRatio="true">
+                                        <image>
+                                            <Image url="@../Images/User_icon.png" />
+                                        </image>
+                                    </ImageView>
+                                    <Label layoutX="70.0" layoutY="20.0" style="-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;" text="User Name" />
+                                    <Button layoutX="200.0" layoutY="20.0" style="-fx-background-color: green; -fx-text-fill: white;" text="Accept" />
+                                    <Button layoutX="270.0" layoutY="20.0" style="-fx-background-color: red; -fx-text-fill: white;" text="Decline" />
+                                </children>
+                            </AnchorPane>
+
+                            <AnchorPane prefHeight="70.0" prefWidth="350.0" style="-fx-background-color: #222; -fx-background-radius: 8; -fx-padding: 10;">
+                                <children>
+                                    <ImageView fitHeight="50.0" fitWidth="50.0" layoutX="10.0" layoutY="10.0" preserveRatio="true">
+                                        <image>
+                                            <Image url="@../Images/User_icon.png" />
+                                        </image>
+                                    </ImageView>
+                                    <Label layoutX="70.0" layoutY="20.0" style="-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;" text="User Name" />
+                                    <Button layoutX="200.0" layoutY="20.0" style="-fx-background-color: green; -fx-text-fill: white;" text="Accept" />
+                                    <Button layoutX="270.0" layoutY="20.0" style="-fx-background-color: red; -fx-text-fill: white;" text="Decline" />
+                                </children>
+                            </AnchorPane>
+                            <AnchorPane prefHeight="70.0" prefWidth="350.0" style="-fx-background-color: #222; -fx-background-radius: 8; -fx-padding: 10;">
+                                <children>
+                                    <ImageView fitHeight="50.0" fitWidth="50.0" layoutX="10.0" layoutY="10.0" preserveRatio="true">
+                                        <image>
+                                            <Image url="@../Images/User_icon.png" />
+                                        </image>
+                                    </ImageView>
+                                    <Label layoutX="70.0" layoutY="20.0" style="-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;" text="User Name" />
+                                    <Button layoutX="200.0" layoutY="20.0" style="-fx-background-color: green; -fx-text-fill: white;" text="Accept" />
+                                    <Button layoutX="270.0" layoutY="20.0" style="-fx-background-color: red; -fx-text-fill: white;" text="Decline" />
+                                </children>
+                            </AnchorPane>
+                            <AnchorPane prefHeight="70.0" prefWidth="350.0" style="-fx-background-color: #222; -fx-background-radius: 8; -fx-padding: 10;">
+                                <children>
+                                    <ImageView fitHeight="50.0" fitWidth="50.0" layoutX="10.0" layoutY="10.0" preserveRatio="true">
+                                        <image>
+                                            <Image url="@../Images/User_icon.png" />
+                                        </image>
+                                    </ImageView>
+                                    <Label layoutX="70.0" layoutY="20.0" style="-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;" text="User Name" />
+                                    <Button layoutX="200.0" layoutY="20.0" style="-fx-background-color: green; -fx-text-fill: white;" text="Accept" />
+                                    <Button layoutX="270.0" layoutY="20.0" style="-fx-background-color: red; -fx-text-fill: white;" text="Decline" />
+                                </children>
+                            </AnchorPane>
+                        </VBox>
+                    </content>
+                </ScrollPane>
+            </children>
+        </AnchorPane>
+    </children>
 </AnchorPane>

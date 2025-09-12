@@ -24,7 +24,7 @@ public class ChatView extends Application {
     @Override
     public void start(Stage stage){
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/ChatView.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/ClientView.fxml"));
             Parent root = loader.load();
             chatJFXController = loader.getController();
             stage.setTitle("Client Application");
