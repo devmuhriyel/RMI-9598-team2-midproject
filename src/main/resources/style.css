@@ -30,3 +30,75 @@
 #button-style:hover {
     -fx-background-color: #232323;
 }
+
+/* Friend Request Card */
+.friend-card {
+    -fx-background-color: #222;
+    -fx-background-radius: 10;
+    -fx-padding: 10;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 5,0,0,2);
+    -fx-opacity: 1;
+    -fx-transition: all 0.3s ease-in-out;
+    -fx-cursor: hand;
+}
+
+.friend-card:hover {
+    -fx-background-color: #333;
+    -fx-scale-x: 1.05;   /* smooth zoom */
+    -fx-scale-y: 1.05;
+    -fx-rotate: 1;       /* small tilt */
+}
+
+/* Click press animation */
+.friend-card:pressed {
+    -fx-scale-x: 0.97;
+    -fx-scale-y: 0.97;
+    -fx-opacity: 0.9;
+}
+
+/* Buttons */
+.accept-btn {
+    -fx-background-color: linear-gradient(to bottom, #28a745, #218838);
+    -fx-text-fill: white;
+    -fx-background-radius: 20;
+    -fx-padding: 6 14;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,255,0,0.4), 8,0,0,2);
+    -fx-transition: all 0.2s ease-in-out;
+}
+
+.accept-btn:hover {
+    -fx-background-color: linear-gradient(to bottom, #34d058, #28a745);
+    -fx-scale-x: 1.1;
+    -fx-scale-y: 1.1;
+}
+
+.accept-btn:pressed {
+    -fx-scale-x: 0.95;
+    -fx-scale-y: 0.95;
+    -fx-opacity: 0.85;
+}
+
+/* Decline button */
+.decline-btn {
+    -fx-background-color: linear-gradient(to bottom, #dc3545, #a71d2a);
+    -fx-text-fill: white;
+    -fx-background-radius: 20;
+    -fx-padding: 6 14;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(255,0,0,0.4), 8,0,0,2);
+    -fx-transition: all 0.2s ease-in-out;
+}
+
+.decline-btn:hover {
+    -fx-background-color: linear-gradient(to bottom, #ff4d5e, #dc3545);
+    -fx-scale-x: 1.1;
+    -fx-scale-y: 1.1;
+}
+
+.decline-btn:pressed {
+    -fx-scale-x: 0.95;
+    -fx-scale-y: 0.95;
+    -fx-opacity: 0.85;
+}
+
