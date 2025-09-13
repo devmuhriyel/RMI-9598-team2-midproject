@@ -138,7 +138,7 @@ public class ServerXMLHandler {
                 reply = "REGISTER_SUCCESS";
                 break;
             case "SEND_MESSAGE":
-
+                reply = "SEND_MESSAGE";
                 break;
         }
         return reply;

@@ -54,7 +54,7 @@ public class ClientThread implements Runnable {
                         break;
 
                     case "SEND_MESSAGE":
-                        // TODO: build chat message from xmlMsg
+                        // Build chat message from xmlMsg
                         String chat = name + ": " + extractBody(xmlMsg);
                         broadcast("<Response status=\"MESSAGE\"><body>" + chat + "</body></Response>");
                         break;
@@ -112,12 +112,13 @@ public class ClientThread implements Runnable {
         return content[0]; // username
     }
 
-    // Extract message body from <body> (for SEND_MESSAGE)
+    // Extract message body from <content> (for SEND_MESSAGE)
     private String extractBody(String xmlMsg) throws Exception {
         javax.xml.parsers.DocumentBuilderFactory factory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
         javax.xml.parsers.DocumentBuilder builder = factory.newDocumentBuilder();
         org.w3c.dom.Document doc = builder.parse(new ByteArrayInputStream(xmlMsg.getBytes("UTF-8")));
-        return doc.getElementsByTagName("body").item(0).getTextContent();
+        String[] content = doc.getElementsByTagName("content").item(0).getTextContent().split("waw");
+        return content.length > 1 ? content[1] : ""; // return the message part after "waw"
     }
 
     // Logout and notify others

@@ -5,9 +5,11 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.HBox;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.layout.AnchorPane;
+import javafx.geometry.Pos;
 
 public class ChatJFXController {
     @FXML
@@ -59,9 +61,27 @@ public class ChatJFXController {
     public void addMessage(String message) {
         javafx.application.Platform.runLater(() -> {
             javafx.scene.control.Label messageLabel = new javafx.scene.control.Label(message);
-            messageLabel.setStyle("-fx-background-color: lightgray; -fx-padding: 5; -fx-background-radius: 5;");
+            messageLabel.setStyle("-fx-background-color: rgba(211, 211, 211, 0.7); -fx-padding: 8; -fx-background-radius: 10; -fx-text-fill: black; -fx-wrap-text: true;");
+            messageLabel.setMaxWidth(400); // Limit message width for better display
+            
+            // Create HBox to align message to the right
+            javafx.scene.layout.HBox messageContainer = new javafx.scene.layout.HBox();
+            messageContainer.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+            messageContainer.getChildren().add(messageLabel);
+            
             if (messagesArea != null) {
-                messagesArea.getChildren().add(messageLabel);
+                messagesArea.getChildren().add(messageContainer);
+                // Auto-scroll to bottom when new message is added
+                messagesArea.layout();
+                scrollPane.setVvalue(1.0);
+            }
+        });
+    }
+    
+    public void clearMessages() {
+        javafx.application.Platform.runLater(() -> {
+            if (messagesArea != null) {
+                messagesArea.getChildren().clear();
             }
         });
     }
