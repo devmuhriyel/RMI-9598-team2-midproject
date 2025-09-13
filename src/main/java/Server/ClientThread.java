@@ -59,28 +59,37 @@ public class ClientThread implements Runnable {
                         broadcast("<Response status=\"MESSAGE\"><body>" + chat + "</body></Response>");
                         break;
 
-                    case "ADD_FRIEND":
+                    case "ADD_FRIEND_REQUEST":
                         String[] addContent = extractContent(xmlMsg);
-                        if (xmlHandler.addFriend(addContent[0], addContent[1])) {
-                            sendMessage("<Response status=\"ADD_FRIEND_SUCCESS\"><body>" + addContent[1] + " added</body></Response>");
+                        if (xmlHandler.addFriendRequest(addContent[0], addContent[1])) {
+                            sendMessage("<Response status=\"FRIEND_REQUEST_SENT\"><body>Request sent to " + addContent[1] + "</body></Response>");
                         } else {
-                            sendMessage("<Response status=\"ADD_FRIEND_FAILED\"><body>Failed to add " + addContent[1] + "</body></Response>");
+                            sendMessage("<Response status=\"FRIEND_REQUEST_FAILED\"><body>Failed to send request</body></Response>");
                         }
                         break;
 
-                    case "REMOVE_FRIEND":
-                        String[] remContent = extractContent(xmlMsg);
-                        if (xmlHandler.removeFriend(remContent[0], remContent[1])) {
-                            sendMessage("<Response status=\"REMOVE_FRIEND_SUCCESS\"><body>" + remContent[1] + " removed</body></Response>");
-                        } else {
-                            sendMessage("<Response status=\"REMOVE_FRIEND_FAILED\"><body>Failed to remove " + remContent[1] + "</body></Response>");
-                        }
-                        break;
-
-                    case "LIST_FRIENDS":
+                    case "LIST_REQUESTS":
                         String[] listContent = extractContent(xmlMsg);
-                        java.util.List<String> friends = xmlHandler.listFriends(listContent[0]);
-                        sendMessage("<Response status=\"FRIEND_LIST\"><body>" + String.join(",", friends) + "</body></Response>");
+                        java.util.List<String> requests = xmlHandler.listFriendRequests(listContent[0]);
+                        sendMessage("<Response status=\"REQUEST_LIST\"><body>" + String.join(",", requests) + "</body></Response>");
+                        break;
+
+                    case "ACCEPT_REQUEST":
+                        String[] acceptContent = extractContent(xmlMsg);
+                        if (xmlHandler.acceptFriendRequest(acceptContent[0], acceptContent[1])) {
+                            sendMessage("<Response status=\"REQUEST_ACCEPTED\"><body>You are now friends with " + acceptContent[1] + "</body></Response>");
+                        } else {
+                            sendMessage("<Response status=\"REQUEST_ACCEPT_FAILED\"><body>Failed to accept request</body></Response>");
+                        }
+                        break;
+
+                    case "DECLINE_REQUEST":
+                        String[] declineContent = extractContent(xmlMsg);
+                        if (xmlHandler.declineFriendRequest(declineContent[0], declineContent[1])) {
+                            sendMessage("<Response status=\"REQUEST_DECLINED\"><body>Request from " + declineContent[1] + " declined</body></Response>");
+                        } else {
+                            sendMessage("<Response status=\"REQUEST_DECLINE_FAILED\"><body>Failed to decline request</body></Response>");
+                        }
                         break;
 
                     default:

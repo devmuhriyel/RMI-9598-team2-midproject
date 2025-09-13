@@ -146,19 +146,94 @@ public class ServerXMLHandler {
         return reply;
     }
 
-    //For the Friend Function
-    // Add friend
-    public boolean addFriend(String user, String friend) {
+    // FRIEND REQUEST FUNCTIONS
+
+    public synchronized boolean addFriendRequest(String fromUser, String toUser) {
         try {
             Document doc = loadDocument();
-            NodeList users = doc.getElementsByTagName("user");
-            for (int i = 0; i < users.getLength(); i++) {
-                Element u = (Element) users.item(i);
-                if (u.getAttribute("username").equals(user)) {
-                    Element friendsTag = (Element) u.getElementsByTagName("friends").item(0);
-                    Element newFriend = doc.createElement("friend");
-                    newFriend.setTextContent(friend);
-                    friendsTag.appendChild(newFriend);
+            Element root = doc.getDocumentElement();
+
+            Element requests = (Element) root.getElementsByTagName("friendRequests").item(0);
+            if (requests == null) {
+                requests = doc.createElement("friendRequests");
+                root.appendChild(requests);
+            }
+
+            Element req = doc.createElement("request");
+            req.setAttribute("from", fromUser);
+            req.setAttribute("to", toUser);
+            requests.appendChild(req);
+
+            saveDocument(doc);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public synchronized List<String> listFriendRequests(String username) {
+        List<String> requests = new ArrayList<>();
+        try {
+            Document doc = loadDocument();
+            NodeList requestList = doc.getElementsByTagName("request");
+
+            for (int i = 0; i < requestList.getLength(); i++) {
+                Element req = (Element) requestList.item(i);
+                if (req.getAttribute("to").equals(username)) {
+                    requests.add(req.getAttribute("from"));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return requests;
+    }
+
+    public synchronized boolean acceptFriendRequest(String user, String friend) {
+        try {
+            Document doc = loadDocument();
+
+            // Remove request
+            NodeList requestList = doc.getElementsByTagName("request");
+            for (int i = 0; i < requestList.getLength(); i++) {
+                Element req = (Element) requestList.item(i);
+                if (req.getAttribute("from").equals(friend) && req.getAttribute("to").equals(user)) {
+                    req.getParentNode().removeChild(req);
+                    break;
+                }
+            }
+
+            // Add to <friends>
+            Element root = doc.getDocumentElement();
+            Element friendsElement = (Element) root.getElementsByTagName("friends").item(0);
+            if (friendsElement == null) {
+                friendsElement = doc.createElement("friends");
+                root.appendChild(friendsElement);
+            }
+
+            Element friendship = doc.createElement("friendship");
+            friendship.setAttribute("user1", user);
+            friendship.setAttribute("user2", friend);
+            friendsElement.appendChild(friendship);
+
+            saveDocument(doc);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public synchronized boolean declineFriendRequest(String user, String friend) {
+        try {
+            Document doc = loadDocument();
+            NodeList requestList = doc.getElementsByTagName("request");
+
+            for (int i = 0; i < requestList.getLength(); i++) {
+                Element req = (Element) requestList.item(i);
+                if (req.getAttribute("from").equals(friend) && req.getAttribute("to").equals(user)) {
+                    req.getParentNode().removeChild(req);
                     saveDocument(doc);
                     return true;
                 }
@@ -167,52 +242,6 @@ public class ServerXMLHandler {
             e.printStackTrace();
         }
         return false;
-    }
-
-    // Remove friend
-    public boolean removeFriend(String user, String friend) {
-        try {
-            Document doc = loadDocument();
-            NodeList users = doc.getElementsByTagName("user");
-            for (int i = 0; i < users.getLength(); i++) {
-                Element u = (Element) users.item(i);
-                if (u.getAttribute("username").equals(user)) {
-                    NodeList friends = u.getElementsByTagName("friend");
-                    for (int j = 0; j < friends.getLength(); j++) {
-                        Element f = (Element) friends.item(j);
-                        if (f.getTextContent().equals(friend)) {
-                            f.getParentNode().removeChild(f);
-                            saveDocument(doc);
-                            return true;
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-    // List friends
-    public List<String> listFriends(String user) {
-        List<String> friendsList = new ArrayList<>();
-        try {
-            Document doc = loadDocument();
-            NodeList users = doc.getElementsByTagName("user");
-            for (int i = 0; i < users.getLength(); i++) {
-                Element u = (Element) users.item(i);
-                if (u.getAttribute("username").equals(user)) {
-                    NodeList friends = u.getElementsByTagName("friend");
-                    for (int j = 0; j < friends.getLength(); j++) {
-                        friendsList.add(friends.item(j).getTextContent());
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return friendsList;
     }
 
     private Document loadDocument() throws Exception {
@@ -226,6 +255,7 @@ public class ServerXMLHandler {
         Transformer transformer = transformerFactory.newTransformer();
         transformer.transform(new DOMSource(doc), new StreamResult(new File(FILE_PATH)));
     }
+
 }
 
 //    public static void main(String[] args) throws Exception {
