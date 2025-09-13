@@ -1,41 +1,40 @@
 package ClientMVC.ClientView.Home;
 
+import ClientMVC.UserXMLHandler;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 
+import java.util.List;
+import java.util.Scanner;
+
 public class HomeJFXController {
-    
+
     @FXML
     private Button userProfileButton;
-    
+
     @FXML
-    private VBox messagesArea; // "All" messages area
-    
+    private VBox friendsList; // private messages
+
     @FXML
     private VBox messagesArea1; // "Groups" messages area
-    
-    @FXML
-    private Label allLabel;
-    
-    @FXML
-    private Label groupsLabel;
-    
-    @FXML
-    private ImageView logoImage;
-    
+
     @FXML
     private Label userLabel;
-    
+
     private Runnable userProfileButtonListener;
-    
+    private UserXMLHandler userXMLHandler = new UserXMLHandler();
+
+
     @FXML
     private void initialize() {
         System.out.println("HomeJFXController initialized");
-        
-        // Set up user profile button listener
+        userXMLHandler = new UserXMLHandler(); // <-- add this
+
         if (userProfileButton != null) {
             userProfileButton.setOnAction(event -> {
                 if (userProfileButtonListener != null) {
@@ -50,11 +49,25 @@ public class HomeJFXController {
         return userProfileButton;
     }
 
-    
+
     // Method to update user label with username
     public void setUserLabel(String username) {
         if (userLabel != null) {
             userLabel.setText(username);
         }
+    }
+
+    public void loadFriends(String username) {
+        if (userXMLHandler == null) userXMLHandler = new UserXMLHandler();
+
+        Platform.runLater(() -> {
+            friendsList.getChildren().clear();
+            List<String> friends = userXMLHandler.getFriends(username);
+            for (String friend : friends) {
+                Button friendBtn = new Button(friend);
+                friendBtn.setMaxWidth(Double.MAX_VALUE);
+                friendsList.getChildren().add(friendBtn);
+            }
+        });
     }
 }

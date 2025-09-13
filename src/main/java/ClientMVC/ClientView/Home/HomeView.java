@@ -1,6 +1,8 @@
 package ClientMVC.ClientView.Home;
 
+import ClientMVC.ClientView.Login.LoginJFXController;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 
 import javafx.scene.Parent;
@@ -15,6 +17,7 @@ public class HomeView extends Application {
     private TextField messageField;
     private VBox messagesArea;
     private HomeJFXController homeJFXController;
+    private LoginJFXController loginJFXController;
     private static HomeView instance;
 
     public HomeView() {
@@ -30,6 +33,7 @@ public class HomeView extends Application {
             stage.setTitle("Client Application");
             stage.setScene(new Scene(root));
             stage.show();
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -38,4 +42,11 @@ public class HomeView extends Application {
     public HomeJFXController getFXController() {
         return homeJFXController;
     }
+
+    public void setUsername(String username) {
+        if (homeJFXController != null) {
+            homeJFXController.setUserLabel(username);
+        }
+    }
+
 }

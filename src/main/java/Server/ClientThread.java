@@ -59,6 +59,30 @@ public class ClientThread implements Runnable {
                         broadcast("<Response status=\"MESSAGE\"><body>" + chat + "</body></Response>");
                         break;
 
+                    case "ADD_FRIEND":
+                        String[] addContent = extractContent(xmlMsg);
+                        if (xmlHandler.addFriend(addContent[0], addContent[1])) {
+                            sendMessage("<Response status=\"ADD_FRIEND_SUCCESS\"><body>" + addContent[1] + " added</body></Response>");
+                        } else {
+                            sendMessage("<Response status=\"ADD_FRIEND_FAILED\"><body>Failed to add " + addContent[1] + "</body></Response>");
+                        }
+                        break;
+
+                    case "REMOVE_FRIEND":
+                        String[] remContent = extractContent(xmlMsg);
+                        if (xmlHandler.removeFriend(remContent[0], remContent[1])) {
+                            sendMessage("<Response status=\"REMOVE_FRIEND_SUCCESS\"><body>" + remContent[1] + " removed</body></Response>");
+                        } else {
+                            sendMessage("<Response status=\"REMOVE_FRIEND_FAILED\"><body>Failed to remove " + remContent[1] + "</body></Response>");
+                        }
+                        break;
+
+                    case "LIST_FRIENDS":
+                        String[] listContent = extractContent(xmlMsg);
+                        java.util.List<String> friends = xmlHandler.listFriends(listContent[0]);
+                        sendMessage("<Response status=\"FRIEND_LIST\"><body>" + String.join(",", friends) + "</body></Response>");
+                        break;
+
                     default:
                         sendMessage("<Response status=\"ERROR\"><body>Unknown request</body></Response>");
                         break;
@@ -131,4 +155,19 @@ public class ClientThread implements Runnable {
         }
         socket.close();
     }
+
+    //This for the Friend Getting index 0 as requester and then 1index 1 as friend
+    private String[] extractContent(String xmlMsg) throws Exception {
+        javax.xml.parsers.DocumentBuilderFactory factory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+        javax.xml.parsers.DocumentBuilder builder = factory.newDocumentBuilder();
+        org.w3c.dom.Document doc = builder.parse(new java.io.ByteArrayInputStream(xmlMsg.getBytes("UTF-8")));
+
+        if (doc.getElementsByTagName("content").getLength() > 0) {
+            return doc.getElementsByTagName("content").item(0).getTextContent().split("waw");
+        } else {
+            return doc.getDocumentElement().getTextContent().split("waw");
+        }
+    }
+
+
 }
