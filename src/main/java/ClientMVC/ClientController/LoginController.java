@@ -1,6 +1,7 @@
 package ClientMVC.ClientController;
 
 import ClientMVC.ClientModel.ChatModel;
+import ClientMVC.ClientModel.HomeModel;
 import ClientMVC.ClientModel.LoginModel;
 import ClientMVC.ClientView.Chat.ChatView;
 import ClientMVC.ClientView.Home.HomeView;
@@ -50,9 +51,9 @@ public class LoginController {
                         Stage stage1 = new Stage();
                         homeView.start(stage1);
 
-
-                        homeView.setUsername(model.getUsername());
-                        homeView.getFXController().loadFriends(model.getUsername());
+                        // Wire Home MVC via controller
+                        HomeModel homeModel = new HomeModel(model.getSocket(), model.getUsername());
+                        new HomeController(homeModel, homeView, homeView.getFXController());
 
                         ChatView cView = new ChatView();
                         Stage stage = new Stage();

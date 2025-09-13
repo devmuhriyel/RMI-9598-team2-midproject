@@ -141,4 +141,33 @@ public class UserXMLHandler {
         }
         return friends;
     }
+
+    public List<String> getUserGroups(String username) {
+        List<String> groups = new ArrayList<>();
+        try {
+            File file = new File("src/main/resources/XMLFiles/Users.xml");
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+            doc.getDocumentElement().normalize();
+
+            NodeList groupList = doc.getElementsByTagName("group");
+            for (int i = 0; i < groupList.getLength(); i++) {
+                Element group = (Element) groupList.item(i);
+                NodeList members = group.getElementsByTagName("member");
+                
+                for (int j = 0; j < members.getLength(); j++) {
+                    Element member = (Element) members.item(j);
+                    if (member.getAttribute("username").equals(username)) {
+                        groups.add(group.getAttribute("name"));
+                        break;
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return groups;
+    }
 }
