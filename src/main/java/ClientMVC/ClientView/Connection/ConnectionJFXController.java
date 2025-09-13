@@ -1,14 +1,17 @@
 package ClientMVC.ClientView.Connection;
 
 import javafx.animation.ScaleTransition;
+import javafx.animation.TranslateTransition;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.effect.InnerShadow;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 
 public class ConnectionJFXController {
@@ -23,8 +26,14 @@ public class ConnectionJFXController {
     private TextField ipAddressTextField;
     @FXML
     private TextField portTextField;
+    @FXML
+    private Button minimizeButton, closeButton;
+    @FXML
+    private AnchorPane connectionFrame;
 
     private Runnable connectButtonListener;
+    private double xOffset = 0;
+    private double yOffset = 0;
 
     @FXML
     public void initialize() {
@@ -37,6 +46,27 @@ public class ConnectionJFXController {
             if (connectButtonListener != null) {
                 connectButtonListener.run();
             }
+        });
+
+        // Drag the window when mouse is pressed and dragged
+        connectionFrame.setOnMousePressed(event -> {
+            Stage stage = (Stage) connectionFrame.getScene().getWindow();
+            xOffset = event.getSceneX();
+            yOffset = event.getSceneY();
+        });
+        connectionFrame.setOnMouseDragged(event -> {
+            Stage stage = (Stage) connectionFrame.getScene().getWindow();
+            stage.setX(event.getScreenX() - xOffset);
+            stage.setY(event.getScreenY() - yOffset);
+        });
+
+        // Frameless Button
+        closeButton.setOnMouseClicked(event -> {
+            ((Stage) closeButton.getScene().getWindow()).close();
+        });
+
+        minimizeButton.setOnMouseClicked(event -> {
+            ((Stage) minimizeButton.getScene().getWindow()).setIconified(true);
         });
     }
 
@@ -86,26 +116,91 @@ public class ConnectionJFXController {
         btn.setOnMouseEntered(e -> enter.playFromStart());
         btn.setOnMouseExited(e -> exit.playFromStart());
     }
+
+    // Status display methods - these handle UI feedback based on model results
+    public void showConectedLabel() {
+        statusLabel.setText("Connected Successfully...");
+        statusLabel.setTextFill(Color.rgb(0, 245, 83));
+        statusLabel.setStyle("-fx-font-size: 12px;");
+    }
+
+    public void showInvalidInputLabel() {
+        statusLabel.setText("Invalid IP/PORT...");
+        statusLabel.setTextFill(Color.rgb(217, 27, 36));
+        statusLabel.setStyle("-fx-font-size: 12px;");
+        addShakeAnimation();
+    }
+
+    public void showEmptyFieldsLabel() {
+        statusLabel.setText("Please fill in all fields...");
+        statusLabel.setTextFill(Color.rgb(255, 165, 0)); // Orange color
+        statusLabel.setStyle("-fx-font-size: 12px;");
+        addShakeAnimation();
+    }
+
+    public void showInvalidPortLabel() {
+        statusLabel.setText("Port must be a valid number...");
+        statusLabel.setTextFill(Color.rgb(217, 27, 36));
+        statusLabel.setStyle("-fx-font-size: 12px;");
+        addShakeAnimation();
+    }
+
+    public void showConnectionFailedLabel() {
+        statusLabel.setText("Connection failed...");
+        statusLabel.setTextFill(Color.rgb(217, 27, 36));
+        statusLabel.setStyle("-fx-font-size: 12px;");
+        addShakeAnimation();
+    }
+
+    public void showInvalidPortRangeLabel() {
+        statusLabel.setText("Port must be between 1-65535...");
+        statusLabel.setTextFill(Color.rgb(217, 27, 36));
+        statusLabel.setStyle("-fx-font-size: 12px;");
+        addShakeAnimation();
+    }
+
+    public void showInvalidIpFormatLabel() {
+        statusLabel.setText("Invalid IP address format...");
+        statusLabel.setTextFill(Color.rgb(217, 27, 36));
+        statusLabel.setStyle("-fx-font-size: 12px;");
+        addShakeAnimation();
+    }
+
+    // Helper method to reduce code duplication
+    private void addShakeAnimation() {
+        TranslateTransition shake = new TranslateTransition(Duration.millis(50), statusLabel);
+        shake.setFromX(0);
+        shake.setByX(10);
+        shake.setCycleCount(4);
+        shake.setAutoReverse(true);
+        shake.play();
+    }
+
     @FXML
     private void handleConnect() {
         System.out.println("[DEBUG] handleConnect() triggered from FXML.");
         if (connectButtonListener != null) {
             connectButtonListener.run();
         }
-
     }
 
-    //SETTERS AND GETTERS
+    //SETTERS AND GETTERS - Now returns raw strings for model to validate
     public void setConnectButtonListener(Runnable listener) {
         this.connectButtonListener = listener;
     }
 
     public String getIpAddress() {
-        return ipAddressTextField.getText();
+        return ipAddressTextField.getText(); // Return raw text, let model handle trimming
     }
 
-    public int getPort() {
-        return Integer.parseInt(portTextField.getText());
+    public String getPortText() {
+        return portTextField.getText(); // Return raw text, let model handle validation
+    }
+
+    // Keep legacy method for backward compatibility, but not recommended
+    @Deprecated
+    public int getPort() throws NumberFormatException {
+        return Integer.parseInt(portTextField.getText().trim());
     }
 
     public Label getStatusLabel() {
@@ -114,5 +209,13 @@ public class ConnectionJFXController {
 
     public Button getConnectButton() {
         return connectButton;
+    }
+
+    public TextField getIpAddressTextField() {
+        return ipAddressTextField;
+    }
+
+    public TextField getPortTextField() {
+        return portTextField;
     }
 }
