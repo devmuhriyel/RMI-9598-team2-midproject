@@ -7,6 +7,8 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ServerXMLHandler {
     private static final String FILE_PATH = "src/main/resources/XMLFiles/Users.xml";
@@ -88,7 +90,7 @@ public class ServerXMLHandler {
                 String username = content[0];
                 String password = content[1];
                 boolean found = false;
-                File userAccounts = new File("src/main/resources/XMLFiles/Users.xml");
+                File userAccounts = new File(FILE_PATH);
                 DocumentBuilderFactory loginFactory = DocumentBuilderFactory.newInstance();
                 DocumentBuilder loginBuilder = loginFactory.newDocumentBuilder();
                 Document loginDoc = loginBuilder.parse(userAccounts);
@@ -111,7 +113,7 @@ public class ServerXMLHandler {
                 }
                 break;
             case "REGISTER":
-                File file = new File("src/main/resources/XMLFiles/Users.xml");
+                File file = new File(FILE_PATH);
                 DocumentBuilderFactory registerFactory = DocumentBuilderFactory.newInstance();
                 DocumentBuilder registerBuilder = registerFactory.newDocumentBuilder();
                 Document registerDoc;
@@ -142,6 +144,87 @@ public class ServerXMLHandler {
                 break;
         }
         return reply;
+    }
+
+    //For the Friend Function
+    // Add friend
+    public boolean addFriend(String user, String friend) {
+        try {
+            Document doc = loadDocument();
+            NodeList users = doc.getElementsByTagName("user");
+            for (int i = 0; i < users.getLength(); i++) {
+                Element u = (Element) users.item(i);
+                if (u.getAttribute("username").equals(user)) {
+                    Element friendsTag = (Element) u.getElementsByTagName("friends").item(0);
+                    Element newFriend = doc.createElement("friend");
+                    newFriend.setTextContent(friend);
+                    friendsTag.appendChild(newFriend);
+                    saveDocument(doc);
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // Remove friend
+    public boolean removeFriend(String user, String friend) {
+        try {
+            Document doc = loadDocument();
+            NodeList users = doc.getElementsByTagName("user");
+            for (int i = 0; i < users.getLength(); i++) {
+                Element u = (Element) users.item(i);
+                if (u.getAttribute("username").equals(user)) {
+                    NodeList friends = u.getElementsByTagName("friend");
+                    for (int j = 0; j < friends.getLength(); j++) {
+                        Element f = (Element) friends.item(j);
+                        if (f.getTextContent().equals(friend)) {
+                            f.getParentNode().removeChild(f);
+                            saveDocument(doc);
+                            return true;
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // List friends
+    public List<String> listFriends(String user) {
+        List<String> friendsList = new ArrayList<>();
+        try {
+            Document doc = loadDocument();
+            NodeList users = doc.getElementsByTagName("user");
+            for (int i = 0; i < users.getLength(); i++) {
+                Element u = (Element) users.item(i);
+                if (u.getAttribute("username").equals(user)) {
+                    NodeList friends = u.getElementsByTagName("friend");
+                    for (int j = 0; j < friends.getLength(); j++) {
+                        friendsList.add(friends.item(j).getTextContent());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return friendsList;
+    }
+
+    private Document loadDocument() throws Exception {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        return builder.parse(new File(FILE_PATH));
+    }
+
+    private void saveDocument(Document doc) throws TransformerException {
+        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+        Transformer transformer = transformerFactory.newTransformer();
+        transformer.transform(new DOMSource(doc), new StreamResult(new File(FILE_PATH)));
     }
 }
 
