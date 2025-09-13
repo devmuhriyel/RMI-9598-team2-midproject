@@ -3,6 +3,7 @@ package ClientMVC.ClientController;
 import ClientMVC.ClientModel.ChatModel;
 import ClientMVC.ClientModel.LoginModel;
 import ClientMVC.ClientView.Chat.ChatView;
+import ClientMVC.ClientView.Home.HomeView;
 import ClientMVC.ClientView.Login.LoginJFXController;
 import ClientMVC.ClientView.Login.LoginView;
 import ClientMVC.UserXMLHandler;
@@ -31,6 +32,7 @@ public class LoginController {
             String username = loginJFXController.getUsername();
             String password = loginJFXController.getPassword();
             model.login(username, password);
+            model.setName(username);
         });
     }
 
@@ -44,9 +46,16 @@ public class LoginController {
                 view.login();
                 Platform.runLater(() -> {
                     try {
+                        HomeView homeView = new HomeView();
+                        Stage stage1 = new Stage();
+                        homeView.start(stage1);
+
+
+                        homeView.setUsername(model.getUsername());
+
                         ChatView cView = new ChatView();
                         Stage stage = new Stage();
-                        cView.start(stage);
+//                        cView.start(stage);
                         ChatModel cModel = new ChatModel(model.getSocket(), loginJFXController.getUsername());
                         new ChatController(cModel, cView, cView.getFXController());
                         new Thread(cModel, "Chat Listener").start();

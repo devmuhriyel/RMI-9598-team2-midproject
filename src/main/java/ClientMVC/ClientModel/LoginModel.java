@@ -61,7 +61,11 @@ public class LoginModel implements Runnable {
     public Socket getSocket() {
         return socket;
     }
+    public void setName(String name) {
+        this.name = name;
+    }
     public String getUsername() {
         return name;
     }
+
 }
