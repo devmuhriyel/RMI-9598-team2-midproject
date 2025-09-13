@@ -7,6 +7,8 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ServerXMLHandler {
     private static final String FILE_PATH = "src/main/resources/XMLFiles/Users.xml";
@@ -88,7 +90,7 @@ public class ServerXMLHandler {
                 String username = content[0];
                 String password = content[1];
                 boolean found = false;
-                File userAccounts = new File("src/main/resources/XMLFiles/Users.xml");
+                File userAccounts = new File(FILE_PATH);
                 DocumentBuilderFactory loginFactory = DocumentBuilderFactory.newInstance();
                 DocumentBuilder loginBuilder = loginFactory.newDocumentBuilder();
                 Document loginDoc = loginBuilder.parse(userAccounts);
@@ -111,7 +113,7 @@ public class ServerXMLHandler {
                 }
                 break;
             case "REGISTER":
-                File file = new File("src/main/resources/XMLFiles/Users.xml");
+                File file = new File(FILE_PATH);
                 DocumentBuilderFactory registerFactory = DocumentBuilderFactory.newInstance();
                 DocumentBuilder registerBuilder = registerFactory.newDocumentBuilder();
                 Document registerDoc;
@@ -138,11 +140,122 @@ public class ServerXMLHandler {
                 reply = "REGISTER_SUCCESS";
                 break;
             case "SEND_MESSAGE":
-
+                reply = "SEND_MESSAGE";
                 break;
         }
         return reply;
     }
+
+    // FRIEND REQUEST FUNCTIONS
+
+    public synchronized boolean addFriendRequest(String fromUser, String toUser) {
+        try {
+            Document doc = loadDocument();
+            Element root = doc.getDocumentElement();
+
+            Element requests = (Element) root.getElementsByTagName("friendRequests").item(0);
+            if (requests == null) {
+                requests = doc.createElement("friendRequests");
+                root.appendChild(requests);
+            }
+
+            Element req = doc.createElement("request");
+            req.setAttribute("from", fromUser);
+            req.setAttribute("to", toUser);
+            requests.appendChild(req);
+
+            saveDocument(doc);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public synchronized List<String> listFriendRequests(String username) {
+        List<String> requests = new ArrayList<>();
+        try {
+            Document doc = loadDocument();
+            NodeList requestList = doc.getElementsByTagName("request");
+
+            for (int i = 0; i < requestList.getLength(); i++) {
+                Element req = (Element) requestList.item(i);
+                if (req.getAttribute("to").equals(username)) {
+                    requests.add(req.getAttribute("from"));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return requests;
+    }
+
+    public synchronized boolean acceptFriendRequest(String user, String friend) {
+        try {
+            Document doc = loadDocument();
+
+            // Remove request
+            NodeList requestList = doc.getElementsByTagName("request");
+            for (int i = 0; i < requestList.getLength(); i++) {
+                Element req = (Element) requestList.item(i);
+                if (req.getAttribute("from").equals(friend) && req.getAttribute("to").equals(user)) {
+                    req.getParentNode().removeChild(req);
+                    break;
+                }
+            }
+
+            // Add to <friends>
+            Element root = doc.getDocumentElement();
+            Element friendsElement = (Element) root.getElementsByTagName("friends").item(0);
+            if (friendsElement == null) {
+                friendsElement = doc.createElement("friends");
+                root.appendChild(friendsElement);
+            }
+
+            Element friendship = doc.createElement("friendship");
+            friendship.setAttribute("user1", user);
+            friendship.setAttribute("user2", friend);
+            friendsElement.appendChild(friendship);
+
+            saveDocument(doc);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public synchronized boolean declineFriendRequest(String user, String friend) {
+        try {
+            Document doc = loadDocument();
+            NodeList requestList = doc.getElementsByTagName("request");
+
+            for (int i = 0; i < requestList.getLength(); i++) {
+                Element req = (Element) requestList.item(i);
+                if (req.getAttribute("from").equals(friend) && req.getAttribute("to").equals(user)) {
+                    req.getParentNode().removeChild(req);
+                    saveDocument(doc);
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    private Document loadDocument() throws Exception {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        return builder.parse(new File(FILE_PATH));
+    }
+
+    private void saveDocument(Document doc) throws TransformerException {
+        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+        Transformer transformer = transformerFactory.newTransformer();
+        transformer.transform(new DOMSource(doc), new StreamResult(new File(FILE_PATH)));
+    }
+
 }
 
 //    public static void main(String[] args) throws Exception {

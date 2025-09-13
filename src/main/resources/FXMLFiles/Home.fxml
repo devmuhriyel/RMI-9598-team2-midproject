@@ -24,7 +24,7 @@
       </Button>
       <ScrollPane layoutX="29.0" layoutY="96.0" prefHeight="402.0" prefWidth="222.0" style="-fx-background-color: #4a4a4a;">
          <content>
-            <VBox fx:id="messagesArea" prefHeight="401.0" prefWidth="207.0" style="-fx-background-color: #4a4a4a #4a4a4a;" stylesheets="@../style.css" />
+            <VBox fx:id="friendsList" prefHeight="401.0" prefWidth="207.0" style="-fx-background-color: #4a4a4a #4a4a4a;" stylesheets="@../style.css" />
          </content>
       </ScrollPane>
       <ScrollPane layoutX="277.0" layoutY="96.0" prefHeight="402.0" prefWidth="222.0" style="-fx-background-color: #4a4a4a;">

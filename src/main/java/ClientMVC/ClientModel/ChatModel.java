@@ -28,7 +28,9 @@ public class ChatModel implements Runnable {
 
     public void sendMSG(String message) {
         try {
-            writeMSG.write(message);
+            // Send message in XML format as expected by server
+            String xmlMessage = "<Request><action>SEND_MESSAGE</action><content>" + name + "waw" + message + "</content></Request>";
+            writeMSG.write(xmlMessage);
             writeMSG.newLine();
             writeMSG.flush();
         } catch (IOException e) {
@@ -46,11 +48,33 @@ public class ChatModel implements Runnable {
             String msg;
             while ((msg = readMSG.readLine()) != null) {
                 if (messageListener != null) {
-                    messageListener.accept(msg);
+                    // Parse XML response to extract the actual message
+                    String message = parseMessageFromXML(msg);
+                    if (message != null && !message.isEmpty()) {
+                        messageListener.accept(message);
+                    }
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+    
+    private String parseMessageFromXML(String xmlMsg) {
+        try {
+            javax.xml.parsers.DocumentBuilderFactory factory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+            javax.xml.parsers.DocumentBuilder builder = factory.newDocumentBuilder();
+            org.w3c.dom.Document doc = builder.parse(new ByteArrayInputStream(xmlMsg.getBytes("UTF-8")));
+            
+            // Check if it's a message response
+            org.w3c.dom.NodeList bodyNodes = doc.getElementsByTagName("body");
+            if (bodyNodes.getLength() > 0) {
+                return bodyNodes.item(0).getTextContent();
+            }
+        } catch (Exception e) {
+            // If XML parsing fails, return the raw message
+            return xmlMsg;
+        }
+        return null;
     }
 }

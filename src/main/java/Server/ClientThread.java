@@ -54,9 +54,42 @@ public class ClientThread implements Runnable {
                         break;
 
                     case "SEND_MESSAGE":
-                        // TODO: build chat message from xmlMsg
+                        // Build chat message from xmlMsg
                         String chat = name + ": " + extractBody(xmlMsg);
                         broadcast("<Response status=\"MESSAGE\"><body>" + chat + "</body></Response>");
+                        break;
+
+                    case "ADD_FRIEND_REQUEST":
+                        String[] addContent = extractContent(xmlMsg);
+                        if (xmlHandler.addFriendRequest(addContent[0], addContent[1])) {
+                            sendMessage("<Response status=\"FRIEND_REQUEST_SENT\"><body>Request sent to " + addContent[1] + "</body></Response>");
+                        } else {
+                            sendMessage("<Response status=\"FRIEND_REQUEST_FAILED\"><body>Failed to send request</body></Response>");
+                        }
+                        break;
+
+                    case "LIST_REQUESTS":
+                        String[] listContent = extractContent(xmlMsg);
+                        java.util.List<String> requests = xmlHandler.listFriendRequests(listContent[0]);
+                        sendMessage("<Response status=\"REQUEST_LIST\"><body>" + String.join(",", requests) + "</body></Response>");
+                        break;
+
+                    case "ACCEPT_REQUEST":
+                        String[] acceptContent = extractContent(xmlMsg);
+                        if (xmlHandler.acceptFriendRequest(acceptContent[0], acceptContent[1])) {
+                            sendMessage("<Response status=\"REQUEST_ACCEPTED\"><body>You are now friends with " + acceptContent[1] + "</body></Response>");
+                        } else {
+                            sendMessage("<Response status=\"REQUEST_ACCEPT_FAILED\"><body>Failed to accept request</body></Response>");
+                        }
+                        break;
+
+                    case "DECLINE_REQUEST":
+                        String[] declineContent = extractContent(xmlMsg);
+                        if (xmlHandler.declineFriendRequest(declineContent[0], declineContent[1])) {
+                            sendMessage("<Response status=\"REQUEST_DECLINED\"><body>Request from " + declineContent[1] + " declined</body></Response>");
+                        } else {
+                            sendMessage("<Response status=\"REQUEST_DECLINE_FAILED\"><body>Failed to decline request</body></Response>");
+                        }
                         break;
 
                     default:
@@ -112,12 +145,13 @@ public class ClientThread implements Runnable {
         return content[0]; // username
     }
 
-    // Extract message body from <body> (for SEND_MESSAGE)
+    // Extract message body from <content> (for SEND_MESSAGE)
     private String extractBody(String xmlMsg) throws Exception {
         javax.xml.parsers.DocumentBuilderFactory factory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
         javax.xml.parsers.DocumentBuilder builder = factory.newDocumentBuilder();
         org.w3c.dom.Document doc = builder.parse(new ByteArrayInputStream(xmlMsg.getBytes("UTF-8")));
-        return doc.getElementsByTagName("body").item(0).getTextContent();
+        String[] content = doc.getElementsByTagName("content").item(0).getTextContent().split("waw");
+        return content.length > 1 ? content[1] : ""; // return the message part after "waw"
     }
 
     // Logout and notify others
@@ -130,4 +164,19 @@ public class ClientThread implements Runnable {
         }
         socket.close();
     }
+
+    //This for the Friend Getting index 0 as requester and then 1index 1 as friend
+    private String[] extractContent(String xmlMsg) throws Exception {
+        javax.xml.parsers.DocumentBuilderFactory factory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+        javax.xml.parsers.DocumentBuilder builder = factory.newDocumentBuilder();
+        org.w3c.dom.Document doc = builder.parse(new java.io.ByteArrayInputStream(xmlMsg.getBytes("UTF-8")));
+
+        if (doc.getElementsByTagName("content").getLength() > 0) {
+            return doc.getElementsByTagName("content").item(0).getTextContent().split("waw");
+        } else {
+            return doc.getDocumentElement().getTextContent().split("waw");
+        }
+    }
+
+
 }
