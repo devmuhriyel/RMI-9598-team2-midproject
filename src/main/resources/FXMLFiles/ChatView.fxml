@@ -11,7 +11,7 @@
 
     <children>
         <!-- Text field -->
-        <TextField fx:id="messageField" layoutX="74.0" layoutY="361.0" prefHeight="25.0" prefWidth="452.0" style="-fx-background-color: #4a4a4a;" />
+        <TextField fx:id="messageField" layoutX="74.0" layoutY="361.0" prefHeight="25.0" prefWidth="452.0" style="-fx-background-color: #4a4a4a; -fx-text-fill: white;" />
 
         <!-- Extra button (not linked in controller) -->
         <Button layoutX="14.0" layoutY="361.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="50.0" style="-fx-background-color: dedcff;" text="File" textAlignment="CENTER" />
