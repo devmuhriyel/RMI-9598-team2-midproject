@@ -25,6 +25,11 @@ public class ChatController {
 
     private void setupListeners(){
         chatJFXController.setSendButtonListener(() -> sendMSG());
+        chatJFXController.setHomeButtonListener(() -> goToHome());
+    }
+    
+    private void goToHome() {
+        vw.goToHome();
     }
 
     private void sendMSG(){

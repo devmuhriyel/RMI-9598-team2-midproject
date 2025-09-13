@@ -11,10 +11,9 @@
 <?import javafx.scene.paint.Color?>
 <?import javafx.scene.text.Font?>
 
-
-<AnchorPane prefHeight="532.0" prefWidth="526.0" style="-fx-background-color: #010104 #010104;" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ClientMVC.ClientView.Home.Home">
+<AnchorPane prefHeight="532.0" prefWidth="526.0" style="-fx-background-color: #010104 #010104;" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ClientMVC.ClientView.Home.HomeJFXController">
    <children>
-      <Button layoutX="14.0" layoutY="14.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="33.0" style="-fx-background-radius: 100; -fx-background-color: dedcff;" stylesheets="@style.css" text="🙍‍♂️">
+      <Button layoutX="14.0" layoutY="14.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="33.0" style="-fx-background-radius: 100; -fx-background-color: dedcff;" stylesheets="@../style.css" text="🙍‍♂️">
          <effect>
             <DropShadow>
                <color>
@@ -25,12 +24,12 @@
       </Button>
       <ScrollPane layoutX="29.0" layoutY="96.0" prefHeight="402.0" prefWidth="222.0" style="-fx-background-color: #4a4a4a;">
          <content>
-            <VBox fx:id="messagesArea" prefHeight="401.0" prefWidth="207.0" style="-fx-background-color: #4a4a4a #4a4a4a;" stylesheets="@style.css" />
+            <VBox fx:id="messagesArea" prefHeight="401.0" prefWidth="207.0" style="-fx-background-color: #4a4a4a #4a4a4a;" stylesheets="@../style.css" />
          </content>
       </ScrollPane>
       <ScrollPane layoutX="277.0" layoutY="96.0" prefHeight="402.0" prefWidth="222.0" style="-fx-background-color: #4a4a4a;">
          <content>
-            <VBox fx:id="messagesArea1" prefHeight="402.0" prefWidth="206.0" style="-fx-background-color: #4a4a4a;" stylesheets="@style.css" />
+            <VBox fx:id="messagesArea1" prefHeight="402.0" prefWidth="206.0" style="-fx-background-color: #4a4a4a;" stylesheets="@../style.css" />
          </content>
       </ScrollPane>
       <Label alignment="CENTER" layoutX="346.0" layoutY="63.0" prefHeight="30.0" prefWidth="83.0" style="-fx-background-color: #020024;" text="Groups" textFill="WHITE">
@@ -59,7 +58,7 @@
       </Label>
       <ImageView fx:id="logoImage" fitHeight="135.0" fitWidth="160.0" layoutX="196.0" layoutY="-19.0" pickOnBounds="true" preserveRatio="true">
          <image>
-            <Image url="@Images/variety-logo/white_on_trans.png" />
+            <Image url="@../Images/variety-logo/white_on_trans.png" />
          </image>
          <effect>
             <DropShadow height="96.72" radius="39.067499999999995" spread="0.36" width="61.55">
@@ -69,7 +68,7 @@
             </DropShadow>
          </effect>
       </ImageView>
-      <Label layoutX="57.0" layoutY="19.0" text="User" textFill="WHITE">
+      <Label fx:id="userLabel" layoutX="57.0" layoutY="19.0" text="User" textFill="WHITE">
          <font>
             <Font size="15.0" />
          </font>
