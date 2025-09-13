@@ -66,8 +66,46 @@ public class HomeJFXController {
             for (String friend : friends) {
                 Button friendBtn = new Button(friend);
                 friendBtn.setMaxWidth(Double.MAX_VALUE);
+                friendBtn.setStyle("-fx-background-color: #4a4a4a; -fx-text-fill: white; -fx-padding: 10;");
                 friendsList.getChildren().add(friendBtn);
             }
+        });
+    }
+
+    public void loadGroups(String username) {
+        if (userXMLHandler == null) userXMLHandler = new UserXMLHandler();
+
+        Platform.runLater(() -> {
+            messagesArea1.getChildren().clear();
+            List<String> groups = userXMLHandler.getUserGroups(username);
+            
+            // If no groups found, add some sample groups for demonstration
+            if (groups.isEmpty()) {
+                groups.add("General Chat");
+                groups.add("Project Team");
+                groups.add("Study Group");
+            }
+            
+            for (String group : groups) {
+                Button groupBtn = new Button("📁 " + group);
+                groupBtn.setMaxWidth(Double.MAX_VALUE);
+                groupBtn.setStyle("-fx-background-color: #4a4a4a; -fx-text-fill: white; -fx-padding: 10;");
+                groupBtn.setOnAction(event -> {
+                    // Handle group selection - you can add group chat functionality here
+                    System.out.println("Selected group: " + group);
+                });
+                messagesArea1.getChildren().add(groupBtn);
+            }
+            
+            // Add a "Create Group" button
+            Button createGroupBtn = new Button("+ Create New Group");
+            createGroupBtn.setMaxWidth(Double.MAX_VALUE);
+            createGroupBtn.setStyle("-fx-background-color: #dedcff; -fx-text-fill: black; -fx-padding: 10;");
+            createGroupBtn.setOnAction(event -> {
+                // Handle create group - you can add group creation dialog here
+                System.out.println("Create new group clicked");
+            });
+            messagesArea1.getChildren().add(createGroupBtn);
         });
     }
 }

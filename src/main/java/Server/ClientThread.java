@@ -92,6 +92,39 @@ public class ClientThread implements Runnable {
                         }
                         break;
 
+                    case "CREATE_GROUP":
+                        String[] createGroupContent = extractContent(xmlMsg);
+                        if (xmlHandler.createGroup(createGroupContent[0], createGroupContent[1])) {
+                            sendMessage("<Response status=\"GROUP_CREATED\"><body>Group " + createGroupContent[0] + " created successfully</body></Response>");
+                        } else {
+                            sendMessage("<Response status=\"GROUP_CREATE_FAILED\"><body>Failed to create group</body></Response>");
+                        }
+                        break;
+
+                    case "JOIN_GROUP":
+                        String[] joinGroupContent = extractContent(xmlMsg);
+                        if (xmlHandler.joinGroup(joinGroupContent[0], joinGroupContent[1])) {
+                            sendMessage("<Response status=\"GROUP_JOINED\"><body>Joined group " + joinGroupContent[0] + "</body></Response>");
+                        } else {
+                            sendMessage("<Response status=\"GROUP_JOIN_FAILED\"><body>Failed to join group</body></Response>");
+                        }
+                        break;
+
+                    case "LIST_GROUPS":
+                        String[] listGroupsContent = extractContent(xmlMsg);
+                        java.util.List<String> groups = xmlHandler.getUserGroups(listGroupsContent[0]);
+                        sendMessage("<Response status=\"GROUPS_LIST\"><body>" + String.join(",", groups) + "</body></Response>");
+                        break;
+
+                    case "SEND_GROUP_MESSAGE":
+                        String[] groupMsgContent = extractContent(xmlMsg);
+                        String groupName = groupMsgContent[0];
+                        String sender = groupMsgContent[1];
+                        String message = groupMsgContent[2];
+                        String groupChat = sender + ": " + message;
+                        broadcastToGroup(groupName, "<Response status=\"GROUP_MESSAGE\"><body>" + groupChat + "</body></Response>");
+                        break;
+
                     default:
                         sendMessage("<Response status=\"ERROR\"><body>Unknown request</body></Response>");
                         break;
@@ -175,6 +208,26 @@ public class ClientThread implements Runnable {
             return doc.getElementsByTagName("content").item(0).getTextContent().split("waw");
         } else {
             return doc.getDocumentElement().getTextContent().split("waw");
+        }
+    }
+
+    // Broadcast message to all members of a specific group
+    private void broadcastToGroup(String groupName, String message) {
+        synchronized (clients) {
+            for (ClientThread c : new ArrayList<>(clients)) {
+                try {
+                    // Check if this client is a member of the group
+                    if (xmlHandler.isUserInGroup(c.name, groupName)) {
+                        c.writeMSG.write(message);
+                        c.writeMSG.newLine();
+                        c.writeMSG.flush();
+                    }
+                } catch (IOException e) {
+                    try {
+                        c.logOut();
+                    } catch (IOException ignored) {}
+                }
+            }
         }
     }
 

@@ -142,6 +142,18 @@ public class ServerXMLHandler {
             case "SEND_MESSAGE":
                 reply = "SEND_MESSAGE";
                 break;
+            case "CREATE_GROUP":
+                reply = "CREATE_GROUP";
+                break;
+            case "JOIN_GROUP":
+                reply = "JOIN_GROUP";
+                break;
+            case "LIST_GROUPS":
+                reply = "LIST_GROUPS";
+                break;
+            case "SEND_GROUP_MESSAGE":
+                reply = "SEND_GROUP_MESSAGE";
+                break;
         }
         return reply;
     }
@@ -254,6 +266,123 @@ public class ServerXMLHandler {
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
         Transformer transformer = transformerFactory.newTransformer();
         transformer.transform(new DOMSource(doc), new StreamResult(new File(FILE_PATH)));
+    }
+
+    // GROUP MANAGEMENT FUNCTIONS
+
+    public synchronized boolean createGroup(String groupName, String creator) {
+        try {
+            Document doc = loadDocument();
+            Element root = doc.getDocumentElement();
+
+            Element groups = (Element) root.getElementsByTagName("groups").item(0);
+            if (groups == null) {
+                groups = doc.createElement("groups");
+                root.appendChild(groups);
+            }
+
+            Element group = doc.createElement("group");
+            group.setAttribute("name", groupName);
+            group.setAttribute("creator", creator);
+            groups.appendChild(group);
+
+            saveDocument(doc);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public synchronized boolean joinGroup(String groupName, String username) {
+        try {
+            Document doc = loadDocument();
+            Element root = doc.getDocumentElement();
+
+            Element groups = (Element) root.getElementsByTagName("groups").item(0);
+            if (groups == null) {
+                return false;
+            }
+
+            NodeList groupList = groups.getElementsByTagName("group");
+            for (int i = 0; i < groupList.getLength(); i++) {
+                Element group = (Element) groupList.item(i);
+                if (group.getAttribute("name").equals(groupName)) {
+                    Element member = doc.createElement("member");
+                    member.setAttribute("username", username);
+                    group.appendChild(member);
+                    saveDocument(doc);
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public synchronized List<String> listGroups() {
+        List<String> groups = new ArrayList<>();
+        try {
+            Document doc = loadDocument();
+            NodeList groupList = doc.getElementsByTagName("group");
+
+            for (int i = 0; i < groupList.getLength(); i++) {
+                Element group = (Element) groupList.item(i);
+                groups.add(group.getAttribute("name"));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return groups;
+    }
+
+    public synchronized List<String> getUserGroups(String username) {
+        List<String> userGroups = new ArrayList<>();
+        try {
+            Document doc = loadDocument();
+            NodeList groupList = doc.getElementsByTagName("group");
+
+            for (int i = 0; i < groupList.getLength(); i++) {
+                Element group = (Element) groupList.item(i);
+                NodeList members = group.getElementsByTagName("member");
+                
+                for (int j = 0; j < members.getLength(); j++) {
+                    Element member = (Element) members.item(j);
+                    if (member.getAttribute("username").equals(username)) {
+                        userGroups.add(group.getAttribute("name"));
+                        break;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return userGroups;
+    }
+
+    public synchronized boolean isUserInGroup(String username, String groupName) {
+        try {
+            Document doc = loadDocument();
+            NodeList groupList = doc.getElementsByTagName("group");
+
+            for (int i = 0; i < groupList.getLength(); i++) {
+                Element group = (Element) groupList.item(i);
+                if (group.getAttribute("name").equals(groupName)) {
+                    NodeList members = group.getElementsByTagName("member");
+                    
+                    for (int j = 0; j < members.getLength(); j++) {
+                        Element member = (Element) members.item(j);
+                        if (member.getAttribute("username").equals(username)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
 }

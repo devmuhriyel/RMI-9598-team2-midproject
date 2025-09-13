@@ -53,6 +53,7 @@ public class LoginController {
 
                         homeView.setUsername(model.getUsername());
                         homeView.getFXController().loadFriends(model.getUsername());
+                        homeView.getFXController().loadGroups(model.getUsername());
 
                         ChatView cView = new ChatView();
                         Stage stage = new Stage();
