@@ -32,6 +32,7 @@ public class ChatJFXController {
     private AnchorPane anchorPane;
 
     private Runnable sendButtonListener;
+    private Runnable homeButtonListener;
 
     @FXML
     public void initialize() {
@@ -42,6 +43,14 @@ public class ChatJFXController {
             sendButton.setOnAction(event -> {
                 if (sendButtonListener != null) {
                     sendButtonListener.run();
+                }
+            });
+        }
+        
+        if (home != null) {
+            home.setOnAction(event -> {
+                if (homeButtonListener != null) {
+                    homeButtonListener.run();
                 }
             });
         }
@@ -60,9 +69,14 @@ public class ChatJFXController {
     public void setSendButtonListener(Runnable sendButtonListener) {
         this.sendButtonListener = sendButtonListener;
     }
+    
+    public void setHomeButtonListener(Runnable homeButtonListener) {
+        this.homeButtonListener = homeButtonListener;
+    }
 
     // Getters for MVC access
     public TextField getMessageField() { return messageField; }
     public VBox getMessagesArea() { return messagesArea; }
     public Button getSendButton() { return sendButton; }
+    public Button getHomeButton() { return home; }
 }

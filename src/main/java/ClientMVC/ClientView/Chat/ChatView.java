@@ -1,6 +1,8 @@
 package ClientMVC.ClientView.Chat;
 
+import ClientMVC.ClientView.Home.HomeView;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 
 import javafx.scene.Parent;
@@ -37,5 +39,23 @@ public class ChatView extends Application {
 
     public ChatJFXController getFXController() {
         return chatJFXController;
+    }
+    
+    // Navigation method to go to HomeView
+    public void goToHome() {
+        Platform.runLater(() -> {
+            try {
+                // Close current chat window
+                Stage currentStage = (Stage) chatJFXController.getHomeButton().getScene().getWindow();
+                currentStage.close();
+                
+                // Open HomeView
+                HomeView homeView = new HomeView();
+                Stage homeStage = new Stage();
+                homeView.start(homeStage);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
     }
 }

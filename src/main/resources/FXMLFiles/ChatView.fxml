@@ -14,16 +14,16 @@
         <TextField fx:id="messageField" layoutX="74.0" layoutY="361.0" prefHeight="25.0" prefWidth="452.0" style="-fx-background-color: #4a4a4a;" />
 
         <!-- Extra button (not linked in controller) -->
-        <Button layoutX="14.0" layoutY="361.0" mnemonicParsing="false" style="-fx-background-color: dedcff;" text="Button" />
+        <Button layoutX="14.0" layoutY="361.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="50.0" style="-fx-background-color: dedcff;" text="File" textAlignment="CENTER" />
 
         <!-- Send button -->
         <Button fx:id="sendButton" layoutX="534.0" layoutY="361.0" mnemonicParsing="false" style="-fx-background-color: dedcff;" text="Send" />
 
         <!-- Label -->
-        <Label fx:id="label" layoutX="-90.0" layoutY="131.0" text="Label" />
+        <Label fx:id="label" layoutX="281.0" layoutY="30.0" text="Person" textFill="WHITE" />
 
         <!-- Home button -->
-        <Button fx:id="home" layoutX="14.0" layoutY="13.0" mnemonicParsing="false" style="-fx-background-color: dedcff;" text="Home" />
+        <Button fx:id="home" layoutX="14.0" layoutY="13.0" mnemonicParsing="false" style="-fx-background-color: dedcff;" text="Back" />
 
         <!-- ScrollPane with VBox -->
         <ScrollPane fx:id="scrollPane" hbarPolicy="NEVER" layoutY="52.0" prefHeight="297.0" prefWidth="600.0">
