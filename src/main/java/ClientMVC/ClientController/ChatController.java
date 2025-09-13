@@ -35,7 +35,11 @@ public class ChatController {
     private void sendMSG(){
         String textToSend = chatJFXController.getMessageField().getText();
         if (!textToSend.isEmpty()) {
+            // Display the message immediately in the UI
+            chatJFXController.addMessage(" " + textToSend);
+            // Send to server
             mdl.sendMSG(textToSend);
+            // Clear the input field
             chatJFXController.getMessageField().clear();
         }
     }
