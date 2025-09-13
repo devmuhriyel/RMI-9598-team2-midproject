@@ -14,6 +14,8 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 public class UserXMLHandler {
     public String readMessage(String xmlString) throws Exception {
@@ -113,5 +115,30 @@ public class UserXMLHandler {
             System.out.println("Error message: " + e.getMessage());
             return null;
         }
+    }
+
+
+    public List<String> getFriends(String username) {
+        List<String> friends = new ArrayList<>();
+        try {
+            File file = new File("src/main/resources/XMLFiles/UserAccount.xml");
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+            doc.getDocumentElement().normalize();
+
+            // Root <user>
+            NodeList friendNodes = doc.getElementsByTagName("friend");
+
+            for (int i = 0; i < friendNodes.getLength(); i++) {
+                Element friendElement = (Element) friendNodes.item(i);
+                String friendName = friendElement.getElementsByTagName("username").item(0).getTextContent();
+                friends.add(friendName);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return friends;
     }
 }
