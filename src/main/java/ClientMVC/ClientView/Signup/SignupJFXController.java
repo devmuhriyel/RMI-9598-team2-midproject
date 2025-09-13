@@ -53,7 +53,7 @@ public class SignupJFXController {
 
         // Save user into XML
         try {
-            UserXmlHandler.registerUser(username, firstName, lastName, password);
+            //UserXmlHandler.registerUser(username, firstName, lastName, password);
             showAlert("Signup successful!\nWelcome, " + firstName + "!");
         } catch (Exception e) {
             e.printStackTrace();

@@ -29,7 +29,7 @@ public class ConnectionJFXController {
     @FXML
     private Button minimizeButton, closeButton;
     @FXML
-    private AnchorPane connectionFrame;
+    private AnchorPane titleBar;
 
     private Runnable connectButtonListener;
     private double xOffset = 0;
@@ -49,13 +49,13 @@ public class ConnectionJFXController {
         });
 
         // Drag the window when mouse is pressed and dragged
-        connectionFrame.setOnMousePressed(event -> {
-            Stage stage = (Stage) connectionFrame.getScene().getWindow();
+        titleBar.setOnMousePressed(event -> {
+            Stage stage = (Stage) titleBar.getScene().getWindow();
             xOffset = event.getSceneX();
             yOffset = event.getSceneY();
         });
-        connectionFrame.setOnMouseDragged(event -> {
-            Stage stage = (Stage) connectionFrame.getScene().getWindow();
+        titleBar.setOnMouseDragged(event -> {
+            Stage stage = (Stage) titleBar.getScene().getWindow();
             stage.setX(event.getScreenX() - xOffset);
             stage.setY(event.getScreenY() - yOffset);
         });
