@@ -13,73 +13,89 @@
 <?import javafx.scene.paint.Color?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane prefHeight="343.0" prefWidth="557.0" snapToPixel="false" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ClientMVC.ClientView.Connection.ConnectionJFXController">
-   <children>
-      <AnchorPane fx:id="connectionFrame" prefHeight="326.0" prefWidth="561.0">
-         <children>
-            <AnchorPane fx:id="leftFrame" prefHeight="406.0" prefWidth="213.0" style="-fx-background-color: #202020;">
-               <children>
-                  <ImageView fitHeight="406.0" fitWidth="213.0" opacity="0.05" pickOnBounds="true">
-                     <image>
-                        <Image url="@../Images/connectionImage3.jpg" />
-                     </image>
-                  </ImageView>
-                  <ImageView fx:id="logoImage" fitHeight="187.0" fitWidth="174.0" layoutX="20.0" layoutY="-19.0" pickOnBounds="true" preserveRatio="true">
-                     <image>
-                        <Image url="@../Images/variety-logo/white_on_trans.png" />
-                     </image>
-                     <effect>
-                        <DropShadow height="96.72" radius="39.067499999999995" spread="0.36" width="61.55">
-                           <color>
-                              <Color red="0.5131579041481018" green="0.5131579041481018" blue="0.5131579041481018" />
-                           </color>
-                        </DropShadow>
-                     </effect>
-                  </ImageView>
-               </children>
-            </AnchorPane>
-            <ImageView id="backgroundImage" fx:id="backgroundImage" fitHeight="406.0" fitWidth="422.0" layoutX="212.0" pickOnBounds="true">
-               <image>
-                  <Image url="@../Images/connectionImage.jpg" />
-               </image>
-               <effect>
-                  <Bloom threshold="1.0">
-                     <input>
-                        <Glow level="0.84">
-                           <input>
-                              <InnerShadow choke="0.18" height="212.5" radius="116.375" width="255.0" />
-                           </input>
-                        </Glow>
-                     </input>
-                  </Bloom>
-               </effect>
-            </ImageView>
-            <AnchorPane fx:id="inputFrame" layoutX="-3.0" layoutY="122.0" prefHeight="284.0" prefWidth="213.0">
-               <children>
-                  <TextField id="ipAddressInput" fx:id="ipAddressTextField" layoutX="40.0" layoutY="37.0" prefHeight="34.0" prefWidth="133.0" promptText="127.0.0.1" styleClass="input-invalid" stylesheets="@../style.css" />
-                  <TextField id="portInput" fx:id="portTextField" layoutX="40.0" layoutY="105.0" prefHeight="34.0" prefWidth="133.0" promptText="80" styleClass="input-invalid" stylesheets="@../style.css" />
-                  <Label fx:id="ipAddressLabel" layoutX="40.0" layoutY="14.0" stylesheets="@../style.css" text="IP Address:" textFill="WHITE">
-                     <font>
-                        <Font name="HP Simplified Jpan Regular" size="12.0" />
-                     </font>
-                  </Label>
-                  <Label fx:id="portLabel" layoutX="40.0" layoutY="86.0" stylesheets="@../style.css" text="Port:" textFill="WHITE">
-                     <font>
-                        <Font name="HP Simplified Jpan Regular" size="12.0" />
-                     </font>
-                  </Label>
-                  <Button id="button-style" fx:id="connectButton" layoutX="89.0" layoutY="183.0" mnemonicParsing="false" onAction="#handleConnect" prefHeight="22.0" prefWidth="24.0" stylesheets="@../style.css" text="&gt;">
-                     <font>
-                        <Font name="Baskerville Old Face" size="12.0" />
-                     </font>
-                  </Button>
-                  <Label fx:id="statusLabel" alignment="CENTER" layoutX="11.0" layoutY="233.0" prefHeight="24.0" prefWidth="195.0" textAlignment="JUSTIFY" textFill="WHITE">
-                     <font>
-                        <Font name="HP Simplified Jpan Regular" size="12.0" />
-                     </font></Label>
-               </children>
-            </AnchorPane>
-         </children>
-      </AnchorPane>
-   </children>
+<AnchorPane fx:id="parent" prefHeight="343.0" prefWidth="557.0" snapToPixel="false" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ClientMVC.ClientView.Connection.ConnectionJFXController">
+    <children>
+        <AnchorPane fx:id="connectionFrame" prefHeight="326.0" prefWidth="561.0">
+            <children>
+                <AnchorPane fx:id="leftFrame" prefHeight="406.0" prefWidth="213.0" style="-fx-background-color: #202020;">
+                    <children>
+                        <ImageView fitHeight="448.0" fitWidth="213.0" opacity="0.05" pickOnBounds="true">
+                            <image>
+                                <Image url="@../Images/connectionImage3.jpg" />
+                            </image>
+                        </ImageView>
+                        <ImageView fx:id="logoImage" fitHeight="210.0" fitWidth="216.0" layoutX="2.0" layoutY="-22.0" pickOnBounds="true" preserveRatio="true">
+                            <image>
+                                <Image url="@../Images/variety-logo/white_on_trans.png" />
+                            </image>
+                            <effect>
+                                <DropShadow height="96.72" radius="39.067499999999995" spread="0.36" width="61.55">
+                                    <color>
+                                        <Color red="0.5131579041481018" green="0.5131579041481018" blue="0.5131579041481018" />
+                                    </color>
+                                </DropShadow>
+                            </effect>
+                        </ImageView>
+                        <AnchorPane fx:id="inputFrame" layoutX="1.0" layoutY="164.0" prefHeight="284.0" prefWidth="210.0">
+                            <children>
+                                <TextField id="ipAddressInput" fx:id="ipAddressTextField" layoutX="40.0" layoutY="37.0" prefHeight="34.0" prefWidth="133.0" promptText="127.0.0.1" styleClass="input-invalid" stylesheets="@../style.css">
+                                    <font>
+                                        <Font name="Gill Sans MT" size="12.0" />
+                                    </font></TextField>
+                                <TextField id="portInput" fx:id="portTextField" layoutX="40.0" layoutY="105.0" prefHeight="34.0" prefWidth="133.0" promptText="1234" styleClass="input-invalid" stylesheets="@../style.css">
+                                    <font>
+                                        <Font name="Gill Sans MT" size="12.0" />
+                                    </font></TextField>
+                                <Label fx:id="ipAddressLabel" layoutX="40.0" layoutY="14.0" stylesheets="@../style.css" text="IP Address:" textFill="WHITE">
+                                    <font>
+                                        <Font name="Gill Sans MT Bold" size="12.0" />
+                                    </font>
+                                </Label>
+                                <Label fx:id="portLabel" layoutX="40.0" layoutY="86.0" stylesheets="@../style.css" text="Port:" textFill="WHITE">
+                                    <font>
+                                        <Font name="Gill Sans MT Bold" size="12.0" />
+                                    </font>
+                                </Label>
+                                <Button id="button-style" fx:id="connectButton" layoutX="89.0" layoutY="185.0" minWidth="17.0" mnemonicParsing="false" onAction="#handleConnect" prefHeight="36.0" prefWidth="35.0" stylesheets="@../style.css" text="&gt;" textAlignment="CENTER">
+                                    <font>
+                                        <Font name="Baskerville Old Face" size="12.0" />
+                                    </font>
+                                </Button>
+                                <Label fx:id="statusLabel" alignment="CENTER" layoutX="2.0" layoutY="233.0" prefHeight="24.0" prefWidth="210.0" text="..." textAlignment="JUSTIFY" textFill="WHITE">
+                                    <font>
+                                        <Font name="HP Simplified Jpan Regular" size="12.0" />
+                                    </font>
+                                </Label>
+                            </children>
+                        </AnchorPane>
+                    </children>
+                </AnchorPane>
+                <ImageView id="backgroundImage" fx:id="backgroundImage" fitHeight="448.0" fitWidth="477.0" layoutX="212.0" pickOnBounds="true">
+                    <image>
+                        <Image url="@../Images/connectionImage.jpg" />
+                    </image>
+                    <effect>
+                        <Bloom threshold="1.0">
+                            <input>
+                                <Glow level="0.84">
+                                    <input>
+                                        <InnerShadow choke="0.18" height="212.5" radius="116.375" width="255.0" />
+                                    </input>
+                                </Glow>
+                            </input>
+                        </Bloom>
+                    </effect>
+                </ImageView>
+                <Button fx:id="closeButton" cacheShape="false" focusTraversable="false" layoutX="663.0" layoutY="-1.0" minWidth="25.0" prefHeight="30.0" prefWidth="25.0" styleClass="window-control" stylesheets="@../style.css" text="x">
+                    <font>
+                        <Font size="9.0" />
+                    </font>
+                </Button>
+                <Button fx:id="minimizeButton" contentDisplay="CENTER" layoutX="638.0" layoutY="-1.0" minWidth="15.0" prefHeight="30.0" prefWidth="25.0" styleClass="window-control" stylesheets="@../style.css" text="-">
+                    <font>
+                        <Font name="Arial Black" size="12.0" />
+                    </font></Button>
+            </children>
+        </AnchorPane>
+    </children>
 </AnchorPane>
