@@ -33,6 +33,7 @@ public class HomeView extends Application {
             stage.setTitle("Client Application");
             stage.setScene(new Scene(root));
             stage.show();
+
         } catch (Exception e) {
             e.printStackTrace();
         }
