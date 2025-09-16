@@ -23,6 +23,11 @@ public class LoginJFXController {
     @FXML
     private ToggleButton signupTab;
 
+    @FXML
+    private Hyperlink signupLink;
+
+
+    private Runnable signupLinkListener;
     private Runnable loginButtonListener;
 
     @FXML
@@ -30,6 +35,12 @@ public class LoginJFXController {
         loginButton.setOnAction(e -> {
             if (loginButtonListener != null) {
                 loginButtonListener.run();
+            }
+        });
+
+        signupLink.setOnAction(e -> {
+            if (signupLinkListener != null) {
+                signupLinkListener.run();
             }
         });
     }
@@ -58,6 +69,10 @@ public class LoginJFXController {
 
     public ToggleButton getSignupTab() {
         return signupTab;
+    }
+
+    public void setSignupLinkListener(Runnable listener) {
+        this.signupLinkListener = listener;
     }
 
     public void showAlert(String msg) {

@@ -10,6 +10,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
+<?import javafx.scene.control.ToggleButton?>
 <VBox fx:id="loginRoot" alignment="CENTER" prefHeight="428.0" prefWidth="376.0" spacing="15" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ClientMVC.ClientView.Login.LoginJFXController">
     <padding>
         <Insets bottom="30" left="30" right="30" top="30" />
@@ -44,6 +45,6 @@
     <!-- Signup Prompt -->
     <HBox alignment="CENTER">
         <Label text="Create an account " />
-        <Hyperlink style="-fx-text-fill: #3b82f6;" text="Signup now" />
+        <Hyperlink fx:id="signupLink" style="-fx-text-fill: #3b82f6;" text="Signup now" />
     </HBox>
 </VBox>

@@ -30,7 +30,7 @@
     <!-- Sign in prompt -->
     <HBox alignment="CENTER" spacing="5">
         <Label text="Already have account?" />
-        <Hyperlink text="Sign in" />
+        <Hyperlink fx:id="signInLink" text="Sign in" />
     </HBox>
 
     <!-- Username Field -->
