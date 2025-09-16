@@ -49,12 +49,12 @@ public class HomeController {
         new ChatController(chatModel, chatView, chatView.getFXController());
         new Thread(chatModel, "Chat Listener").start();
 
-        // Preload basic history from XML
-        java.util.List<String> history = model.getPrivateHistory(friendName);
-        if (history != null) {
-            for (String line : history) {
-                chatView.getFXController().addMessage(line);
-            }
-        }
+////        // Preload basic history from XML
+////        java.util.List<String> history = model.getPrivateHistory(friendName);
+//        if (history != null) {
+//            for (String line : history) {
+//                chatView.getFXController().addMessage(line);
+//            }
+//        }
     }
 }

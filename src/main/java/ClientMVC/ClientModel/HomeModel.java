@@ -46,10 +46,10 @@ public class HomeModel {
         return userXMLHandler.getUserGroups(username);
     }
 
-    public List<String> getPrivateHistory(String friendName) {
-        if (username == null) return java.util.Collections.emptyList();
-        return userXMLHandler.getPrivateHistory(username, friendName);
-    }
+//    public List<String> getPrivateHistory(String friendName) {
+//        if (username == null) return java.util.Collections.emptyList();
+//        return userXMLHandler.getPrivateHistory(username, friendName);
+//    }
 }
 
 
