@@ -1,10 +1,6 @@
 package ClientMVC.ClientModel;
 
 import ClientMVC.ClientController.LoginController;
-import ClientMVC.ClientView.Login.LoginView;
-import javafx.application.Platform;
-import javafx.stage.Stage;
-
 import java.io.*;
 import java.net.Socket;
 
@@ -85,31 +81,14 @@ public class ConnectionModel {
             return new ConnectionResult(ConnectionStatus.INVALID_IP_FORMAT, "Invalid IP address format");
         }
 
-        // Attempt connection
         try {
-            socket = new Socket(ip, port);
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new PrintWriter(socket.getOutputStream(), true);
-            this.ip = ip;
-            this.port = port;
+            socket = new Socket(ip, Integer.parseInt(portText));
             this.connected = true;
+            this.ip = ip;
+            this.port = Integer.parseInt(portText);
 
-            // Launch login view on successful connection
-            Platform.runLater(() -> {
-                try {
-                    LoginView lView = new LoginView();
-                    Stage stage = new Stage();
-                    lView.start(stage);
-                    LoginModel lModel = new LoginModel(getSocket());
-                    new LoginController(lView, lModel, lView.getFXController());
-                    new Thread(lModel, "Logged In").start();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            });
-
+            // Only return success, NO GUI handling
             return new ConnectionResult(ConnectionStatus.SUCCESS, "Connected successfully");
-
         } catch (IOException e) {
             this.connected = false;
             this.socket = null;
