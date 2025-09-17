@@ -74,7 +74,10 @@ public class ChatModel implements Runnable {
                             // Extract the latest message from the decoded XML and notify UI
                             String latestMessage = extractLatestMessage(base64Content);
                             if (latestMessage != null && messageListener != null) {
-                                messageListener.accept(latestMessage);
+                                // Use Platform.runLater to update UI on JavaFX thread
+                                javafx.application.Platform.runLater(() -> {
+                                    messageListener.accept(latestMessage);
+                                });
                             }
                         }
                     }

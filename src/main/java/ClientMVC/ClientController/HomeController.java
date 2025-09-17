@@ -77,27 +77,37 @@ public class HomeController {
 
         ChatModel chatModel = new ChatModel(model.getSocket(), model.getUsername());
         ChatController chatController = new ChatController(chatModel, chatView, chatView.getFXController());
+
+        // IMPORTANT: Set up the message listener to update the chat UI in real-time
+        chatModel.setMessageListener(message -> {
+            javafx.application.Platform.runLater(() -> {
+                chatView.getFXController().addMessage(message, false);
+            });
+        });
+
         chatController.loadChatHistory(model.getUsername(), friendName);
         new Thread(chatModel, "Chat Listener").start();
     }
 
     private void openGroupChat(String groupName) throws IOException {
-        // Request group chat history from server
         model.requestGroupChatHistory(groupName);
 
-        // Create new chat view
         ChatView chatView = new ChatView();
         Stage stage = new Stage();
         chatView.start(stage);
         chatView.getFXController().setLabel("Group: " + groupName);
 
-        // Create chat model and controller
         ChatModel chatModel = new ChatModel(model.getSocket(), model.getUsername());
         ChatController chatController = new ChatController(chatModel, chatView, chatView.getFXController());
 
-        // Load group chat history
-        chatController.loadGroupChatHistory(model.getUsername(), groupName);
+        // IMPORTANT: Set up the message listener for group messages too
+        chatModel.setMessageListener(message -> {
+            javafx.application.Platform.runLater(() -> {
+                chatView.getFXController().addMessage(message, false);
+            });
+        });
 
+        chatController.loadGroupChatHistory(model.getUsername(), groupName);
         new Thread(chatModel, "Group Chat Listener").start();
     }
 
