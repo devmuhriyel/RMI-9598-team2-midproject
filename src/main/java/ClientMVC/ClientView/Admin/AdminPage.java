@@ -1,5 +1,6 @@
 package ClientMVC.ClientView.Admin;
 
+import ClientMVC.ClientView.Admin.AdminPageJFXController;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -15,7 +16,7 @@ public class AdminPage extends Application {
     @Override
     public void start(Stage stage) throws Exception {
         primaryStage = stage;
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/Admin.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/Admin.fxml"));
         Parent root = loader.load();
         jfxController = loader.getController();
         primaryStage.setTitle("Admin Page");

@@ -57,7 +57,7 @@ public class AdminPageJFXController {
     @FXML
     private void initialize() {
         searchButton.setOnAction(e -> {
-            System.out.println("Searching for: " + searchField.getText());
+            System.out.println("Searching for : " + searchField.getText());
         });
 
         if (tabPane != null) {

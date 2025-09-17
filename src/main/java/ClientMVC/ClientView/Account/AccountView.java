@@ -1,6 +1,7 @@
 package ClientMVC.ClientView.Account;
 
 import javafx.application.Application;
+import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 
 import javafx.scene.Parent;
@@ -10,6 +11,8 @@ import javafx.stage.StageStyle;
 
 public class AccountView extends Application {
     private AccountJFXController accountJFXController;
+    @FXML
+
 
     @Override
     public void start(Stage stage) {
@@ -17,6 +20,7 @@ public class AccountView extends Application {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/ClientAccountView.fxml"));
             Parent root = loader.load();
             accountJFXController = loader.getController();
+            accountJFXController.showProfile();
 
             Scene scene = new Scene(root);
             stage.initStyle(StageStyle.UNDECORATED);

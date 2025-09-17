@@ -18,7 +18,6 @@ public class ConnectionView extends Application {
             Parent root = loader.load();
             jfxController = loader.getController();
 
-
             Scene scene = new Scene(root);
             stage.initStyle(javafx.stage.StageStyle.UNDECORATED); // Removes title bar
             stage.initStyle(javafx.stage.StageStyle.TRANSPARENT);

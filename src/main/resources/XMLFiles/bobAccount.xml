@@ -91,6 +91,10 @@
                 <sender>bob</sender>
                 <msg>yoooooo</msg>
             </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>heehee - michael jackson</msg>
+            </chat>
         </chathistory>
     </friend>
     <group>
