@@ -175,14 +175,39 @@ public class ClientThread implements Runnable {
                         java.util.List<String> groups = xmlHandler.getUserGroups(listGroupsContent[0]);
                         sendMessage("<Response status=\"GROUPS_LIST\"><body>" + String.join(",", groups) + "</body></Response>");
                         break;
-
+// Replace the SEND_GROUP_MESSAGE case in ClientThread.java
                     case "SEND_GROUP_MESSAGE":
                         String[] groupMsgContent = extractContent(xmlMsg);
-                        String groupName = groupMsgContent[0];
-                        String sender = groupMsgContent[1];
-                        String message = groupMsgContent[2];
-                        String groupChat = sender + ": " + message;
-                        broadcastToGroup(groupName, "<Response status=\"GROUP_MESSAGE\"><body>" + groupChat + "</body></Response>");
+                        String groupSender = groupMsgContent[0];    // sender
+                        String groupName = groupMsgContent[1];      // group name
+                        String groupMessage = groupMsgContent[2];   // message
+
+                        // Get all group members and update their XML files
+                        java.util.List<String> groupMembers = xmlHandler.getGroupMembers(groupName);
+                        for (String member : groupMembers) {
+                            try {
+                                byte[] memberFileContent = Files.readAllBytes(Paths.get("src/main/resources/XMLFiles/" + member + "Account.xml"));
+
+                                // Send updated XML to member if they're online
+                                ClientThread memberClient = null;
+                                synchronized (clients) {
+                                    for (ClientThread c : clients) {
+                                        if (c.name != null && c.name.equals(member)) {
+                                            memberClient = c;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if (memberClient != null) {
+                                    memberClient.sendMessage("<Response><reply>SEND_GROUP_MESSAGE</reply><body>" +
+                                            Base64.getEncoder().encodeToString(memberFileContent) + "</body></Response>");
+                                }
+                            } catch (Exception e) {
+                                System.out.println("Failed to update XML for group member: " + member);
+                                e.printStackTrace();
+                            }
+                        }
                         break;
 
                     default:

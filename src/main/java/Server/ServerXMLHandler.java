@@ -180,6 +180,16 @@ public class ServerXMLHandler {
             case "LIST_GROUPS":
                 reply = "LIST_GROUPS";
                 break;
+            // Add this case to your readMessage() method in ServerXMLHandler.java
+            case "SEND_GROUP_MESSAGE":
+                String groupSender = content[0];
+                String targetGroup = content[1];
+                String groupMessage = content[2];
+
+                // Update XML for all group members
+                handleGroupMessage(groupSender, targetGroup, groupMessage);
+                reply = "SEND_GROUP_MESSAGE";
+                break;
         }
         return reply;
     }

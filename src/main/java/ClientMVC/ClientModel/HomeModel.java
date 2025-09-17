@@ -24,6 +24,7 @@ public class HomeModel implements Runnable{
         this.username = username;
     }
 
+    // Replace the run() method in HomeModel.java
     @Override
     public void run() {
         String msg;
@@ -50,7 +51,23 @@ public class HomeModel implements Runnable{
                                 }
                                 break;
                             case "SEND_MESSAGE":
-                                // Handle incoming messages
+                                // Handle incoming messages - update local XML
+                                String msgBody = userXMLHandler.getBody(msg);
+                                if (msgBody != null && !msgBody.isEmpty()) {
+                                    userXMLHandler.saveUpdatedAccountXML(username, msgBody);
+                                }
+                                // Also notify message listener for UI updates
+                                if (messageListener != null) {
+                                    messageListener.accept(msg);
+                                }
+                                break;
+                            case "SEND_GROUP_MESSAGE":
+                                // Handle incoming group messages - update local XML
+                                String groupMsgBody = userXMLHandler.getBody(msg);
+                                if (groupMsgBody != null && !groupMsgBody.isEmpty()) {
+                                    userXMLHandler.saveUpdatedAccountXML(username, groupMsgBody);
+                                }
+                                // Also notify message listener for UI updates
                                 if (messageListener != null) {
                                     messageListener.accept(msg);
                                 }
