@@ -3,9 +3,14 @@ package ClientMVC.ClientView.Home;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -27,6 +32,17 @@ public class HomeJFXController {
     private Runnable userProfileButtonListener;
     private Consumer<String> friendClickListener;
 
+    @FXML
+    private TextField searchField;
+    @FXML
+    private Button searchButton;
+
+    private List<String> originalFriends = Collections.emptyList();
+    private List<String> originalGroups = Collections.emptyList();
+
+    private static final List<String> PLACEHOLDER_GROUPS = Arrays.asList("General Chat", "Project Team", "Study Group");
+
+    private Consumer<String> searchListener;
 
     @FXML
     private void initialize() {
@@ -34,6 +50,14 @@ public class HomeJFXController {
             userProfileButton.setOnAction(event -> {
                 if (userProfileButtonListener != null) {
                     userProfileButtonListener.run();
+                }
+            });
+        }
+
+        if (searchButton != null) {
+            searchButton.setOnAction(event -> {
+                if (searchListener != null && searchField != null) {
+                    searchListener.accept(searchField.getText());
                 }
             });
         }
@@ -60,8 +84,49 @@ public class HomeJFXController {
     }
 
     public void setFriends(List<String> friends) {
+        if (friends == null) {
+            originalFriends = Collections.emptyList();
+        } else {
+            originalFriends = new ArrayList<>(friends);
+        }
+        renderFriends(originalFriends);
+    }
+
+    public void setGroups(List<String> groups) {
+        if (groups == null) {
+            originalGroups = Collections.emptyList();
+        } else {
+            originalGroups = new ArrayList<>(groups);
+        }
+        renderGroups(originalGroups);
+    }
+
+    // Expose originals for controller-side search
+    public List<String> getOriginalFriends() {
+        return originalFriends;
+    }
+
+    public List<String> getOriginalGroups() {
+        return originalGroups;
+    }
+
+    // Allow controller to listen for search actions
+    public void setSearchListener(Consumer<String> listener) {
+        this.searchListener = listener;
+    }
+
+
+
+    //search integrated, alanganin, lilipat ba to sa HomeController TwT
+
+    // Rendering helpers used by controller
+    public void renderFriends(List<String> friends) {
         Platform.runLater(() -> {
             friendsList.getChildren().clear();
+            if (friends == null || friends.isEmpty()) {
+                friendsList.getChildren().add(new Label("No friends match your search"));
+                return;
+            }
             for (String friend : friends) {
                 Button friendBtn = new Button(friend);
                 friendBtn.setMaxWidth(Double.MAX_VALUE);
@@ -75,12 +140,15 @@ public class HomeJFXController {
         });
     }
 
-    public void setGroups(List<String> groups) {
+    public void renderGroups(List<String> groups) {
         Platform.runLater(() -> {
             messagesArea1.getChildren().clear();
-            java.util.List<String> groupsToRender = (groups != null && !groups.isEmpty())
-                    ? new java.util.ArrayList<>(groups)
-                    : new java.util.ArrayList<>(java.util.Arrays.asList("General Chat", "Project Team", "Study Group"));
+            List<String> groupsToRender;
+            if (groups != null && !groups.isEmpty()) {
+                groupsToRender = new ArrayList<>(groups);
+            } else {
+                groupsToRender = new ArrayList<>(PLACEHOLDER_GROUPS);
+            }
             for (String group : groupsToRender) {
                 Button groupBtn = new Button("📁 " + group);
                 groupBtn.setMaxWidth(Double.MAX_VALUE);

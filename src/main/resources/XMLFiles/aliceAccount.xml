@@ -149,31 +149,27 @@
             </chat>
             <chat>
                 <sender>bob</sender>
-                <msg>yeahhhh</msg>
+                <msg>bob istg</msg>
             </chat>
             <chat>
                 <sender>alice</sender>
-                <msg>hiiii boooob</msg>
+                <msg>ano ba alice</msg>
             </chat>
             <chat>
                 <sender>bob</sender>
-                <msg>yeahhh</msg>
+                <msg>aaaaaa</msg>
             </chat>
             <chat>
                 <sender>alice</sender>
-                <msg>will this work</msg>
+                <msg>ughhhhhh</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>please gumana ka na</msg>
             </chat>
             <chat>
                 <sender>bob</sender>
-                <msg>yeahh??</msg>
-            </chat>
-            <chat>
-                <sender>alice</sender>
-                <msg>hello work please</msg>
-            </chat>
-            <chat>
-                <sender>alice</sender>
-                <msg>Hello there you got P1000 in your account just load ....</msg>
+                <msg>it's not working!!!!!!!!!!!!</msg>
             </chat>
         </chathistory>
     </friend>

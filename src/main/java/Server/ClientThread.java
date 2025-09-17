@@ -277,9 +277,6 @@ public class ClientThread implements Runnable {
         synchronized (clients) {
             clients.remove(this);
         }
-        if (name != null) {
-            broadcast("SERVER: " + this.name + " has disconnected.");
-        }
         socket.close();
     }
 

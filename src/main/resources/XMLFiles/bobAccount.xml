@@ -92,8 +92,84 @@
                 <msg>yoooooo</msg>
             </chat>
             <chat>
+                <sender>bob</sender>
+                <msg>yeahhhhh?</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>yeahhhh??</msg>
+            </chat>
+            <chat>
                 <sender>alice</sender>
-                <msg>heehee - michael jackson</msg>
+                <msg>hello bob</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>hello carl</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>helloooooooo</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>yooo</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>nabasa mo bah</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>aaaaaaa</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>ayaw mooo</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>cgehhhhhh</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>gegegegge</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>hello</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>hello uli</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>hellllllllloooo</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>bob istg</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>ano ba alice</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>aaaaaa</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>ughhhhhh</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>please gumana ka na</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>it's not working!!!!!!!!!!!!</msg>
             </chat>
         </chathistory>
     </friend>

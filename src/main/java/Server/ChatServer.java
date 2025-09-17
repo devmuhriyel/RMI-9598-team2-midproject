@@ -45,8 +45,8 @@ public class ChatServer {
 
     //TYPE EXIT IF CLOSEEEE OR PWEDE NAMAN YUNG STOP BUTTON (Wala maangas lang kaya i added it :>)
     public static void main(String[] args) throws IOException {
-        InetAddress bindAddress = InetAddress.getByName("26.141.158.76");
-        ServerSocket serverSocket = new ServerSocket(1234, 10 ,bindAddress);
+//        InetAddress bindAddress = InetAddress.getByName("26.141.158.76");
+        ServerSocket serverSocket = new ServerSocket(1234);
         ChatServer chatServer = new ChatServer(serverSocket);
         chatServer.start();
 

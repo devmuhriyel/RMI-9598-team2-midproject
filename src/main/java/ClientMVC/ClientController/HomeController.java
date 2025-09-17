@@ -6,9 +6,14 @@ import ClientMVC.ClientView.Home.HomeView;
 import ClientMVC.ClientModel.ChatModel;
 import ClientMVC.ClientView.Chat.ChatView;
 import ClientMVC.ClientController.ChatController;
+import javafx.application.Platform;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class HomeController {
     private final HomeModel model;
@@ -29,6 +34,18 @@ public class HomeController {
 
         ui.setFriends(model.getFriends());
         ui.setGroups(model.getGroups());
+
+        // For search
+        ui.setSearchListener(queryText -> {
+            String q = (queryText == null) ? "" : queryText.trim().toLowerCase();
+            if (q.isEmpty()) {
+                ui.renderFriends(ui.getOriginalFriends());
+                ui.renderGroups(ui.getOriginalGroups());
+                return;
+            }
+            ui.renderFriends(filterList(ui.getOriginalFriends(), q));
+            ui.renderGroups(filterList(ui.getOriginalGroups(), q));
+        });
 
         // Handle friend clicks (existing functionality)
         ui.setFriendClickListener(friendName -> {
@@ -60,27 +77,48 @@ public class HomeController {
 
         ChatModel chatModel = new ChatModel(model.getSocket(), model.getUsername());
         ChatController chatController = new ChatController(chatModel, chatView, chatView.getFXController());
+
+        // IMPORTANT: Set up the message listener to update the chat UI in real-time
+        chatModel.setMessageListener(message -> {
+            javafx.application.Platform.runLater(() -> {
+                chatView.getFXController().addMessage(message, false);
+            });
+        });
+
         chatController.loadChatHistory(model.getUsername(), friendName);
         new Thread(chatModel, "Chat Listener").start();
     }
 
     private void openGroupChat(String groupName) throws IOException {
-        // Request group chat history from server
         model.requestGroupChatHistory(groupName);
 
-        // Create new chat view
         ChatView chatView = new ChatView();
         Stage stage = new Stage();
         chatView.start(stage);
         chatView.getFXController().setLabel("Group: " + groupName);
 
-        // Create chat model and controller
         ChatModel chatModel = new ChatModel(model.getSocket(), model.getUsername());
         ChatController chatController = new ChatController(chatModel, chatView, chatView.getFXController());
 
-        // Load group chat history
-        chatController.loadGroupChatHistory(model.getUsername(), groupName);
+        // IMPORTANT: Set up the message listener for group messages too
+        chatModel.setMessageListener(message -> {
+            javafx.application.Platform.runLater(() -> {
+                chatView.getFXController().addMessage(message, false);
+            });
+        });
 
+        chatController.loadGroupChatHistory(model.getUsername(), groupName);
         new Thread(chatModel, "Group Chat Listener").start();
+    }
+
+
+    private List<String> filterList(List<String> source, String queryLower) {
+        List<String> result = new ArrayList<>();
+        for (String item : source) {
+            if (item != null && item.toLowerCase().contains(queryLower)) {
+                result.add(item);
+            }
+        }
+        return result;
     }
 }
