@@ -135,6 +135,18 @@
                 <sender>bob</sender>
                 <msg>gegegegge</msg>
             </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>hello</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>hello uli</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>hellllllllloooo</msg>
+            </chat>
         </chathistory>
     </friend>
     <group>
