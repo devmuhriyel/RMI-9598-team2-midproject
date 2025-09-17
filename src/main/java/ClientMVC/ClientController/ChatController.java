@@ -35,13 +35,23 @@ public class ChatController {
         vw.goToHome();
     }
 
+    // Replace the sendMSG() method in ChatController.java
     private void sendMSG(){
         String textToSend = chatJFXController.getMessageField().getText();
         String receiver = chatJFXController.getReceiver().getText();
         if (!textToSend.isEmpty()) {
             // Add message as sender (true)
             chatJFXController.addMessage(textToSend, true);
-            mdl.sendMSG(textToSend, receiver);
+
+            // Check if this is a group chat (starts with "Group: ")
+            if (receiver.startsWith("Group: ")) {
+                String groupName = receiver.substring(7); // Remove "Group: " prefix
+                mdl.sendGroupMessage(textToSend, groupName);
+            } else {
+                // Regular private message
+                mdl.sendMSG(textToSend, receiver);
+            }
+
             chatJFXController.getMessageField().clear();
         }
     }
