@@ -153,7 +153,7 @@ public class ServerXMLHandler {
                 String message = content[2];
 
                 updateXMLs(sender, sender, receiver, message);
-                updateXMLs(receiver, sender, sender, message);
+                updateXMLs(receiver, sender, receiver, message);
                 reply = "SEND_MESSAGE";
                 break;
             case "GET_CHAT_HISTORY":

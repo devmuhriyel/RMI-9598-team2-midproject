@@ -107,6 +107,34 @@
                 <sender>alice</sender>
                 <msg>hello carl</msg>
             </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>helloooooooo</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>yooo</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>nabasa mo bah</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>aaaaaaa</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>ayaw mooo</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>cgehhhhhh</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>gegegegge</msg>
+            </chat>
         </chathistory>
     </friend>
     <group>
