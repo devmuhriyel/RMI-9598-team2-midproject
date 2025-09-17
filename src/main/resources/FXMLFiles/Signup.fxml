@@ -2,9 +2,9 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.Hyperlink?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
@@ -29,29 +29,27 @@
 
     <!-- Sign in prompt -->
     <HBox alignment="CENTER" spacing="5">
-        <Label text="Already have account?" />
+        <Label text="Already have an account?" />
         <Hyperlink fx:id="signInLink" text="Sign in" />
     </HBox>
 
     <!-- Username Field -->
     <TextField fx:id="usernameField" maxWidth="300" promptText="Username" />
 
-    <!-- Name Fields -->
-    <HBox alignment="CENTER" spacing="10">
-        <TextField fx:id="firstNameField" maxWidth="145" promptText="First name" />
-        <TextField fx:id="lastNameField" maxWidth="145" promptText="Last name" />
-    </HBox>
+    <!-- Password Field -->
+    <PasswordField fx:id="passwordField" maxWidth="300" promptText="Password" />
 
-    <!-- Email Field -->
-    <TextField fx:id="emailField" maxWidth="300" promptText="E-mail" />
+    <!-- Confirm Password Field -->
+    <PasswordField fx:id="confirmPasswordField" maxWidth="300" promptText="Confirm Password" />
 
     <!-- Sign Up Button -->
-    <Button fx:id="signupButton" maxWidth="300" style="-fx-background-color: #4da6ff; -fx-text-fill: white;" text="Sign up" />
+    <Button fx:id="signupButton"
+            maxWidth="300"
+            style="-fx-background-color: #4da6ff; -fx-text-fill: white;"
+            text="Sign up" />
 
-    <!-- Terms Checkbox -->
-    <HBox alignment="CENTER" spacing="5">
-        <CheckBox fx:id="termsCheckbox" text="I have read and agree to the" />
-        <Hyperlink text="Terms of Service" />
-    </HBox>
+    <!-- Message Label -->
+    <Label fx:id="messageLabel" textFill="red" />
+
 
 </VBox>

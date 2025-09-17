@@ -75,6 +75,10 @@ public class ClientThread implements Runnable {
                         sendMessage("<Response status=\"REGISTER_FAILED\"><body>Registration failed</body></Response>");
                         break;
 
+                    case "USER_EXISTS":
+                        sendMessage("<Response status=\"USER_EXISTS\"><body>Username already exists</body></Response>");
+                        break;
+
                     case "SEND_MESSAGE":
                         String senderName = xmlHandler.getSender(xmlMsg);
                         String receiverName = xmlHandler.getReceiver(xmlMsg);
@@ -209,7 +213,6 @@ public class ClientThread implements Runnable {
                             }
                         }
                         break;
-
                     default:
                         sendMessage("<Response status=\"ERROR\"><body>Unknown request</body></Response>");
                         break;
