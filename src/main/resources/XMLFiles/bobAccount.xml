@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<user>
+    <friend>
+        <username>alice</username>
+        <chathistory>
+            <chat>
+                <sender>alice</sender>
+                <msg>Hello</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>Hiii</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>hi</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>hello alice</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>hello</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>hey alice</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>bobbbb</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>crazy weather</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>crazy weather</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>CRAAAAZY</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>bob pleassseeeee</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>BOB PLEASE REPLY</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>ALICE PLEASE REPLY TO MEEEEE</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>ALICE PLEASE I MISS YOU</msg>
+            </chat>
+        </chathistory>
+    </friend>
+</user>

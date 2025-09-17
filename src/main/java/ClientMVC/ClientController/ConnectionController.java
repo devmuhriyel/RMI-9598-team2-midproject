@@ -25,15 +25,10 @@ public class ConnectionController {
     public void connect() {
         String ip = connectionJFXController.getIpAddress();
         String portText = connectionJFXController.getPortText();
-
-        // Let the model handle all validation
         ConnectionModel.ConnectionResult result = model.connect(ip, portText);
-
-        // Controller only handles UI updates based on model results
         switch(result.getStatus()) {
             case SUCCESS:
                 Platform.runLater(() -> {
-                    // Close the connection window
                     Stage stage = (Stage) connectionJFXController.getConnectButton().getScene().getWindow();
                     stage.close();
 

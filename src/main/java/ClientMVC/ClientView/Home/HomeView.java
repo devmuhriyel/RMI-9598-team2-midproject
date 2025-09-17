@@ -19,6 +19,7 @@ public class HomeView extends Application {
     private HomeJFXController homeJFXController;
     private LoginJFXController loginJFXController;
     private static HomeView instance;
+    private Stage stage;
 
     public HomeView() {
         instance = this;
@@ -26,6 +27,7 @@ public class HomeView extends Application {
 
     @Override
     public void start(Stage stage){
+        this.stage = stage;
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/Home.fxml"));
             Parent root = loader.load();
@@ -43,6 +45,13 @@ public class HomeView extends Application {
         return homeJFXController;
     }
 
+    public void openChatWithFriend(){
+        Platform.runLater(() -> {
+            if (stage != null) {
+                stage.close();
+            }
+        });
+    }
     public void setUsername(String username) {
         if (homeJFXController != null) {
             homeJFXController.setUserLabel(username);

@@ -3,37 +3,87 @@ package ClientMVC.ClientModel;
 import ClientMVC.UserXMLHandler;
 import eu.hansolo.tilesfx.tools.DoubleExponentialSmoothingForLinearSeries;
 
+import java.io.*;
 import java.net.Socket;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class HomeModel implements Runnable{
     private final UserXMLHandler userXMLHandler;
     private Socket socket;
     private String username;
+    private final BufferedReader readMSG;
+    private final BufferedWriter writeMSG;
+    private Consumer<String> messageListener;
 
-    public HomeModel() {
-        this.userXMLHandler = new UserXMLHandler();
-    }
-
-    public HomeModel(Socket socket, String username) {
+    public HomeModel(Socket socket, String username) throws IOException {
         this.userXMLHandler = new UserXMLHandler();
         this.socket = socket;
+        readMSG = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        writeMSG = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
         this.username = username;
     }
 
-
     @Override
     public void run() {
-
+        String msg;
+        try {
+            while ((msg = readMSG.readLine()) != null) {
+                if (msg.startsWith("<")) {
+                    String trimmed = msg.trim();
+                    String reply = userXMLHandler.getReply(msg);
+                    if (reply != null) {
+                        switch (reply) {
+                            case "GET_CHAT_HISTORY":
+                                // Handle the response containing the updated XML file
+                                String body = userXMLHandler.getBody(msg);
+                                if (body != null && !body.isEmpty()) {
+                                    // Decode the Base64 encoded XML content and save it locally
+                                    userXMLHandler.saveUpdatedAccountXML(username, body);
+                                }
+                                break;
+                            case "SEND_MESSAGE":
+                                // Handle incoming messages
+                                if (messageListener != null) {
+                                    messageListener.accept(msg);
+                                }
+                                break;
+                            case "FORCE_LOGOUT":
+                                // Handle force logout
+                                System.out.println("Logged out from another location");
+                                break;
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     //MVC Methods
+    public void requestChatHistory(String friendName) {
+        try {
+            String xmlMessage = "<Request><type>GET_CHAT_HISTORY</type><content>" +
+                    username + "![]!" + friendName + "</content></Request>";
+            System.out.println(xmlMessage);
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
     public List<String> getFriends() {
         return userXMLHandler.getFriends(username);
     }
 
     public List<String> getGroups() {
         return userXMLHandler.getUserGroups(username);
+    }
+
+    public void setMessageListener(Consumer<String> messageListener) {
+        this.messageListener = messageListener;
     }
 
     //GETTERS AND SETTERS
@@ -52,11 +102,6 @@ public class HomeModel implements Runnable{
     public String getUsername() {
         return username;
     }
-
-//    public List<String> getPrivateHistory(String friendName) {
-//        if (username == null) return java.util.Collections.emptyList();
-//        return userXMLHandler.getPrivateHistory(username, friendName);
-//    }
 }
 
 

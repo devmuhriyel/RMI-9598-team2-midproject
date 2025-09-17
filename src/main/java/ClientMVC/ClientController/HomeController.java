@@ -13,7 +13,7 @@ import java.io.IOException;
 
 public class HomeController {
     private final HomeModel model;
-    private final HomeView view; // kept for future navigation beyond chat
+    private final HomeView view;
     private final HomeJFXController ui;
 
     public HomeController(HomeModel model, HomeView view, HomeJFXController ui) {
@@ -33,7 +33,9 @@ public class HomeController {
 
         ui.setFriendClickListener(friendName -> {
             try {
+
                 openChatWithFriend(friendName);
+                view.openChatWithFriend();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -41,20 +43,17 @@ public class HomeController {
     }
 
     private void openChatWithFriend(String friendName) throws IOException {
+
+        model.requestChatHistory(friendName);
         ChatView chatView = new ChatView();
         Stage stage = new Stage();
         chatView.start(stage);
+        chatView.getFXController().setLabel(friendName);
 
-        ChatModel chatModel = new ChatModel(model.getSocket(), friendName); // ⚡ model provides socket
-        new ChatController(chatModel, chatView, chatView.getFXController());
+        ChatModel chatModel = new ChatModel(model.getSocket(), model.getUsername());
+        ChatController chatController = new ChatController(chatModel, chatView, chatView.getFXController());
+        chatController.loadChatHistory(model.getUsername(), friendName);
         new Thread(chatModel, "Chat Listener").start();
 
-////        // Preload basic history from XML
-////        java.util.List<String> history = model.getPrivateHistory(friendName);
-//        if (history != null) {
-//            for (String line : history) {
-//                chatView.getFXController().addMessage(line);
-//            }
-//        }
     }
 }

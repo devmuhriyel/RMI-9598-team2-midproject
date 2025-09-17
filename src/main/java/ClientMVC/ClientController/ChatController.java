@@ -4,6 +4,9 @@ package ClientMVC.ClientController;
 import ClientMVC.ClientModel.ChatModel;
 import ClientMVC.ClientView.Chat.ChatView;
 import ClientMVC.ClientView.Chat.ChatJFXController;
+import ClientMVC.UserXMLHandler;
+
+import java.util.List;
 
 public class ChatController {
     private ChatModel mdl;
@@ -27,20 +30,27 @@ public class ChatController {
         chatJFXController.setSendButtonListener(() -> sendMSG());
         chatJFXController.setHomeButtonListener(() -> goToHome());
     }
-    
+
     private void goToHome() {
         vw.goToHome();
     }
 
     private void sendMSG(){
         String textToSend = chatJFXController.getMessageField().getText();
+        String receiver = chatJFXController.getReceiver().getText();
         if (!textToSend.isEmpty()) {
-            // Display the message immediately in the UI
             chatJFXController.addMessage(" " + textToSend);
-            // Send to server
-            mdl.sendMSG(textToSend);
-            // Clear the input field
+            mdl.sendMSG(textToSend, chatJFXController.getReceiver().getText());
             chatJFXController.getMessageField().clear();
+        }
+    }
+    public void loadChatHistory(String currentUser, String friend) {
+        UserXMLHandler xmlHandler = new UserXMLHandler();
+        List<String> history = xmlHandler.getChatHistory(currentUser, friend);
+
+        chatJFXController.clearMessages();
+        for (String msg : history) {
+            chatJFXController.addMessage(msg);
         }
     }
 }

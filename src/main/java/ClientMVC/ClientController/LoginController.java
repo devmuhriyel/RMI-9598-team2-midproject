@@ -17,6 +17,7 @@ public class LoginController {
     private final LoginJFXController loginJFXController;
     private final LoginView view;
     private final LoginModel model;
+    private final Thread modelThread;
     private UserXMLHandler userXMLHandler = new UserXMLHandler();
 
     public LoginController(LoginView loginView, LoginModel loginModel, LoginJFXController loginJFXController) {
@@ -24,7 +25,8 @@ public class LoginController {
         this.view = loginView;
         this.model = loginModel;
         model.setMessageListener(this::login);
-        new Thread(model, "Login Listener").start();
+        modelThread = new Thread(model, "Login Listener");
+        modelThread.start();
         initialize();
     }
 
@@ -39,11 +41,8 @@ public class LoginController {
 
     public void login(String msg) {
         try {
-            System.out.println("Processing login response: " + msg);
             String reply = userXMLHandler.getReply(msg.trim());
-
             if (reply != null && reply.equals("LOGIN_SUCCESS")) {
-                System.out.println("Login successful!");
                 view.login();
                 Platform.runLater(() -> {
                     try {
@@ -51,27 +50,19 @@ public class LoginController {
                         Stage stage1 = new Stage();
                         homeView.start(stage1);
 
-                        // Wire Home MVC via controller
-                        HomeModel homeModel = new HomeModel(model.getSocket(), model.getUsername());
+                        HomeModel homeModel = new HomeModel(model.getSocket(), loginJFXController.getUsername());
                         new HomeController(homeModel, homeView, homeView.getFXController());
-
-                        ChatView cView = new ChatView();
-                        Stage stage = new Stage();
-//                        cView.start(stage);
-                        ChatModel cModel = new ChatModel(model.getSocket(), loginJFXController.getUsername());
-                        new ChatController(cModel, cView, cView.getFXController());
-                        new Thread(cModel, "Chat Listener").start();
+                        new Thread(homeModel,"Home thread").start();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
+
                 });
             } else if (reply != null && reply.equals("LOGIN_FAILED")) {
                 System.out.println("Login failed!");
                 Platform.runLater(() -> {
                     System.out.println("Invalid username or password");
                 });
-            } else {
-                System.out.println("Received non-login response or invalid XML: " + msg);
             }
         } catch (Exception e) {
             System.out.println("Error processing login response: " + e.getMessage());

@@ -29,7 +29,6 @@ public class HomeJFXController {
 
     @FXML
     private void initialize() {
-        System.out.println("HomeJFXController initialized");
         if (userProfileButton != null) {
             userProfileButton.setOnAction(event -> {
                 if (userProfileButtonListener != null) {

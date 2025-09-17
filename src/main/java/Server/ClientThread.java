@@ -2,7 +2,10 @@ package Server;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Base64;
 
 public class ClientThread implements Runnable {
     private Socket socket;
@@ -36,9 +39,28 @@ public class ClientThread implements Runnable {
 
                 switch (reply) {
                     case "LOGIN_SUCCESS":
-                        this.name = extractUsername(xmlMsg); // store logged-in username
-                        sendMessage("<Response><reply>LOGIN_SUCCESS</reply><body>Welcome " + name + "!</body></Response>");
-                        broadcast("SERVER: " + name + " has joined the chat.");
+                        String newUsername = extractUsername(xmlMsg);
+                        ClientThread existingClient = null;
+                        synchronized (clients) {
+                            for (ClientThread clientThread : clients) {
+                                if (clientThread.name != null && clientThread.name.equals(newUsername) && clientThread != this) {
+                                    existingClient = clientThread;
+                                    break;
+                                }
+                            }
+                        }
+                        if (existingClient != null) {
+                            existingClient.sendMessage("<Response><reply>FORCE_LOGOUT</reply><body>You have been logged in from another location</body></Response>");
+                            try {
+                                existingClient.logOut();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                        // Set this client's name and send success response
+                        this.name = newUsername;
+                        sendMessage("<Response><reply>LOGIN_SUCCESS</reply><body>Welcome " + this.name + "!</body></Response>");
                         break;
 
                     case "LOGIN_FAILED":
@@ -54,11 +76,49 @@ public class ClientThread implements Runnable {
                         break;
 
                     case "SEND_MESSAGE":
-                        // Build chat message from xmlMsg
-                        String chat = name + ": " + extractBody(xmlMsg);
-                        broadcast("<Response status=\"MESSAGE\"><body>" + chat + "</body></Response>");
-                        break;
+                        String senderName = xmlHandler.getSender(xmlMsg);
+                        String receiverName = xmlHandler.getReceiver(xmlMsg);
 
+                        byte[] senderFileContent = Files.readAllBytes(Paths.get("src/main/resources/XMLFiles/" + senderName + "Account.xml"));
+                        sendMessage("<Response><reply>SEND_MESSAGE</reply><body>" +
+                                Base64.getEncoder().encodeToString(senderFileContent) + "</body></Response>");
+
+                        ClientThread receiverClient = null;
+                        synchronized (clients) {
+                            for (ClientThread c : clients) {
+                                if (c.name != null && c.name.equals(receiverName)) {
+                                    receiverClient = c;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (receiverClient != null) {
+                            byte[] receiverFileContent = Files.readAllBytes(Paths.get("src/main/resources/XMLFiles/" + receiverName + "Account.xml"));
+                            receiverClient.sendMessage("<Response><reply>SEND_MESSAGE</reply><body>" +
+                                    Base64.getEncoder().encodeToString(receiverFileContent) + "</body></Response>");
+                        } else {
+                            System.out.println(receiverName + " is offline. Message saved in their Account.xml");
+                        }
+                        break;
+                    case "GET_CHAT_HISTORY":
+                        String[] chatHistoryContent = extractContent(xmlMsg);
+                        String requestingUser = chatHistoryContent[0];
+
+                        try {
+                            File userFile = new File("src/main/resources/XMLFiles/" + requestingUser + "Account.xml");
+                            if (userFile.exists()) {
+                                byte[] fileContent = java.nio.file.Files.readAllBytes(userFile.toPath());
+                                String encodedContent = java.util.Base64.getEncoder().encodeToString(fileContent);
+                                sendMessage("<Response><reply>GET_CHAT_HISTORY</reply><body>" + encodedContent + "</body></Response>");
+                            } else {
+                                sendMessage("<Response><reply>GET_CHAT_HISTORY</reply><body>FILE_NOT_FOUND</body></Response>");
+                            }
+                        } catch (Exception e) {
+
+                            e.printStackTrace();
+                        }
+                        break;
                     case "ADD_FRIEND_REQUEST":
                         String[] addContent = extractContent(xmlMsg);
                         if (xmlHandler.addFriendRequest(addContent[0], addContent[1])) {
@@ -174,7 +234,7 @@ public class ClientThread implements Runnable {
         javax.xml.parsers.DocumentBuilderFactory factory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
         javax.xml.parsers.DocumentBuilder builder = factory.newDocumentBuilder();
         org.w3c.dom.Document doc = builder.parse(new ByteArrayInputStream(xmlMsg.getBytes("UTF-8")));
-        String[] content = doc.getElementsByTagName("content").item(0).getTextContent().split("waw");
+        String[] content = doc.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
         return content[0]; // username
     }
 
@@ -183,7 +243,7 @@ public class ClientThread implements Runnable {
         javax.xml.parsers.DocumentBuilderFactory factory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
         javax.xml.parsers.DocumentBuilder builder = factory.newDocumentBuilder();
         org.w3c.dom.Document doc = builder.parse(new ByteArrayInputStream(xmlMsg.getBytes("UTF-8")));
-        String[] content = doc.getElementsByTagName("content").item(0).getTextContent().split("waw");
+        String[] content = doc.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
         return content.length > 1 ? content[1] : ""; // return the message part after "waw"
     }
 
@@ -205,9 +265,9 @@ public class ClientThread implements Runnable {
         org.w3c.dom.Document doc = builder.parse(new java.io.ByteArrayInputStream(xmlMsg.getBytes("UTF-8")));
 
         if (doc.getElementsByTagName("content").getLength() > 0) {
-            return doc.getElementsByTagName("content").item(0).getTextContent().split("waw");
+            return doc.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
         } else {
-            return doc.getDocumentElement().getTextContent().split("waw");
+            return doc.getDocumentElement().getTextContent().split("!\\[]!");
         }
     }
 

@@ -10,6 +10,9 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.layout.AnchorPane;
 import javafx.geometry.Pos;
+import javafx.scene.layout.Region;
+import javafx.geometry.Insets;
+import javafx.scene.layout.Priority;
 
 public class ChatJFXController {
     @FXML
@@ -38,9 +41,6 @@ public class ChatJFXController {
 
     @FXML
     public void initialize() {
-        System.out.println("FXController initialized");
-        System.out.println("sendButton is " + (sendButton == null ? "null" : "ready"));
-
         if (sendButton != null) {
             sendButton.setOnAction(event -> {
                 if (sendButtonListener != null) {
@@ -48,7 +48,7 @@ public class ChatJFXController {
                 }
             });
         }
-        
+
         if (home != null) {
             home.setOnAction(event -> {
                 if (homeButtonListener != null) {
@@ -59,25 +59,72 @@ public class ChatJFXController {
     }
 
     public void addMessage(String message) {
+        addMessage(message, true);
+    }
+
+    public void addMessage(String message, boolean isSender) {
         javafx.application.Platform.runLater(() -> {
+            double maxBubbleWidth = 580.0 / 3.0;
+
             javafx.scene.control.Label messageLabel = new javafx.scene.control.Label(message);
-            messageLabel.setStyle("-fx-background-color: rgba(211, 211, 211, 0.7); -fx-padding: 8; -fx-background-radius: 10; -fx-text-fill: black; -fx-wrap-text: true;");
-            messageLabel.setMaxWidth(400); // Limit message width for better display
-            
-            // Create HBox to align message to the right
+            messageLabel.setWrapText(true);
+            messageLabel.setMaxWidth(maxBubbleWidth);
+            messageLabel.setPrefWidth(Region.USE_COMPUTED_SIZE);
+            messageLabel.setMinHeight(Region.USE_PREF_SIZE);
+            messageLabel.setPadding(new Insets(10, 15, 10, 15));
+
+            // Create message container
             javafx.scene.layout.HBox messageContainer = new javafx.scene.layout.HBox();
-            messageContainer.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
-            messageContainer.getChildren().add(messageLabel);
-            
+            messageContainer.setPadding(new Insets(5, 10, 5, 10));
+            messageContainer.setFillHeight(false);
+            messageContainer.setAlignment(Pos.TOP_CENTER);
+
+            if (isSender) {
+                // Sender messages (right side) - blue bubble
+                messageLabel.setStyle(
+                        "-fx-background-color: #007AFF; " +
+                                "-fx-text-fill: white; " +
+                                "-fx-background-radius: 18; " +
+                                "-fx-font-size: 14px;"
+                );
+
+                // Create spacer to push message to the right
+                Region spacer = new Region();
+                HBox.setHgrow(spacer, Priority.ALWAYS);
+
+                messageContainer.getChildren().addAll(spacer, messageLabel);
+
+            } else {
+                // Receiver messages (left side) - gray bubble
+                messageLabel.setStyle(
+                        "-fx-background-color: #E5E5EA; " +
+                                "-fx-text-fill: black; " +
+                                "-fx-background-radius: 18; " +
+                                "-fx-font-size: 14px;"
+                );
+
+                // Create spacer to keep message on the left
+                Region spacer = new Region();
+                HBox.setHgrow(spacer, Priority.ALWAYS);
+
+                messageContainer.getChildren().addAll(messageLabel, spacer);
+            }
+
             if (messagesArea != null) {
                 messagesArea.getChildren().add(messageContainer);
                 // Auto-scroll to bottom when new message is added
-                messagesArea.layout();
-                scrollPane.setVvalue(1.0);
+                javafx.application.Platform.runLater(() -> {
+                    scrollPane.setVvalue(1.0);
+                });
             }
         });
     }
-    
+
+    public void addChatMessage(String senderName, String message, String currentUser) {
+        boolean isSender = senderName.equals(currentUser);
+        addMessage(message, isSender);
+    }
+
     public void clearMessages() {
         javafx.application.Platform.runLater(() -> {
             if (messagesArea != null) {
@@ -89,14 +136,19 @@ public class ChatJFXController {
     public void setSendButtonListener(Runnable sendButtonListener) {
         this.sendButtonListener = sendButtonListener;
     }
-    
+
     public void setHomeButtonListener(Runnable homeButtonListener) {
         this.homeButtonListener = homeButtonListener;
     }
 
     // Getters for MVC access
+
+    public void setLabel(String label) {
+        this.label.setText(label);
+    }
     public TextField getMessageField() { return messageField; }
     public VBox getMessagesArea() { return messagesArea; }
     public Button getSendButton() { return sendButton; }
     public Button getHomeButton() { return home; }
+    public Label getReceiver() { return label; }
 }

@@ -1,17 +1,24 @@
 package Server;
 
 import org.w3c.dom.*;
+import org.xml.sax.SAXException;
+
 import javax.xml.parsers.*;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 public class ServerXMLHandler {
     private static final String FILE_PATH = "src/main/resources/XMLFiles/Users.xml";
+    private static String chatHistoryFile = "src/main/resources/XMLFiles/bobAccount.xml";
 
     public void registerUser(String username, String password) throws Exception {
         File file = new File(FILE_PATH);
@@ -84,7 +91,7 @@ public class ServerXMLHandler {
         doc.getDocumentElement().normalize();
         String type = doc.getElementsByTagName("type").item(0).getTextContent();
         String reply = "";
-        String[] content = doc.getElementsByTagName("content").item(0).getTextContent().split("waw");;
+        String[] content = doc.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");;
         switch (type){
             case "LOGIN":
                 String username = content[0];
@@ -126,21 +133,43 @@ public class ServerXMLHandler {
                 }
                 Element root = registerDoc.getDocumentElement();
                 Element user = registerDoc.createElement("user");
-                Element uname = doc.createElement("username");
-                uname.appendChild(doc.createTextNode(content[0]));
+                Element uname = registerDoc.createElement("username");
+                uname.appendChild(registerDoc.createTextNode(content[0]));
                 user.appendChild(uname);
-                Element pass = doc.createElement("password");
-                pass.appendChild(doc.createTextNode(content[1]));
+                Element pass = registerDoc.createElement("password");
+                pass.appendChild(registerDoc.createTextNode(content[1]));
                 user.appendChild(pass);
                 root.appendChild(user);
                 TransformerFactory tf = TransformerFactory.newInstance();
                 Transformer transformer = tf.newTransformer();
                 transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-                transformer.transform(new DOMSource(doc), new StreamResult(file));
+                transformer.transform(new DOMSource(registerDoc), new StreamResult(file));
                 reply = "REGISTER_SUCCESS";
                 break;
             case "SEND_MESSAGE":
+                //Parse the xml string
+                String sender = content[0];
+                String receiver = content[1];
+                String message = content[2];
+
+                updateXMLs(sender, sender, receiver, message);
+                updateXMLs(receiver, sender, receiver, message);
                 reply = "SEND_MESSAGE";
+                break;
+            case "GET_CHAT_HISTORY":
+                String requestingUser = content[0];
+                String friendName = content[1];
+                try {
+                    File userFile = new File("src/main/resources/XMLFiles/" + requestingUser + "Account.xml");
+                    if (userFile.exists()) {
+                        reply = "GET_CHAT_HISTORY";
+                    } else {
+                        reply = "FILE_NOT_FOUND";
+                    }
+                } catch (Exception e) {
+                    reply = e.getStackTrace().toString();
+                    e.printStackTrace();
+                }
                 break;
             case "CREATE_GROUP":
                 reply = "CREATE_GROUP";
@@ -156,6 +185,105 @@ public class ServerXMLHandler {
                 break;
         }
         return reply;
+    }
+
+    public void updateXMLs(String owner, String sender, String receiver, String msg) throws IOException, SAXException, ParserConfigurationException, TransformerException {
+        File file = new File("src/main/resources/XMLFiles/" + owner + "Account.xml");
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document doc;
+
+        if (file.exists()) {
+            doc = builder.parse(file);
+        } else {
+            doc = builder.newDocument();
+            Element root = doc.createElement("user");
+            doc.appendChild(root);
+        }
+
+        Element root = doc.getDocumentElement();
+
+        // Determine who the "other person" is from the owner's perspective
+        String otherPerson = owner.equals(sender) ? receiver : sender;
+
+        // find or create <friend>
+        NodeList friends = root.getElementsByTagName("friend");
+        Element targetFriend = null;
+        for (int i = 0; i < friends.getLength(); i++) {
+            Element f = (Element) friends.item(i);
+            String friendName = f.getElementsByTagName("username").item(0).getTextContent();
+            if (friendName.equals(otherPerson)) {
+                targetFriend = f;
+                break;
+            }
+        }
+
+        // If friend doesn't exist, create it
+        if (targetFriend == null) {
+            targetFriend = doc.createElement("friend");
+            Element username = doc.createElement("username");
+            username.appendChild(doc.createTextNode(otherPerson));
+            targetFriend.appendChild(username);
+            root.appendChild(targetFriend);
+        }
+
+        // find or create <chathistory>
+        Element chatHistory = null;
+        NodeList chList = targetFriend.getElementsByTagName("chathistory");
+        if (chList.getLength() > 0) {
+            chatHistory = (Element) chList.item(0);
+        } else {
+            chatHistory = doc.createElement("chathistory");
+            targetFriend.appendChild(chatHistory);
+        }
+
+        // add new chat
+        Element chat = doc.createElement("chat");
+
+        Element s = doc.createElement("sender");
+        s.appendChild(doc.createTextNode(sender));
+        chat.appendChild(s);
+
+        Element m = doc.createElement("msg");
+        m.appendChild(doc.createTextNode(msg));
+        chat.appendChild(m);
+
+        chatHistory.appendChild(chat);
+
+        saveDocument(doc, file);
+    }
+
+    private void removeEmptyTextNodes(Document doc) {
+        NodeList list = doc.getElementsByTagName("*"); // all elements
+        for (int i = 0; i < list.getLength(); i++) {
+            Node node = list.item(i);
+            Node child = node.getFirstChild();
+            while (child != null) {
+                Node next = child.getNextSibling();
+                if (child.getNodeType() == Node.TEXT_NODE && child.getTextContent().trim().isEmpty()) {
+                    node.removeChild(child);
+                }
+                child = next;
+            }
+        }
+    }
+
+
+    public String getSender(String xmlString) throws ParserConfigurationException, IOException, SAXException {
+        DocumentBuilderFactory stringFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder stringBuilder = stringFactory.newDocumentBuilder();
+        Document stringDoc = stringBuilder.parse(new ByteArrayInputStream(xmlString.getBytes("UTF-8")));
+        stringDoc.getDocumentElement().normalize();
+        String[] contentTag = stringDoc.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
+        return contentTag[0];
+    }
+    public String getReceiver(String xmlString) throws ParserConfigurationException, IOException, SAXException {
+        DocumentBuilderFactory stringFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder stringBuilder = stringFactory.newDocumentBuilder();
+        Document stringDoc = stringBuilder.parse(new ByteArrayInputStream(xmlString.getBytes("UTF-8")));
+        stringDoc.getDocumentElement().normalize();
+        String[] contentTag = stringDoc.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
+        return contentTag[1];
     }
 
     // FRIEND REQUEST FUNCTIONS
@@ -266,6 +394,19 @@ public class ServerXMLHandler {
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
         Transformer transformer = transformerFactory.newTransformer();
         transformer.transform(new DOMSource(doc), new StreamResult(new File(FILE_PATH)));
+    }
+
+    private void saveDocument(Document doc, File file) throws TransformerException {
+        removeEmptyTextNodes(doc);
+        TransformerFactory tf = TransformerFactory.newInstance();
+        Transformer transformer = tf.newTransformer();
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+        transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+        transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+
+        transformer.transform(new DOMSource(doc), new StreamResult(file));
     }
 
     // GROUP MANAGEMENT FUNCTIONS
