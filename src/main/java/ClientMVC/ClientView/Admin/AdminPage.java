@@ -10,7 +10,6 @@ public class AdminPage extends Application {
 
     private static Stage primaryStage;
     private AdminPageJFXController jfxController;
-    private static AdminPage instance;
 
     @Override
     public void start(Stage stage) throws Exception {
@@ -26,13 +25,5 @@ public class AdminPage extends Application {
 
     public AdminPageJFXController getFXController() {
         return jfxController;
-    }
-
-    public static AdminPage getInstance() {
-        return instance;
-    }
-
-    public static void main(String[] args) {
-        launch(args);
     }
 }
