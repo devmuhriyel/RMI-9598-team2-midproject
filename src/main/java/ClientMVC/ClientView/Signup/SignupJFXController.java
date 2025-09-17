@@ -1,10 +1,12 @@
 package ClientMVC.ClientView.Signup;
 
-import Server.ServerXMLHandler; // import your XML handler
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 
 public class SignupJFXController {
+
+    @FXML
+    private Hyperlink signInLink;
 
     @FXML
     private TextField usernameField;
@@ -19,7 +21,7 @@ public class SignupJFXController {
     private TextField emailField;
 
     @FXML
-    private PasswordField passwordField; //add this if you want password input
+    private PasswordField passwordField;
 
     @FXML
     private Button signupButton;
@@ -27,45 +29,64 @@ public class SignupJFXController {
     @FXML
     private CheckBox termsCheckbox;
 
+    private Runnable signInListener;
+    private Runnable signupButtonListener;
+
     @FXML
     private void initialize() {
-        signupButton.setOnAction(event -> handleSignup());
+        signupButton.setOnAction(event -> {
+            if (signupButtonListener != null) {
+                signupButtonListener.run();
+            }
+        });
+
+        signInLink.setOnAction(e -> {
+            if (signInListener != null) {
+                signInListener.run();
+            }
+        });
+    }
+    public void setSignupButtonListener(Runnable listener) {
+        this.signupButtonListener = listener;
     }
 
-    private void handleSignup() {
-        String username = usernameField.getText();
-        String firstName = firstNameField.getText();
-        String lastName = lastNameField.getText();
-        String email = emailField.getText();
-        String password = passwordField.getText(); // collect password
-
-        // Check Terms
-        if (!termsCheckbox.isSelected()) {
-            showAlert("Please agree to the Terms of Service.");
-            return;
-        }
-
-        // Validate inputs
-        if (username.isEmpty() || firstName.isEmpty() || lastName.isEmpty() || email.isEmpty() || password.isEmpty()) {
-            showAlert("Please fill in all fields.");
-            return;
-        }
-
-        // Save user into XML
-        try {
-//            UserXmlHandler.registerUser(username, firstName, lastName, password);
-            showAlert("Signup successful!\nWelcome, " + firstName + "!");
-        } catch (Exception e) {
-            e.printStackTrace();
-            showAlert("Failed to register user.");
-        }
+    public void setSignInListener(Runnable listener) {
+        this.signInListener = listener;
     }
 
-    private void showAlert(String message) {
+    public String getUsername() {
+        return usernameField.getText();
+    }
+
+    public String getFirstName() {
+        return firstNameField.getText();
+    }
+
+    public String getLastName() {
+        return lastNameField.getText();
+    }
+
+    public String getEmail() {
+        return emailField.getText();
+    }
+
+    public String getPassword() {
+        return passwordField.getText();
+    }
+
+    public boolean isTermsAccepted() {
+        return termsCheckbox.isSelected();
+    }
+
+    public void showAlert(String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Signup");
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    public Button getSignupButton() {
+        return signupButton;
     }
 }

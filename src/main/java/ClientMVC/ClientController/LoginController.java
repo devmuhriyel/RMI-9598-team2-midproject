@@ -3,10 +3,12 @@ package ClientMVC.ClientController;
 import ClientMVC.ClientModel.ChatModel;
 import ClientMVC.ClientModel.HomeModel;
 import ClientMVC.ClientModel.LoginModel;
+import ClientMVC.ClientModel.SignupModel;
 import ClientMVC.ClientView.Chat.ChatView;
 import ClientMVC.ClientView.Home.HomeView;
 import ClientMVC.ClientView.Login.LoginJFXController;
 import ClientMVC.ClientView.Login.LoginView;
+import ClientMVC.ClientView.Signup.SignupView;
 import ClientMVC.UserXMLHandler;
 import javafx.application.Platform;
 import javafx.stage.Stage;
@@ -17,7 +19,6 @@ public class LoginController {
     private final LoginJFXController loginJFXController;
     private final LoginView view;
     private final LoginModel model;
-    private final Thread modelThread;
     private UserXMLHandler userXMLHandler = new UserXMLHandler();
 
     public LoginController(LoginView loginView, LoginModel loginModel, LoginJFXController loginJFXController) {
@@ -25,18 +26,42 @@ public class LoginController {
         this.view = loginView;
         this.model = loginModel;
         model.setMessageListener(this::login);
-        modelThread = new Thread(model, "Login Listener");
-        modelThread.start();
+        new Thread(model, "Login Listener").start();
         initialize();
     }
 
     private void initialize() {
         loginJFXController.setLoginButtonListener(() -> {
+
+            //Disable multi click to avoid multi call for the next GUI
+            loginJFXController.getLoginButton().setDisable(true);
+
             String username = loginJFXController.getUsername();
             String password = loginJFXController.getPassword();
             model.login(username, password);
             model.setName(username);
         });
+
+        loginJFXController.setSignupLinkListener(() -> {
+            Platform.runLater(() -> {
+                try {
+                    // close login stage
+                    LoginView.getPrimaryStage().close();
+
+                    // open signup stage
+                    SignupView signupView = new SignupView();
+                    Stage signupStage = new Stage();
+                    signupView.start(signupStage);
+
+                    SignupModel signupModel = new SignupModel(model.getSocket()); // reuse socket
+                    new SignupController(signupModel, signupView, signupView.getFXController());
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            });
+        });
+
+
     }
 
     public void login(String msg) {
@@ -56,13 +81,14 @@ public class LoginController {
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-
                 });
             } else if (reply != null && reply.equals("LOGIN_FAILED")) {
                 System.out.println("Login failed!");
                 Platform.runLater(() -> {
                     System.out.println("Invalid username or password");
                 });
+            } else {
+                System.out.println("Received non-login response or invalid XML: " + msg);
             }
         } catch (Exception e) {
             System.out.println("Error processing login response: " + e.getMessage());
