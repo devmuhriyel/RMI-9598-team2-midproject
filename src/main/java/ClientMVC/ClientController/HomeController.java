@@ -6,9 +6,14 @@ import ClientMVC.ClientView.Home.HomeView;
 import ClientMVC.ClientModel.ChatModel;
 import ClientMVC.ClientView.Chat.ChatView;
 import ClientMVC.ClientController.ChatController;
+import javafx.application.Platform;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class HomeController {
     private final HomeModel model;
@@ -29,6 +34,18 @@ public class HomeController {
 
         ui.setFriends(model.getFriends());
         ui.setGroups(model.getGroups());
+
+        // For search
+        ui.setSearchListener(queryText -> {
+            String q = (queryText == null) ? "" : queryText.trim().toLowerCase();
+            if (q.isEmpty()) {
+                ui.renderFriends(ui.getOriginalFriends());
+                ui.renderGroups(ui.getOriginalGroups());
+                return;
+            }
+            ui.renderFriends(filterList(ui.getOriginalFriends(), q));
+            ui.renderGroups(filterList(ui.getOriginalGroups(), q));
+        });
 
         // Handle friend clicks (existing functionality)
         ui.setFriendClickListener(friendName -> {
@@ -82,5 +99,16 @@ public class HomeController {
         chatController.loadGroupChatHistory(model.getUsername(), groupName);
 
         new Thread(chatModel, "Group Chat Listener").start();
+    }
+
+
+    private List<String> filterList(List<String> source, String queryLower) {
+        List<String> result = new ArrayList<>();
+        for (String item : source) {
+            if (item != null && item.toLowerCase().contains(queryLower)) {
+                result.add(item);
+            }
+        }
+        return result;
     }
 }

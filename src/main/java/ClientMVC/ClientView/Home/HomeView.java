@@ -15,6 +15,8 @@ import javafx.stage.Stage;
 public class HomeView extends Application {
     private Button sendButton;
     private TextField messageField;
+    private TextField searchField;
+    private TextField searchButton;
     private VBox messagesArea;
     private HomeJFXController homeJFXController;
     private LoginJFXController loginJFXController;
