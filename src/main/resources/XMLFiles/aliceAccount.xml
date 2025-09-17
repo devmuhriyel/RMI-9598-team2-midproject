@@ -147,6 +147,30 @@
                 <sender>bob</sender>
                 <msg>hellllllllloooo</msg>
             </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>bob istg</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>ano ba alice</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>aaaaaa</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>ughhhhhh</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>please gumana ka na</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>it's not working!!!!!!!!!!!!</msg>
+            </chat>
         </chathistory>
     </friend>
     <friend>
