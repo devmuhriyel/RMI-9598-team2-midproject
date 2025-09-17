@@ -59,6 +59,18 @@
                 <sender>bob</sender>
                 <msg>ALICE PLEASE I MISS YOU</msg>
             </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>helu</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>hi bob</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>anyway</msg>
+            </chat>
         </chathistory>
     </friend>
 </user>

@@ -87,8 +87,6 @@ public class LoginController {
                 Platform.runLater(() -> {
                     System.out.println("Invalid username or password");
                 });
-            } else {
-                System.out.println("Received non-login response or invalid XML: " + msg);
             }
         } catch (Exception e) {
             System.out.println("Error processing login response: " + e.getMessage());

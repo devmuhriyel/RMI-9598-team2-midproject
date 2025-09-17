@@ -46,7 +46,6 @@ public class LoginModel implements Runnable {
         try {
             String msg;
             while ((msg = readMSG.readLine()) != null) {
-                System.out.println("Received: " + msg);
                 if (msg.trim().startsWith("<")) {
                     String finalMsg = msg.trim();
 
@@ -74,13 +73,7 @@ public class LoginModel implements Runnable {
                                 case "LOGIN_FAILED":
                                     System.out.println("Login failed: " + xmlHandler.getResponseBody(finalMsg));
                                     break;
-
-                                default:
-                                    System.out.println("Received response: " + reply);
-                                    break;
                             }
-                        } else {
-                            System.out.println("Received non-login response or invalid XML: " + finalMsg);
                         }
                     } catch (Exception e) {
                         System.out.println("Error parsing server response: " + e.getMessage());
