@@ -91,6 +91,22 @@
                 <sender>bob</sender>
                 <msg>yoooooo</msg>
             </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>yeahhhhh?</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>yeahhhh??</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>hello bob</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>hello carl</msg>
+            </chat>
         </chathistory>
     </friend>
     <group>
