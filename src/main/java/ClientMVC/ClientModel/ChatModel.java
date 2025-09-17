@@ -33,6 +33,19 @@ public class ChatModel implements Runnable {
             e.printStackTrace();
         }
     }
+    // Add this method to your ChatModel class
+
+    public void sendGroupMessage(String message, String groupName) {
+        try {
+            String xmlMessage = "<Request><type>SEND_GROUP_MESSAGE</type><content>" + name + "![]!" + groupName + "![]!" + message + "</content></Request>";
+            System.out.println(xmlMessage);
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     public void setMessageListener(Consumer<String> listener) {
         this.messageListener = listener;

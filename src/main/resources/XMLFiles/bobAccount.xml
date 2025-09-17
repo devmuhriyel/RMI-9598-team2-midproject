@@ -71,6 +71,41 @@
                 <sender>bob</sender>
                 <msg>anyway</msg>
             </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>no</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>no</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>hey alice</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>hi</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>yoooooo</msg>
+            </chat>
         </chathistory>
     </friend>
+    <group>
+        <groupname>Project Team</groupname>
+        <username>charlie</username>
+        <username>alice</username>
+        <chathistory>
+            <chat>
+                <sender>charlie</sender>
+                <msg>Hello, sino leader natin?</msg>
+            </chat>
+            <chat>
+                <sender>charlie</sender>
+                <msg>si bOb</msg>
+            </chat>
+        </chathistory>
+    </group>
 </user>

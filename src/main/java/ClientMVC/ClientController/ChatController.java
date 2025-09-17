@@ -1,6 +1,5 @@
 package ClientMVC.ClientController;
 
-
 import ClientMVC.ClientModel.ChatModel;
 import ClientMVC.ClientView.Chat.ChatView;
 import ClientMVC.ClientView.Chat.ChatJFXController;
@@ -21,7 +20,8 @@ public class ChatController {
         setupListeners();
         mdl.setMessageListener(msg -> {
             javafx.application.Platform.runLater(() -> {
-                chatJFXController.addMessage(msg);
+                // For incoming messages, assume they're from the friend (not sender)
+                chatJFXController.addMessage(msg, false);
             });
         });
     }
@@ -39,18 +39,59 @@ public class ChatController {
         String textToSend = chatJFXController.getMessageField().getText();
         String receiver = chatJFXController.getReceiver().getText();
         if (!textToSend.isEmpty()) {
-            chatJFXController.addMessage(" " + textToSend);
-            mdl.sendMSG(textToSend, chatJFXController.getReceiver().getText());
+            // Add message as sender (true)
+            chatJFXController.addMessage(textToSend, true);
+            mdl.sendMSG(textToSend, receiver);
             chatJFXController.getMessageField().clear();
         }
     }
+
+
     public void loadChatHistory(String currentUser, String friend) {
         UserXMLHandler xmlHandler = new UserXMLHandler();
-        List<String> history = xmlHandler.getChatHistory(currentUser, friend);
+        List<UserXMLHandler.ChatMessage> history = xmlHandler.getChatHistoryWithSenders(currentUser, friend);
 
         chatJFXController.clearMessages();
-        for (String msg : history) {
-            chatJFXController.addMessage(msg);
+        for (UserXMLHandler.ChatMessage chatMsg : history) {
+            boolean isSender = chatMsg.getSender().equals(currentUser);
+            chatJFXController.addChatMessage(chatMsg.getSender(), chatMsg.getMessage(), currentUser);
+        }
+    }
+
+    public void loadGroupChatHistory(String currentUser, String groupName) {
+        UserXMLHandler xmlHandler = new UserXMLHandler();
+        List<UserXMLHandler.ChatMessage> history = xmlHandler.getGroupChatHistoryWithSenders(currentUser, groupName);
+
+        chatJFXController.clearMessages();
+        for (UserXMLHandler.ChatMessage chatMsg : history) {
+            boolean isSender = chatMsg.getSender().equals(currentUser);
+            chatJFXController.addChatMessage(chatMsg.getSender(), chatMsg.getMessage(), currentUser);
+        }
+    }
+
+    // You might also want to modify the sendMessage method to handle groups
+    public void sendGroupMessage(String message, String groupName) {
+        if (mdl != null) {
+            mdl.sendGroupMessage(message, groupName);
+        }
+    }
+
+    // Inner class to hold chat message data
+    public static class ChatMessage {
+        private final String sender;
+        private final String message;
+
+        public ChatMessage(String sender, String message) {
+            this.sender = sender;
+            this.message = message;
+        }
+
+        public String getSender() {
+            return sender;
+        }
+
+        public String getMessage() {
+            return message;
         }
     }
 }

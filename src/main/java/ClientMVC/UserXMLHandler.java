@@ -191,6 +191,119 @@ public class UserXMLHandler {
         }
     }
 
+    // Add these methods to your UserXMLHandler class
+
+    public List<ChatMessage> getGroupChatHistoryWithSenders(String username, String groupName) {
+        List<ChatMessage> messages = new ArrayList<>();
+        try {
+            File file = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+            doc.getDocumentElement().normalize();
+
+            NodeList groupNodes = doc.getElementsByTagName("group");
+            for (int i = 0; i < groupNodes.getLength(); i++) {
+                Element groupElement = (Element) groupNodes.item(i);
+                String gName = groupElement.getElementsByTagName("groupname").item(0).getTextContent();
+
+                if (gName.equals(groupName)) {
+                    NodeList chatNodes = groupElement.getElementsByTagName("chat");
+                    for (int j = 0; j < chatNodes.getLength(); j++) {
+                        Element chatElement = (Element) chatNodes.item(j);
+                        String sender = chatElement.getElementsByTagName("sender").item(0).getTextContent();
+                        String msg = chatElement.getElementsByTagName("msg").item(0).getTextContent();
+                        messages.add(new ChatMessage(sender, msg));
+                    }
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return messages;
+    }
+
+    public List<String> getGroupChatHistory(String username, String groupName) {
+        List<String> messages = new ArrayList<>();
+        try {
+            File file = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+            doc.getDocumentElement().normalize();
+
+            NodeList groupNodes = doc.getElementsByTagName("group");
+            for (int i = 0; i < groupNodes.getLength(); i++) {
+                Element groupElement = (Element) groupNodes.item(i);
+                String gName = groupElement.getElementsByTagName("groupname").item(0).getTextContent();
+
+                if (gName.equals(groupName)) {
+                    NodeList chatNodes = groupElement.getElementsByTagName("chat");
+                    for (int j = 0; j < chatNodes.getLength(); j++) {
+                        Element chatElement = (Element) chatNodes.item(j);
+                        String sender = chatElement.getElementsByTagName("sender").item(0).getTextContent();
+                        String msg = chatElement.getElementsByTagName("msg").item(0).getTextContent();
+                        messages.add(sender + ": " + msg);
+                    }
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return messages;
+    }
+
+    public List<ChatMessage> getChatHistoryWithSenders(String username, String friendName) {
+        List<ChatMessage> messages = new ArrayList<>();
+        try {
+            File file = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+            doc.getDocumentElement().normalize();
+
+            NodeList friendNodes = doc.getElementsByTagName("friend");
+            for (int i = 0; i < friendNodes.getLength(); i++) {
+                Element friendElement = (Element) friendNodes.item(i);
+                String fName = friendElement.getElementsByTagName("username").item(0).getTextContent();
+
+                if (fName.equals(friendName)) {
+                    NodeList chatNodes = friendElement.getElementsByTagName("chat");
+                    for (int j = 0; j < chatNodes.getLength(); j++) {
+                        Element chatElement = (Element) chatNodes.item(j);
+                        String sender = chatElement.getElementsByTagName("sender").item(0).getTextContent();
+                        String msg = chatElement.getElementsByTagName("msg").item(0).getTextContent();
+                        messages.add(new ChatMessage(sender, msg));
+                    }
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return messages;
+    }
+
+    public static class ChatMessage {
+        private final String sender;
+        private final String message;
+
+        public ChatMessage(String sender, String message) {
+            this.sender = sender;
+            this.message = message;
+        }
+
+        public String getSender() {
+            return sender;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+    }
+
     // Inner class to hold server response data
     public static class ServerResponse {
         private final String status;

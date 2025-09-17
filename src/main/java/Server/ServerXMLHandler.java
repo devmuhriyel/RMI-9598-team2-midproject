@@ -180,11 +180,137 @@ public class ServerXMLHandler {
             case "LIST_GROUPS":
                 reply = "LIST_GROUPS";
                 break;
-            case "SEND_GROUP_MESSAGE":
-                reply = "SEND_GROUP_MESSAGE";
-                break;
         }
         return reply;
+    }
+
+    private void handleGroupMessage(String sender, String groupName, String message) {
+        try {
+            List<String> groupMembers = getGroupMembers(groupName);
+
+            // Send message to all group members (including sender for their own record)
+            for (String member : groupMembers) {
+                updateGroupXML(member, sender, groupName, message);
+            }
+
+            System.out.println("Group message sent from " + sender + " to group " + groupName + ": " + message);
+
+        } catch (Exception e) {
+            System.err.println("Error handling group message: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public List<String> getGroupMembers(String groupName) {
+        List<String> members = new ArrayList<>();
+        try {
+            Document doc = loadDocument();
+            NodeList groupList = doc.getElementsByTagName("group");
+
+            for (int i = 0; i < groupList.getLength(); i++) {
+                Element group = (Element) groupList.item(i);
+                if (group.getAttribute("name").equals(groupName)) {
+                    // Add group creator
+                    String creator = group.getAttribute("creator");
+                    if (creator != null && !creator.isEmpty()) {
+                        members.add(creator);
+                    }
+
+                    // Add all members
+                    NodeList memberList = group.getElementsByTagName("member");
+                    for (int j = 0; j < memberList.getLength(); j++) {
+                        Element member = (Element) memberList.item(j);
+                        String memberName = member.getAttribute("username");
+                        if (!members.contains(memberName)) { // Avoid duplicates
+                            members.add(memberName);
+                        }
+                    }
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error getting group members: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return members;
+    }
+
+    public void updateGroupXML(String owner, String sender, String groupName, String msg) throws IOException, SAXException, ParserConfigurationException, TransformerException {
+        File file = new File("src/main/resources/XMLFiles/" + owner + "Account.xml");
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document doc;
+
+        if (file.exists()) {
+            doc = builder.parse(file);
+        } else {
+            doc = builder.newDocument();
+            Element root = doc.createElement("user");
+            doc.appendChild(root);
+        }
+
+        Element root = doc.getDocumentElement();
+
+        // Find or create <group> element for this group
+        NodeList groups = root.getElementsByTagName("group");
+        Element targetGroup = null;
+        for (int i = 0; i < groups.getLength(); i++) {
+            Element g = (Element) groups.item(i);
+            NodeList groupNameNodes = g.getElementsByTagName("groupname");
+            if (groupNameNodes.getLength() > 0) {
+                String gName = groupNameNodes.item(0).getTextContent();
+                if (gName.equals(groupName)) {
+                    targetGroup = g;
+                    break;
+                }
+            }
+        }
+
+        // If group doesn't exist in user's XML, create it
+        if (targetGroup == null) {
+            targetGroup = doc.createElement("group");
+
+            Element groupNameElement = doc.createElement("groupname");
+            groupNameElement.appendChild(doc.createTextNode(groupName));
+            targetGroup.appendChild(groupNameElement);
+
+            // Add other group members (optional - for reference)
+            List<String> members = getGroupMembers(groupName);
+            for (String member : members) {
+                if (!member.equals(owner)) { // Don't add self
+                    Element memberElement = doc.createElement("username");
+                    memberElement.appendChild(doc.createTextNode(member));
+                    targetGroup.appendChild(memberElement);
+                }
+            }
+
+            root.appendChild(targetGroup);
+        }
+
+        // Find or create <chathistory> in the group
+        Element chatHistory = null;
+        NodeList chList = targetGroup.getElementsByTagName("chathistory");
+        if (chList.getLength() > 0) {
+            chatHistory = (Element) chList.item(0);
+        } else {
+            chatHistory = doc.createElement("chathistory");
+            targetGroup.appendChild(chatHistory);
+        }
+
+        // Add new chat message
+        Element chat = doc.createElement("chat");
+
+        Element s = doc.createElement("sender");
+        s.appendChild(doc.createTextNode(sender));
+        chat.appendChild(s);
+
+        Element m = doc.createElement("msg");
+        m.appendChild(doc.createTextNode(msg));
+        chat.appendChild(m);
+
+        chatHistory.appendChild(chat);
+
+        saveDocument(doc, file);
     }
 
     public void updateXMLs(String owner, String sender, String receiver, String msg) throws IOException, SAXException, ParserConfigurationException, TransformerException {

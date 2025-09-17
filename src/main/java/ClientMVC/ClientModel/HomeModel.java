@@ -42,6 +42,13 @@ public class HomeModel implements Runnable{
                                     userXMLHandler.saveUpdatedAccountXML(username, body);
                                 }
                                 break;
+                            case "GET_GROUP_CHAT_HISTORY":
+                                // Handle group chat history response
+                                String groupBody = userXMLHandler.getBody(msg);
+                                if (groupBody != null && !groupBody.isEmpty()) {
+                                    userXMLHandler.saveUpdatedAccountXML(username, groupBody);
+                                }
+                                break;
                             case "SEND_MESSAGE":
                                 // Handle incoming messages
                                 if (messageListener != null) {
@@ -60,6 +67,7 @@ public class HomeModel implements Runnable{
             e.printStackTrace();
         }
     }
+
 
     //MVC Methods
     public void requestChatHistory(String friendName) {
@@ -84,6 +92,21 @@ public class HomeModel implements Runnable{
 
     public void setMessageListener(Consumer<String> messageListener) {
         this.messageListener = messageListener;
+    }
+
+    // Add this method to your HomeModel class
+
+    public void requestGroupChatHistory(String groupName) {
+        try {
+            String xmlMessage = "<Request><type>GET_GROUP_CHAT_HISTORY</type><content>" +
+                    username + "![]!" + groupName + "</content></Request>";
+            System.out.println(xmlMessage);
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     //GETTERS AND SETTERS

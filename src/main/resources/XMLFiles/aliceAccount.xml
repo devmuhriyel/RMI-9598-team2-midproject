@@ -71,6 +71,26 @@
                 <sender>bob</sender>
                 <msg>anyway</msg>
             </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>no</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>no</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>hey alice</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>hi</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>yoooooo</msg>
+            </chat>
         </chathistory>
     </friend>
 </user>

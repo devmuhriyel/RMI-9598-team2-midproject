@@ -23,6 +23,7 @@ public class HomeJFXController {
     @FXML
     private Label userLabel;
 
+    private Consumer<String> groupClickListener;
     private Runnable userProfileButtonListener;
     private Consumer<String> friendClickListener;
 
@@ -45,6 +46,9 @@ public class HomeJFXController {
 
     public void setFriendClickListener(Consumer<String> friendClickListener) {
         this.friendClickListener = friendClickListener;
+    }
+    public void setGroupClickListener(Consumer<String> groupClickListener) {
+        this.groupClickListener = groupClickListener;
     }
 
 
@@ -81,6 +85,9 @@ public class HomeJFXController {
                 Button groupBtn = new Button("📁 " + group);
                 groupBtn.setMaxWidth(Double.MAX_VALUE);
                 groupBtn.setOnAction(event -> {
+                    if (groupClickListener != null) {
+                        groupClickListener.accept(group);
+                    }
                     System.out.println("Selected group: " + group);
                 });
                 messagesArea1.getChildren().add(groupBtn);

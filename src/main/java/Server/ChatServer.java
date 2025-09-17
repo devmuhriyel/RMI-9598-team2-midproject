@@ -1,6 +1,7 @@
 package Server;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Scanner;
@@ -44,7 +45,8 @@ public class ChatServer {
 
     //TYPE EXIT IF CLOSEEEE OR PWEDE NAMAN YUNG STOP BUTTON (Wala maangas lang kaya i added it :>)
     public static void main(String[] args) throws IOException {
-        ServerSocket serverSocket = new ServerSocket(1234);
+        InetAddress bindAddress = InetAddress.getByName("26.141.158.76");
+        ServerSocket serverSocket = new ServerSocket(1234, 10 ,bindAddress);
         ChatServer chatServer = new ChatServer(serverSocket);
         chatServer.start();
 

@@ -3,7 +3,6 @@ package ClientMVC.ClientController;
 import ClientMVC.ClientModel.HomeModel;
 import ClientMVC.ClientView.Home.HomeJFXController;
 import ClientMVC.ClientView.Home.HomeView;
-
 import ClientMVC.ClientModel.ChatModel;
 import ClientMVC.ClientView.Chat.ChatView;
 import ClientMVC.ClientController.ChatController;
@@ -31,11 +30,21 @@ public class HomeController {
         ui.setFriends(model.getFriends());
         ui.setGroups(model.getGroups());
 
+        // Handle friend clicks (existing functionality)
         ui.setFriendClickListener(friendName -> {
             try {
-
                 openChatWithFriend(friendName);
                 view.openChatWithFriend();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        // Handle group clicks (new functionality)
+        ui.setGroupClickListener(groupName -> {
+            try {
+                openGroupChat(groupName);
+                view.openChatWithFriend(); // Reuse the same method to close current view
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -43,7 +52,6 @@ public class HomeController {
     }
 
     private void openChatWithFriend(String friendName) throws IOException {
-
         model.requestChatHistory(friendName);
         ChatView chatView = new ChatView();
         Stage stage = new Stage();
@@ -54,6 +62,25 @@ public class HomeController {
         ChatController chatController = new ChatController(chatModel, chatView, chatView.getFXController());
         chatController.loadChatHistory(model.getUsername(), friendName);
         new Thread(chatModel, "Chat Listener").start();
+    }
 
+    private void openGroupChat(String groupName) throws IOException {
+        // Request group chat history from server
+        model.requestGroupChatHistory(groupName);
+
+        // Create new chat view
+        ChatView chatView = new ChatView();
+        Stage stage = new Stage();
+        chatView.start(stage);
+        chatView.getFXController().setLabel("Group: " + groupName);
+
+        // Create chat model and controller
+        ChatModel chatModel = new ChatModel(model.getSocket(), model.getUsername());
+        ChatController chatController = new ChatController(chatModel, chatView, chatView.getFXController());
+
+        // Load group chat history
+        chatController.loadGroupChatHistory(model.getUsername(), groupName);
+
+        new Thread(chatModel, "Group Chat Listener").start();
     }
 }
