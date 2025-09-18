@@ -115,33 +115,36 @@ public class ServerXMLHandler {
                     reply = "LOGIN_FAILED";
                 }
                 break;
-            case "REGISTER":
-                File file = new File(FILE_PATH);
-                DocumentBuilderFactory registerFactory = DocumentBuilderFactory.newInstance();
-                DocumentBuilder registerBuilder = registerFactory.newDocumentBuilder();
-                Document registerDoc;
-                if (file.exists()) {
-                    registerDoc = registerBuilder.parse(file);
-                } else {
-                    registerDoc = registerBuilder.newDocument();
-                    Element root = registerDoc.createElement("users");
-                    registerDoc.appendChild(root);
+            case "REGISTER": {
+                // Get username and password either from content or XML tags
+                username = (content.length >= 2)
+                        ? content[0].trim()
+                        : (doc.getElementsByTagName("username").getLength() > 0
+                        ? doc.getElementsByTagName("username").item(0).getTextContent().trim()
+                        : null);
+
+                password = (content.length >= 2)
+                        ? content[1].trim()
+                        : (doc.getElementsByTagName("password").getLength() > 0
+                        ? doc.getElementsByTagName("password").item(0).getTextContent().trim()
+                        : null);
+
+                if (username == null || username.isEmpty() || password == null || password.isEmpty()) {
+                    reply = "REGISTER_FAILED";
+                    break;
                 }
-                Element root = registerDoc.getDocumentElement();
-                Element user = registerDoc.createElement("user");
-                Element uname = registerDoc.createElement("username");
-                uname.appendChild(registerDoc.createTextNode(content[0]));
-                user.appendChild(uname);
-                Element pass = registerDoc.createElement("password");
-                pass.appendChild(registerDoc.createTextNode(content[1]));
-                user.appendChild(pass);
-                root.appendChild(user);
-                TransformerFactory tf = TransformerFactory.newInstance();
-                Transformer transformer = tf.newTransformer();
-                transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-                transformer.transform(new DOMSource(registerDoc), new StreamResult(file));
-                reply = "REGISTER_SUCCESS";
+
+                synchronized (this) {
+                    if (userExists(username)) {
+                        reply = "USER_EXISTS";
+                    } else {
+                        boolean saved = addUserToDocument(username, password);
+                        reply = saved ? "REGISTER_SUCCESS" : "REGISTER_FAILED";
+                    }
+
+                }
                 break;
+            }
             case "SEND_MESSAGE":
                 //Parse the xml string
                 String sender = content[0];
@@ -651,6 +654,87 @@ public class ServerXMLHandler {
                     }
                 }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    //This forda checker ng Signup
+    private boolean userExists(String username) {
+        try {
+            File file = new File(FILE_PATH);
+            if (!file.exists()) return false;
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+            NodeList users = doc.getElementsByTagName("user");
+
+            for (int i = 0; i < users.getLength(); i++) {
+                Node userNode = users.item(i);
+                if (userNode.getNodeType() == Node.ELEMENT_NODE) {
+                    Element userElement = (Element) userNode;
+                    String uname = userElement.getElementsByTagName("username")
+                            .item(0).getTextContent()
+                            .trim();
+                    if (uname.equalsIgnoreCase(username.trim())) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    //Pati This forda checker of the Signup
+    private boolean addUserToDocument(String username, String password) {
+        try {
+            File file = new File(FILE_PATH);
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc;
+
+            if (file.exists()) {
+                doc = builder.parse(file);
+            } else {
+                doc = builder.newDocument();
+                Element root = doc.createElement("users");
+                doc.appendChild(root);
+            }
+
+            Element root = doc.getDocumentElement();
+
+            // Double check before inserting
+            if (userExists(username)) {
+                return false; // already exists
+            }
+
+            // Create new <user>
+            Element userElement = doc.createElement("user");
+
+            Element uname = doc.createElement("username");
+            uname.appendChild(doc.createTextNode(username.trim()));
+            userElement.appendChild(uname);
+
+            Element pass = doc.createElement("password");
+            pass.appendChild(doc.createTextNode(password.trim()));
+            userElement.appendChild(pass);
+
+            root.appendChild(userElement);
+
+            // Save back to file (no ugly whitespace)
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2"); // clean indent
+            DOMSource source = new DOMSource(doc);
+            StreamResult result = new StreamResult(file);
+            transformer.transform(source, result);
+
+            return true;
         } catch (Exception e) {
             e.printStackTrace();
         }
