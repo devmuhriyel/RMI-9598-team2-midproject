@@ -327,6 +327,14 @@
                 <sender>alice</sender>
                 <msg>bavsfdghasdhgasdas</msg>
             </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>haaaaaaaaaaaaaaaa</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>hello carl</msg>
+            </chat>
         </chathistory>
     </friend>
     <group>

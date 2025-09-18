@@ -144,8 +144,8 @@ public class HomeJFXController {
         Platform.runLater(() -> {
             messagesArea1.getChildren().clear();
 
-            // Always show Community Chat first
-            Button communityBtn = new Button("🌐 Community Chat");
+            // Always show Community Chat first (this is the global chat)
+            Button communityBtn = new Button("Community Chat");
             communityBtn.setMaxWidth(Double.MAX_VALUE);
             communityBtn.setStyle("-fx-background-color: #e8f5e8; -fx-text-fill: black; -fx-padding: 10;");
             communityBtn.setOnAction(event -> {
@@ -159,7 +159,7 @@ public class HomeJFXController {
             // Add user's actual groups if any
             if (groups != null && !groups.isEmpty()) {
                 for (String group : groups) {
-                    Button groupBtn = new Button("📁 " + group);
+                    Button groupBtn = new Button("👥 " + group);
                     groupBtn.setMaxWidth(Double.MAX_VALUE);
                     groupBtn.setOnAction(event -> {
                         if (groupClickListener != null) {
@@ -170,16 +170,17 @@ public class HomeJFXController {
                     messagesArea1.getChildren().add(groupBtn);
                 }
             } else {
-                // Show placeholder groups (excluding Community Chat since it's already added)
-                List<String> otherPlaceholders = Arrays.asList("General Chat", "Project Team", "Study Group");
+
+                List<String> otherPlaceholders = Arrays.asList("Project Team", "Study Group");
                 for (String group : otherPlaceholders) {
-                    Button groupBtn = new Button("📁 " + group);
+                    Button groupBtn = new Button("👥 " + group);
                     groupBtn.setMaxWidth(Double.MAX_VALUE);
+                    groupBtn.setStyle("-fx-opacity: 0.6;"); // Make them look inactive/placeholder
                     groupBtn.setOnAction(event -> {
                         if (groupClickListener != null) {
                             groupClickListener.accept(group);
                         }
-                        System.out.println("Selected group: " + group);
+                        System.out.println("Selected placeholder group: " + group);
                     });
                     messagesArea1.getChildren().add(groupBtn);
                 }

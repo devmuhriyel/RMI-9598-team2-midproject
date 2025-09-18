@@ -99,16 +99,19 @@ public class ChatController {
         String receiver = chatJFXController.getReceiver().getText();
 
         if (!textToSend.isEmpty() && receiver != null && !receiver.isEmpty()) {
-            // Add message to UI immediately as sender
-            chatJFXController.addChatMessage(model.getUsername(), textToSend, model.getUsername());
 
-            // Send message through unified model
+            // Send message through unified model first
             if (receiver.equals("Community Chat")) {
+                // DON'T add community messages to UI immediately - let the broadcast handle it
                 model.sendCommunityMessage(textToSend);
             } else if (receiver.startsWith("Group: ")) {
                 String groupName = receiver.substring(7);
+                // Add group message to UI immediately, then send
+                chatJFXController.addChatMessage(model.getUsername(), textToSend, model.getUsername());
                 model.sendGroupMessage(textToSend, groupName);
             } else {
+                // Add private message to UI immediately, then send
+                chatJFXController.addChatMessage(model.getUsername(), textToSend, model.getUsername());
                 model.sendMessage(textToSend, receiver);
             }
 
@@ -168,8 +171,7 @@ public class ChatController {
 
         chatJFXController.clearMessages();
 
-        // Community chat doesn't have history, just show welcome message
-        chatJFXController.addChatMessage("System", "Welcome to Community Chat! Messages here are not saved.", currentUser);
+        chatJFXController.addChatMessage("System", "Welcome to Community Chat! Chat with the community", currentUser);
 
         System.out.println("Community chat loaded - no history available");
     }

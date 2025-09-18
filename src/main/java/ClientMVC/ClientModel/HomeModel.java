@@ -110,8 +110,6 @@ public class HomeModel implements Runnable{
         this.messageListener = messageListener;
     }
 
-    // Add this method to your HomeModel class
-
     public void requestGroupChatHistory(String groupName) {
         try {
             String xmlMessage = "<Request><type>GET_GROUP_CHAT_HISTORY</type><content>" +

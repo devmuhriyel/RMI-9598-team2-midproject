@@ -198,7 +198,10 @@ public class ServerXMLHandler {
     private void handleGroupMessage(String sender, String groupName, String message) {
         try {
             List<String> groupMembers = getGroupMembers(groupName);
+            System.out.println("Handling group message for group: " + groupName + " with " + groupMembers.size() + " members");
+
             for (String member : groupMembers) {
+                System.out.println("Updating XML for member: " + member);
                 updateGroupXML(member, sender, groupName, message);
             }
             System.out.println("Group message sent from " + sender + " to group " + groupName + ": " + message);
@@ -209,6 +212,8 @@ public class ServerXMLHandler {
         }
     }
 
+
+
     public List<String> getGroupMembers(String groupName) {
         List<String> members = new ArrayList<>();
         try {
@@ -218,24 +223,27 @@ public class ServerXMLHandler {
             for (int i = 0; i < groupList.getLength(); i++) {
                 Element group = (Element) groupList.item(i);
                 if (group.getAttribute("name").equals(groupName)) {
-                    // Add group creator
+                    // Add group creator FIRST
                     String creator = group.getAttribute("creator");
                     if (creator != null && !creator.isEmpty()) {
                         members.add(creator);
+                        System.out.println("Added creator to group members: " + creator);
                     }
 
-                    // Add all members
+                    // Add all other members
                     NodeList memberList = group.getElementsByTagName("member");
                     for (int j = 0; j < memberList.getLength(); j++) {
                         Element member = (Element) memberList.item(j);
                         String memberName = member.getAttribute("username");
                         if (!members.contains(memberName)) { // Avoid duplicates
                             members.add(memberName);
+                            System.out.println("Added member to group: " + memberName);
                         }
                     }
                     break;
                 }
             }
+            System.out.println("Total members found for group " + groupName + ": " + members.size());
         } catch (Exception e) {
             System.err.println("Error getting group members: " + e.getMessage());
             e.printStackTrace();
@@ -319,7 +327,10 @@ public class ServerXMLHandler {
         chatHistory.appendChild(chat);
 
         saveDocument(doc, file);
+
+        System.out.println("Updated group XML for user: " + owner + " in group: " + groupName);
     }
+
 
     public void updateXMLs(String owner, String sender, String receiver, String msg) throws IOException, SAXException, ParserConfigurationException, TransformerException {
         File file = new File("src/main/resources/XMLFiles/" + owner + "Account.xml");
