@@ -27,8 +27,9 @@ public class UserXMLHandler {
         doc.getDocumentElement().normalize();
         String type = doc.getElementsByTagName("type").item(0).getTextContent();
         String reply = "";
-        String[] content = doc.getElementsByTagName("content").item(0).getTextContent().split("waw");;
-        switch (type){
+        String[] content = doc.getElementsByTagName("content").item(0).getTextContent().split("waw");
+        ;
+        switch (type) {
             case "LOGIN":
                 String username = content[0];
                 String password = content[1];
@@ -149,7 +150,7 @@ public class UserXMLHandler {
         } catch (Exception e) {
             System.out.println("Error parsing XML. Length: " + xmlString.length());
             System.out.println("XML starts with: " + xmlString.substring(0, Math.min(200, xmlString.length())));
-            System.out.println("XML ends with: " + xmlString.substring(Math.max(0, xmlString.length()-200)));
+            System.out.println("XML ends with: " + xmlString.substring(Math.max(0, xmlString.length() - 200)));
             System.out.println("Error message: " + e.getMessage());
             e.printStackTrace();
             return null;
@@ -484,6 +485,7 @@ public class UserXMLHandler {
         }
         return groups;
     }
+
     public List<String> getChatHistory(String username, String friendName) {
         List<String> messages = new ArrayList<>();
         try {
@@ -514,6 +516,7 @@ public class UserXMLHandler {
         }
         return messages;
     }
+
     public String getBody(String xmlString) throws Exception {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
@@ -527,5 +530,66 @@ public class UserXMLHandler {
         return null;
     }
 
+    public static boolean deleteUserFromXML(String filePath, String username) {
+        try {
+            File xmlFile = new File(filePath);
+            if (!xmlFile.exists()) return false;
 
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(xmlFile);
+            doc.getDocumentElement().normalize();
+
+            NodeList userList = doc.getElementsByTagName("user");
+            for (int i = 0; i < userList.getLength(); i++) {
+                Element userElement = (Element) userList.item(i);
+                String uname = userElement.getElementsByTagName("username").item(0).getTextContent();
+                if (uname.equals(username)) {
+                    userElement.getParentNode().removeChild(userElement);
+
+                    // Save back to file
+                    TransformerFactory tf = TransformerFactory.newInstance();
+                    Transformer transformer = tf.newTransformer();
+                    transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                    transformer.transform(new DOMSource(doc), new StreamResult(xmlFile));
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public static boolean deleteGroupFromXML(String filePath, String groupName, String owner) {
+        try {
+            File xmlFile = new File(filePath);
+            Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(xmlFile);
+            doc.getDocumentElement().normalize();
+
+            NodeList list = doc.getElementsByTagName("group");
+            for (int i = 0; i < list.getLength(); i++) {
+                Element elem = (Element) list.item(i);
+                String currentGroupName = elem.getElementsByTagName("groupName").item(0).getTextContent();
+                String currentOwner = elem.getElementsByTagName("owner").item(0).getTextContent();
+
+                if (currentGroupName.equals(groupName) && currentOwner.equals(owner)) {
+                    elem.getParentNode().removeChild(elem);
+
+                    // Save back to file
+                    javax.xml.transform.Transformer transformer =
+                            javax.xml.transform.TransformerFactory.newInstance().newTransformer();
+                    transformer.transform(
+                            new javax.xml.transform.dom.DOMSource(doc),
+                            new javax.xml.transform.stream.StreamResult(xmlFile)
+                    );
+
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 }

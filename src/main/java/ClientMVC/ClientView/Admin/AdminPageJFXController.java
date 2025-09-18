@@ -22,6 +22,10 @@ public class AdminPageJFXController {
     @FXML private TextField searchField;
     @FXML private Button searchButton;
 
+    // Delete Buttons
+    @FXML private Button deleteButton;
+    @FXML private Button groupDeleteButton;
+
     // Groups form fields
     @FXML private TextField groupSearchField;
     @FXML private Button groupSearchButton;
@@ -57,4 +61,6 @@ public class AdminPageJFXController {
 
     public Button getGroupsButton() { return groupsButton; }
     public Button getBackToUsersButton() { return backToUsersButton; }
+    public Button getDeleteButton() { return deleteButton; }
+    public Button getGroupDeleteButton() { return groupDeleteButton; }
 }

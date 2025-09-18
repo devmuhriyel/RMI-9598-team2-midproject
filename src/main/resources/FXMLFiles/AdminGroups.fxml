@@ -65,13 +65,29 @@
             </center>
 
             <bottom>
-                <HBox alignment="CENTER_RIGHT" spacing="10" BorderPane.alignment="CENTER">
-                    <Region HBox.hgrow="ALWAYS"/>
-                    <Button fx:id="groupDeleteButton" text="Delete"
-                            style="-fx-background-color: #b10000; -fx-text-fill: white;"/>
-                    <Button fx:id="groupEditButton" text="Edit"
-                            style="-fx-background-color: #0087b1; -fx-text-fill: white;"/>
-                </HBox>
+                <VBox spacing="10" BorderPane.alignment="CENTER">
+                    <HBox spacing="103">
+                        <Label text="Owner:" textFill="white"/>
+                        <TextField fx:id="ownerField" promptText="Enter ownername"/>
+                    </HBox>
+                    <HBox spacing="10">
+                        <Label text="Change GroupName:" textFill="white"/>
+                        <PasswordField fx:id="newGroupNameField" promptText="Enter new groupname"/>
+                    </HBox>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Button fx:id="ConfirmButton" text="Confirm"
+                                style="-fx-background-color: #008000; -fx-text-fill: white;"
+                                prefWidth="120" prefHeight="30"/>
+                    </HBox>
+                    <!-- Delete / Edit Buttons HBox -->
+                    <HBox alignment="CENTER_RIGHT" spacing="10">
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="groupDeleteButton" text="Delete"
+                                style="-fx-background-color: #b10000; -fx-text-fill: white;"/>
+                        <Button fx:id="groupEditButton" text="Edit"
+                                style="-fx-background-color: #0087b1; -fx-text-fill: white;"/>
+                    </HBox>
+                </VBox>
                 <padding>
                     <Insets top="20" bottom="20" left="20" right="20"/>
                 </padding>

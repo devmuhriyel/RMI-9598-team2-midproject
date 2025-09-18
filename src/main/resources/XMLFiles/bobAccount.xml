@@ -543,6 +543,10 @@
                 <sender>alice</sender>
                 <msg>allelujah</msg>
             </chat>
+            <chat>
+                <sender>joshua</sender>
+                <msg>hello guys</msg>
+            </chat>
         </chathistory>
     </group>
 </user>
