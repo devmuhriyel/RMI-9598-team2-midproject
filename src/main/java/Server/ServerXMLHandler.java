@@ -47,6 +47,9 @@ public class ServerXMLHandler {
         Transformer transformer = tf.newTransformer();
         transformer.setOutputProperty(OutputKeys.INDENT, "yes");
         transformer.transform(new DOMSource(doc), new StreamResult(file));
+
+        // CREATE USER ACCOUNT XML FILE
+        createUserAccountXML(username);
     }
 
     public static boolean validateUser(String username, String password) throws Exception {
@@ -75,6 +78,25 @@ public class ServerXMLHandler {
         return false;
     }
 
+    private void createUserAccountXML(String username) throws Exception {
+        File accountFile = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
+        if (accountFile.exists()) {
+            return;
+        }
+
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document doc = builder.newDocument();
+
+        // Create root <user> element
+        Element root = doc.createElement("user");
+        doc.appendChild(root);
+
+        // Save the empty account XML file
+        saveDocument(doc, accountFile);
+        System.out.println("Created account XML file for user: " + username);
+    }
+
 
     public String sendMessage(String xmlString) throws Exception {
         return "";
@@ -87,7 +109,8 @@ public class ServerXMLHandler {
         doc.getDocumentElement().normalize();
         String type = doc.getElementsByTagName("type").item(0).getTextContent();
         String reply = "";
-        String[] content = doc.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");;
+        String[] content = doc.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
+
         switch (type){
             case "LOGIN":
                 String username = content[0];
@@ -115,8 +138,8 @@ public class ServerXMLHandler {
                     reply = "LOGIN_FAILED";
                 }
                 break;
+
             case "REGISTER": {
-                // Get username and password either from content or XML tags
                 username = (content.length >= 2)
                         ? content[0].trim()
                         : (doc.getElementsByTagName("username").getLength() > 0
@@ -139,12 +162,23 @@ public class ServerXMLHandler {
                         reply = "USER_EXISTS";
                     } else {
                         boolean saved = addUserToDocument(username, password);
-                        reply = saved ? "REGISTER_SUCCESS" : "REGISTER_FAILED";
+                        if (saved) {
+                            // CREATE USER ACCOUNT XML AFTER SUCCESSFUL REGISTRATION
+                            try {
+                                createUserAccountXML(username);
+                                reply = "REGISTER_SUCCESS";
+                            } catch (Exception e) {
+                                System.err.println("Failed to create account XML for " + username + ": " + e.getMessage());
+                                reply = "REGISTER_SUCCESS"; // Still success, just log the error
+                            }
+                        } else {
+                            reply = "REGISTER_FAILED";
+                        }
                     }
-
                 }
                 break;
             }
+
             case "CREATE_GROUP":
                 reply = "CREATE_GROUP";
                 break;
@@ -164,12 +198,14 @@ public class ServerXMLHandler {
                 updateXMLs(receiver, sender, receiver, message);
                 reply = "SEND_MESSAGE";
                 break;
+
             case "SEND_GROUP_MESSAGE":
                 String groupSender = content[0];
                 String targetGroup = content[1];
                 String groupMessage = content[2];
 
-                handleGroupMessage(groupSender, targetGroup, groupMessage);
+                // FIXED: Handle group message for ALL members
+                handleGroupMessageForAllMembers(groupSender, targetGroup, groupMessage);
                 reply = "SEND_GROUP_MESSAGE";
                 break;
 
@@ -195,15 +231,17 @@ public class ServerXMLHandler {
         return reply;
     }
 
-    private void handleGroupMessage(String sender, String groupName, String message) {
+    private void handleGroupMessageForAllMembers(String sender, String groupName, String message) {
         try {
             List<String> groupMembers = getGroupMembers(groupName);
             System.out.println("Handling group message for group: " + groupName + " with " + groupMembers.size() + " members");
 
+            // Update XML for ALL group members (including sender)
             for (String member : groupMembers) {
                 System.out.println("Updating XML for member: " + member);
-                updateGroupXML(member, sender, groupName, message);
+                updateGroupXMLWithHistory(member, sender, groupName, message);
             }
+
             System.out.println("Group message sent from " + sender + " to group " + groupName + ": " + message);
 
         } catch (Exception e) {
@@ -243,12 +281,153 @@ public class ServerXMLHandler {
                     break;
                 }
             }
+
+            // FALLBACK: If no group found in main XML, check individual account XMLs
+            if (members.isEmpty()) {
+                members = findGroupMembersFromAccountXMLs(groupName);
+            }
+
             System.out.println("Total members found for group " + groupName + ": " + members.size());
         } catch (Exception e) {
             System.err.println("Error getting group members: " + e.getMessage());
             e.printStackTrace();
         }
         return members;
+    }
+
+    private List<String> findGroupMembersFromAccountXMLs(String groupName) {
+        List<String> members = new ArrayList<>();
+
+        // Get all users from main XML
+        try {
+            Document doc = loadDocument();
+            NodeList users = doc.getElementsByTagName("user");
+
+            for (int i = 0; i < users.getLength(); i++) {
+                Element user = (Element) users.item(i);
+                String username = user.getElementsByTagName("username").item(0).getTextContent();
+
+                // Check if this user has the group in their account XML
+                if (hasGroupInAccountXML(username, groupName)) {
+                    members.add(username);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error in fallback group member search: " + e.getMessage());
+        }
+
+        return members;
+    }
+
+    private boolean hasGroupInAccountXML(String username, String groupName) {
+        try {
+            File accountFile = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
+            if (!accountFile.exists()) {
+                return false;
+            }
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(accountFile);
+
+            NodeList groups = doc.getElementsByTagName("group");
+            for (int i = 0; i < groups.getLength(); i++) {
+                Element group = (Element) groups.item(i);
+                NodeList groupNameNodes = group.getElementsByTagName("groupname");
+                if (groupNameNodes.getLength() > 0) {
+                    String gName = groupNameNodes.item(0).getTextContent();
+                    if (gName.equals(groupName)) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error checking group in account XML for " + username + ": " + e.getMessage());
+        }
+
+        return false;
+    }
+
+    public void updateGroupXMLWithHistory(String owner, String sender, String groupName, String msg) throws IOException, SAXException, ParserConfigurationException, TransformerException {
+        File file = new File("src/main/resources/XMLFiles/" + owner + "Account.xml");
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document doc;
+
+        // Create account XML if it doesn't exist
+        if (file.exists()) {
+            doc = builder.parse(file);
+        } else {
+            System.out.println("Creating new account XML for user: " + owner);
+            doc = builder.newDocument();
+            Element root = doc.createElement("user");
+            doc.appendChild(root);
+        }
+
+        Element root = doc.getDocumentElement();
+
+        // Find or create <group> element for this group
+        NodeList groups = root.getElementsByTagName("group");
+        Element targetGroup = null;
+        for (int i = 0; i < groups.getLength(); i++) {
+            Element g = (Element) groups.item(i);
+            NodeList groupNameNodes = g.getElementsByTagName("groupname");
+            if (groupNameNodes.getLength() > 0) {
+                String gName = groupNameNodes.item(0).getTextContent();
+                if (gName.equals(groupName)) {
+                    targetGroup = g;
+                    break;
+                }
+            }
+        }
+
+        // If group doesn't exist in user's XML, create it
+        if (targetGroup == null) {
+            targetGroup = doc.createElement("group");
+
+            Element groupNameElement = doc.createElement("groupname");
+            groupNameElement.appendChild(doc.createTextNode(groupName));
+            targetGroup.appendChild(groupNameElement);
+
+            // Add other group members (for reference)
+            List<String> members = getGroupMembers(groupName);
+            for (String member : members) {
+                if (!member.equals(owner)) { // Don't add self
+                    Element memberElement = doc.createElement("username");
+                    memberElement.appendChild(doc.createTextNode(member));
+                    targetGroup.appendChild(memberElement);
+                }
+            }
+
+            root.appendChild(targetGroup);
+        }
+
+        // Find or create <chathistory> in the group
+        Element chatHistory = null;
+        NodeList chList = targetGroup.getElementsByTagName("chathistory");
+        if (chList.getLength() > 0) {
+            chatHistory = (Element) chList.item(0);
+        } else {
+            chatHistory = doc.createElement("chathistory");
+            targetGroup.appendChild(chatHistory);
+        }
+
+        // Add new chat message
+        Element chat = doc.createElement("chat");
+
+        Element s = doc.createElement("sender");
+        s.appendChild(doc.createTextNode(sender));
+        chat.appendChild(s);
+
+        Element m = doc.createElement("msg");
+        m.appendChild(doc.createTextNode(msg));
+        chat.appendChild(m);
+
+        chatHistory.appendChild(chat);
+
+        saveDocument(doc, file);
+
+        System.out.println("Updated group XML for user: " + owner + " in group: " + groupName);
     }
 
     public void updateGroupXML(String owner, String sender, String groupName, String msg) throws IOException, SAXException, ParserConfigurationException, TransformerException {
@@ -330,7 +509,6 @@ public class ServerXMLHandler {
 
         System.out.println("Updated group XML for user: " + owner + " in group: " + groupName);
     }
-
 
     public void updateXMLs(String owner, String sender, String receiver, String msg) throws IOException, SAXException, ParserConfigurationException, TransformerException {
         File file = new File("src/main/resources/XMLFiles/" + owner + "Account.xml");
@@ -422,6 +600,7 @@ public class ServerXMLHandler {
         String[] contentTag = stringDoc.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
         return contentTag[0];
     }
+
     public String getReceiver(String xmlString) throws ParserConfigurationException, IOException, SAXException {
         DocumentBuilderFactory stringFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder stringBuilder = stringFactory.newDocumentBuilder();
@@ -631,8 +810,15 @@ public class ServerXMLHandler {
 
             for (int i = 0; i < groupList.getLength(); i++) {
                 Element group = (Element) groupList.item(i);
+
+                // Check if user is the creator
+                if (group.getAttribute("creator").equals(username)) {
+                    userGroups.add(group.getAttribute("name"));
+                    continue;
+                }
+
+                // Check if user is a member
                 NodeList members = group.getElementsByTagName("member");
-                
                 for (int j = 0; j < members.getLength(); j++) {
                     Element member = (Element) members.item(j);
                     if (member.getAttribute("username").equals(username)) {
@@ -655,8 +841,14 @@ public class ServerXMLHandler {
             for (int i = 0; i < groupList.getLength(); i++) {
                 Element group = (Element) groupList.item(i);
                 if (group.getAttribute("name").equals(groupName)) {
+
+                    // Check if user is the creator
+                    if (group.getAttribute("creator").equals(username)) {
+                        return true;
+                    }
+
+                    // Check if user is a member
                     NodeList members = group.getElementsByTagName("member");
-                    
                     for (int j = 0; j < members.getLength(); j++) {
                         Element member = (Element) members.item(j);
                         if (member.getAttribute("username").equals(username)) {
@@ -736,11 +928,11 @@ public class ServerXMLHandler {
 
             root.appendChild(userElement);
 
-            // Save back to file (no ugly whitespace)
+            // Save back to file
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
             Transformer transformer = transformerFactory.newTransformer();
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2"); // clean indent
+            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
             DOMSource source = new DOMSource(doc);
             StreamResult result = new StreamResult(file);
             transformer.transform(source, result);
@@ -754,7 +946,3 @@ public class ServerXMLHandler {
 
 }
 
-//    public static void main(String[] args) throws Exception {
-//        System.out.println(validateUser("bob", "qwerty456"));
-//    }
-//}
