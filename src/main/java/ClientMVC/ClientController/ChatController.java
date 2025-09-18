@@ -3,7 +3,11 @@ package ClientMVC.ClientController;
 import ClientMVC.ClientModel.UnifiedClientModel;
 import ClientMVC.ClientView.Chat.ChatView;
 import ClientMVC.ClientView.Chat.ChatJFXController;
+import ClientMVC.ClientView.Home.HomeView;
 import ClientMVC.UserXMLHandler;
+
+import javafx.application.Platform;
+import javafx.stage.Stage;
 
 import java.util.List;
 
@@ -91,7 +95,24 @@ public class ChatController {
         currentChatPartner = null;
         isGroupChat = false;
         isCommunityChat = false;
-        view.goToHome();
+
+        Platform.runLater(() -> {
+            try {
+                // Close current chat window
+                Stage currentStage = (Stage) chatJFXController.getHomeButton().getScene().getWindow();
+                currentStage.close();
+
+                // Open Home view wired to the same model so the user can pick another chat
+                HomeView homeView = new HomeView();
+                Stage homeStage = new Stage();
+                homeView.start(homeStage);
+
+                // Initialize controller with existing model to populate friends/groups
+                new HomeController(model, homeView, homeView.getFXController());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     private void sendMSG(){

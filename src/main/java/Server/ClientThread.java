@@ -156,23 +156,39 @@ public class ClientThread implements Runnable {
                         String targetGroup = getGroupName(xmlMsg);
                         String groupMessage = getGroupMessage(xmlMsg);
 
-                        // Send updated chat history to all group members
-                        java.util.List<String> groupMembers = xmlHandler.getGroupMembers(targetGroup);
-                        for (String member : groupMembers) {
-                            for (ClientThread client : clients) {
-                                if (client.socket.isConnected() && client.name != null && client.name.equals(member)) {
+                        System.out.println("Processing group message from " + groupSender + " to group " + targetGroup);
+
+                        // FIXED: Send updated chat history to ALL group members AFTER server processes the message
+                        try {
+                            // Get all group members (including sender)
+                            java.util.List<String> groupMembers = xmlHandler.getGroupMembers(targetGroup);
+                            System.out.println("Found " + groupMembers.size() + " members in group " + targetGroup);
+
+                            // Send updated chat history to each group member who is online
+                            for (String member : groupMembers) {
+                                ClientThread memberClient = findClientByName(member);
+                                if (memberClient != null && memberClient.socket.isConnected()) {
                                     try {
-                                        File userFile = new File("src/main/resources/XMLFiles/" + client.name + "Account.xml");
+                                        File userFile = new File("src/main/resources/XMLFiles/" + member + "Account.xml");
                                         if (userFile.exists()) {
                                             byte[] fileContent = java.nio.file.Files.readAllBytes(userFile.toPath());
                                             String encodedContent = java.util.Base64.getEncoder().encodeToString(fileContent);
-                                            client.sendMessage("<Response><reply>NEW_GROUP_MESSAGE</reply><body>" + encodedContent + "</body></Response>");
+                                            memberClient.sendMessage("<Response><reply>NEW_GROUP_MESSAGE</reply><body>" + encodedContent + "</body></Response>");
+                                            System.out.println("Sent group message update to: " + member);
+                                        } else {
+                                            System.out.println("Account XML not found for member: " + member);
                                         }
                                     } catch (Exception e) {
+                                        System.err.println("Error sending group message to " + member + ": " + e.getMessage());
                                         e.printStackTrace();
                                     }
+                                } else {
+                                    System.out.println("Member " + member + " is not online or client not found");
                                 }
                             }
+                        } catch (Exception e) {
+                            System.err.println("Error processing group message: " + e.getMessage());
+                            e.printStackTrace();
                         }
                         break;
 
@@ -220,6 +236,20 @@ public class ClientThread implements Runnable {
                 e.printStackTrace();
             }
         }
+    }
+
+    /**
+     * HELPER: Find a client by their username
+     */
+    private ClientThread findClientByName(String username) {
+        synchronized (clients) {
+            for (ClientThread client : clients) {
+                if (client.name != null && client.name.equals(username)) {
+                    return client;
+                }
+            }
+        }
+        return null;
     }
 
     // Broadcasts community message to all connected clients

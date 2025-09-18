@@ -339,6 +339,7 @@
     </friend>
     <group>
         <groupname>Project Team</groupname>
+        <username>bob</username>
         <username>charlie</username>
         <username>alice</username>
         <chathistory>
