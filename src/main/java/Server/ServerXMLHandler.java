@@ -10,15 +10,11 @@ import javax.xml.transform.stream.StreamResult;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 
 public class ServerXMLHandler {
     private static final String FILE_PATH = "src/main/resources/XMLFiles/Users.xml";
-    private static String chatHistoryFile = "src/main/resources/XMLFiles/bobAccount.xml";
 
     public void registerUser(String username, String password) throws Exception {
         File file = new File(FILE_PATH);
@@ -158,7 +154,6 @@ public class ServerXMLHandler {
                 break;
             case "GET_CHAT_HISTORY":
                 String requestingUser = content[0];
-                String friendName = content[1];
                 try {
                     File userFile = new File("src/main/resources/XMLFiles/" + requestingUser + "Account.xml");
                     if (userFile.exists()) {

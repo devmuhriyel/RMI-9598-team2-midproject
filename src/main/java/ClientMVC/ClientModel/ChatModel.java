@@ -13,6 +13,7 @@ public class ChatModel implements Runnable {
     private final BufferedReader readMSG;
     private final BufferedWriter writeMSG;
     private Consumer<String> messageListener;
+    private Consumer<String> groupMessageListener;
     private String name;
     private static ArrayList<ChatModel> clients = new ArrayList<ChatModel>();
     private UserXMLHandler xmlHandler = new UserXMLHandler();
@@ -25,10 +26,11 @@ public class ChatModel implements Runnable {
         clients.add(this);
     }
 
+
     public void sendMSG(String message, String receiver) {
         try {
             String xmlMessage = "<Request><type>SEND_MESSAGE</type><content>" + name + "![]!" + receiver + "![]!" + message + "</content></Request>";
-            System.out.println(xmlMessage);
+            System.out.println("Sending message: " + xmlMessage);
             writeMSG.write(xmlMessage);
             writeMSG.newLine();
             writeMSG.flush();
@@ -40,7 +42,7 @@ public class ChatModel implements Runnable {
     public void sendGroupMessage(String message, String groupName) {
         try {
             String xmlMessage = "<Request><type>SEND_GROUP_MESSAGE</type><content>" + name + "![]!" + groupName + "![]!" + message + "</content></Request>";
-            System.out.println(xmlMessage);
+            System.out.println("Sending group message: " + xmlMessage);
             writeMSG.write(xmlMessage);
             writeMSG.newLine();
             writeMSG.flush();
@@ -53,67 +55,89 @@ public class ChatModel implements Runnable {
         this.messageListener = listener;
     }
 
+    public void setGroupMessageListener(Consumer<String> listener) {
+        this.groupMessageListener = listener;
+    }
+
     @Override
     public void run() {
+        String msg;
         try {
-            String msg;
             while ((msg = readMSG.readLine()) != null) {
-                System.out.println("ChatModel received: " + msg);
+                System.out.println("HomeModel received: " + msg); // Debug log
 
                 if (msg.startsWith("<")) {
+                    String trimmed = msg.trim();
                     String reply = xmlHandler.getReply(msg);
+                    System.out.println("Reply type: " + reply); // Debug log
 
-                    if ("SEND_MESSAGE".equals(reply) || "SEND_GROUP_MESSAGE".equals(reply)) {
-                        // Get the Base64 encoded XML content
-                        String base64Content = xmlHandler.getBody(msg);
+                    if (reply != null) {
+                        switch (reply) {
+                            case "GET_CHAT_HISTORY":
+                                String body = xmlHandler.getBody(msg);
+                                if (body != null && !body.isEmpty() && body.equals("CHAT")) {
 
-                        if (base64Content != null && !base64Content.isEmpty()) {
-                            // Save the updated XML file
-                            xmlHandler.saveUpdatedAccountXML(name, base64Content);
-
-                            // Extract the latest message from the decoded XML and notify UI
-                            String latestMessage = extractLatestMessage(base64Content);
-                            if (latestMessage != null && messageListener != null) {
-                                // Use Platform.runLater to update UI on JavaFX thread
-                                javafx.application.Platform.runLater(() -> {
-                                    messageListener.accept(latestMessage);
-                                });
-                            }
+                                }
+                                break;
+                            case "FORCE_LOGOUT":
+                                System.out.println("Logged out from another location");
+                                break;
                         }
                     }
                 }
             }
         } catch (Exception e) {
+            System.err.println("Error in HomeModel: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    private String extractLatestMessage(String base64Content) {
+    private boolean isValidBase64(String base64) {
+        try {
+            byte[] decoded = Base64.getDecoder().decode(base64);
+            // Additional check: try to parse as UTF-8 string
+            String xmlContent = new String(decoded, "UTF-8");
+            return xmlContent.startsWith("<") && xmlContent.contains("</");
+        } catch (Exception e) {
+            System.err.println("Base64 validation failed: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private String extractLatestMessageFromBase64(String base64Content) {
         try {
             // Decode the Base64 content
             byte[] decodedXML = Base64.getDecoder().decode(base64Content);
             String xmlContent = new String(decodedXML, "UTF-8");
+            System.out.println("Decoded XML content preview: " + xmlContent.substring(0, Math.min(200, xmlContent.length())));
 
             // Parse the XML to find the latest message
             javax.xml.parsers.DocumentBuilderFactory factory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
             javax.xml.parsers.DocumentBuilder builder = factory.newDocumentBuilder();
             org.w3c.dom.Document doc = builder.parse(new ByteArrayInputStream(xmlContent.getBytes("UTF-8")));
+            doc.getDocumentElement().normalize();
 
-            // Get all chat elements
-            org.w3c.dom.NodeList chatNodes = doc.getElementsByTagName("chat");
+            // Get all chat elements from all friends and groups
+            org.w3c.dom.NodeList allChatNodes = doc.getElementsByTagName("chat");
 
-            if (chatNodes.getLength() > 0) {
+            if (allChatNodes.getLength() > 0) {
                 // Get the last chat element (most recent message)
-                org.w3c.dom.Element lastChat = (org.w3c.dom.Element) chatNodes.item(chatNodes.getLength() - 1);
+                org.w3c.dom.Element lastChat = (org.w3c.dom.Element) allChatNodes.item(allChatNodes.getLength() - 1);
 
                 // Extract sender and message
                 String sender = lastChat.getElementsByTagName("sender").item(0).getTextContent();
                 String message = lastChat.getElementsByTagName("msg").item(0).getTextContent();
 
+                System.out.println("Latest message found - Sender: " + sender + ", Message: " + message + ", Current user: " + name);
+
                 // Only return messages that are NOT from the current user (to avoid showing own messages again)
                 if (!sender.equals(name)) {
-                    return message;
+                    return sender + ": " + message;
+                } else {
+                    System.out.println("Skipping own message");
                 }
+            } else {
+                System.out.println("No chat messages found in XML");
             }
         } catch (Exception e) {
             System.err.println("Error extracting latest message: " + e.getMessage());
@@ -122,19 +146,19 @@ public class ChatModel implements Runnable {
         return null;
     }
 
-    private String parseMessageFromXML(String xmlMsg) {
-        try {
-            javax.xml.parsers.DocumentBuilderFactory factory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
-            javax.xml.parsers.DocumentBuilder builder = factory.newDocumentBuilder();
-            org.w3c.dom.Document doc = builder.parse(new ByteArrayInputStream(xmlMsg.getBytes("UTF-8")));
+    // Helper method to get the current username
+    public String getName() {
+        return name;
+    }
 
-            org.w3c.dom.NodeList bodyNodes = doc.getElementsByTagName("body");
-            if (bodyNodes.getLength() > 0) {
-                return bodyNodes.item(0).getTextContent();
+    // Helper method to close connection
+    public void disconnect() {
+        try {
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
             }
-        } catch (Exception e) {
-            return xmlMsg;
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        return null;
     }
 }

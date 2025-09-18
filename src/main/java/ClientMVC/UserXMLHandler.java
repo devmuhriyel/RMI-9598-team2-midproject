@@ -88,23 +88,47 @@ public class UserXMLHandler {
         return reply;
     }
 
-    // Updated method to prioritize <reply> format over status attribute format
-    public String getReply(String xmlString) throws Exception {
-        // Clean and validate
-        xmlString = xmlString.trim();
-        if (xmlString.startsWith("\uFEFF")) {
-            xmlString = xmlString.substring(1);
-        }
-
-        // Check if it's actually XML
-        if (!xmlString.startsWith("<") || !xmlString.endsWith(">")) {
-            System.out.println("Not a valid XML message: " + xmlString);
-            return null;
-        }
-
+    public String getReply(String xmlString) {
         try {
+            // Clean and validate
+            xmlString = xmlString.trim();
+            if (xmlString.startsWith("\uFEFF")) {
+                xmlString = xmlString.substring(1);
+            }
+
+            // Check if it's actually XML
+            if (!xmlString.startsWith("<") || !xmlString.endsWith(">")) {
+                System.out.println("Not a valid XML message: " + xmlString.substring(0, Math.min(100, xmlString.length())));
+                return null;
+            }
+
+            // Check for truncated XML by counting opening/closing tags
+            if (!isBalancedXML(xmlString)) {
+                System.out.println("XML appears to be truncated or malformed");
+                return null;
+            }
+
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
+
+            // Set error handler to catch parsing issues
+            builder.setErrorHandler(new org.xml.sax.ErrorHandler() {
+                @Override
+                public void warning(org.xml.sax.SAXParseException exception) {
+                    System.out.println("XML Warning: " + exception.getMessage());
+                }
+
+                @Override
+                public void error(org.xml.sax.SAXParseException exception) {
+                    System.out.println("XML Error: " + exception.getMessage());
+                }
+
+                @Override
+                public void fatalError(org.xml.sax.SAXParseException exception) {
+                    System.out.println("XML Fatal Error: " + exception.getMessage());
+                }
+            });
+
             Document doc = builder.parse(new ByteArrayInputStream(xmlString.getBytes("UTF-8")));
             doc.getDocumentElement().normalize();
 
@@ -121,15 +145,38 @@ public class UserXMLHandler {
                 return root.getAttribute("status");
             }
 
-            return null; // no reply tag or status attribute found
+            return null;
         } catch (Exception e) {
-            System.out.println("Error parsing XML: " + xmlString);
+            System.out.println("Error parsing XML. Length: " + xmlString.length());
+            System.out.println("XML starts with: " + xmlString.substring(0, Math.min(200, xmlString.length())));
+            System.out.println("XML ends with: " + xmlString.substring(Math.max(0, xmlString.length()-200)));
             System.out.println("Error message: " + e.getMessage());
+            e.printStackTrace();
             return null;
         }
     }
 
-    // New method to get the message body from server responses
+    private boolean isBalancedXML(String xml) {
+        // Simple check for balanced XML tags
+        int openTags = 0;
+        int closeTags = 0;
+
+        // Count opening tags (not self-closing)
+        for (int i = 0; i < xml.length() - 1; i++) {
+            if (xml.charAt(i) == '<' && xml.charAt(i + 1) != '/' && xml.charAt(i + 1) != '?') {
+                // Check if it's not a self-closing tag
+                int tagEnd = xml.indexOf('>', i);
+                if (tagEnd > i && xml.charAt(tagEnd - 1) != '/') {
+                    openTags++;
+                }
+            } else if (xml.charAt(i) == '<' && xml.charAt(i + 1) == '/') {
+                closeTags++;
+            }
+        }
+
+        return openTags == closeTags;
+    }
+
     public String getResponseBody(String xmlString) throws Exception {
         xmlString = xmlString.trim();
         if (xmlString.startsWith("\uFEFF")) {
@@ -137,6 +184,7 @@ public class UserXMLHandler {
         }
 
         if (!xmlString.startsWith("<") || !xmlString.endsWith(">")) {
+            System.out.println("Not valid XML format: " + xmlString.substring(0, Math.min(100, xmlString.length())));
             return null;
         }
 
@@ -148,13 +196,62 @@ public class UserXMLHandler {
 
             NodeList bodyNodes = doc.getElementsByTagName("body");
             if (bodyNodes.getLength() > 0) {
-                return bodyNodes.item(0).getTextContent();
+                String bodyContent = bodyNodes.item(0).getTextContent();
+                System.out.println("Extracted body content length: " + bodyContent.length());
+                return bodyContent;
             }
 
+            System.out.println("No <body> tag found in XML");
             return null;
         } catch (Exception e) {
-            System.out.println("Error parsing XML body: " + xmlString);
+            System.out.println("Error parsing XML body: " + e.getMessage());
+            System.out.println("XML content: " + xmlString.substring(0, Math.min(500, xmlString.length())));
+            e.printStackTrace();
             return null;
+        }
+    }
+
+    public void saveUpdatedAccountXML(String username, String base64Content) {
+        try {
+            System.out.println("Attempting to save XML for user: " + username);
+            System.out.println("Base64 content length: " + base64Content.length());
+
+            // Decode Base64 content
+            byte[] xmlContent = Base64.getDecoder().decode(base64Content);
+            String xmlString = new String(xmlContent, "UTF-8");
+
+            System.out.println("Decoded XML length: " + xmlString.length());
+            System.out.println("XML preview: " + xmlString.substring(0, Math.min(200, xmlString.length())));
+
+            // Validate XML structure
+            if (!xmlString.trim().startsWith("<") || !xmlString.trim().endsWith(">")) {
+                throw new IllegalArgumentException("Invalid XML structure");
+            }
+
+            String filePath = "src/main/resources/XMLFiles/" + username + "Account.xml";
+            File file = new File(filePath);
+
+            // Create directories if they don't exist
+            file.getParentFile().mkdirs();
+
+            // Write to file
+            try (FileOutputStream fos = new FileOutputStream(file)) {
+                fos.write(xmlContent);
+                fos.flush();
+            }
+
+            System.out.println("Successfully updated " + username + "Account.xml");
+
+            // Verify the file was written correctly
+            if (file.exists() && file.length() > 0) {
+                System.out.println("File verification successful. Size: " + file.length() + " bytes");
+            } else {
+                System.err.println("File verification failed!");
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error saving updated XML for user " + username + ": " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -430,18 +527,5 @@ public class UserXMLHandler {
         return null;
     }
 
-    public void saveUpdatedAccountXML(String username, String base64Content) {
-        try {
-            byte[] xmlContent = Base64.getDecoder().decode(base64Content);
-            String filePath = "src/main/resources/XMLFiles/" + username + "Account.xml";
 
-            FileOutputStream fos = new FileOutputStream(filePath);
-            fos.write(xmlContent);
-            fos.close();
-
-            System.out.println("Updated " + username + "Account.xml received from server");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 }

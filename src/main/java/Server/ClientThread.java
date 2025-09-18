@@ -1,11 +1,12 @@
 package Server;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import org.w3c.dom.Document;
 import java.io.*;
 import java.net.Socket;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Base64;
+
 
 public class ClientThread implements Runnable {
     private Socket socket;
@@ -75,32 +76,6 @@ public class ClientThread implements Runnable {
                         sendMessage("<Response status=\"REGISTER_FAILED\"><body>Registration failed</body></Response>");
                         break;
 
-                    case "SEND_MESSAGE":
-                        String senderName = xmlHandler.getSender(xmlMsg);
-                        String receiverName = xmlHandler.getReceiver(xmlMsg);
-
-                        byte[] senderFileContent = Files.readAllBytes(Paths.get("src/main/resources/XMLFiles/" + senderName + "Account.xml"));
-                        sendMessage("<Response><reply>SEND_MESSAGE</reply><body>" +
-                                Base64.getEncoder().encodeToString(senderFileContent) + "</body></Response>");
-
-                        ClientThread receiverClient = null;
-                        synchronized (clients) {
-                            for (ClientThread c : clients) {
-                                if (c.name != null && c.name.equals(receiverName)) {
-                                    receiverClient = c;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (receiverClient != null) {
-                            byte[] receiverFileContent = Files.readAllBytes(Paths.get("src/main/resources/XMLFiles/" + receiverName + "Account.xml"));
-                            receiverClient.sendMessage("<Response><reply>SEND_MESSAGE</reply><body>" +
-                                    Base64.getEncoder().encodeToString(receiverFileContent) + "</body></Response>");
-                        } else {
-                            System.out.println(receiverName + " is offline. Message saved in their Account.xml");
-                        }
-                        break;
                     case "GET_CHAT_HISTORY":
                         String[] chatHistoryContent = extractContent(xmlMsg);
                         String requestingUser = chatHistoryContent[0];
@@ -175,43 +150,31 @@ public class ClientThread implements Runnable {
                         java.util.List<String> groups = xmlHandler.getUserGroups(listGroupsContent[0]);
                         sendMessage("<Response status=\"GROUPS_LIST\"><body>" + String.join(",", groups) + "</body></Response>");
                         break;
-// Replace the SEND_GROUP_MESSAGE case in ClientThread.java
                     case "SEND_GROUP_MESSAGE":
-                        String[] groupMsgContent = extractContent(xmlMsg);
-                        String groupSender = groupMsgContent[0];    // sender
-                        String groupName = groupMsgContent[1];      // group name
-                        String groupMessage = groupMsgContent[2];   // message
 
-                        // Get all group members and update their XML files
-                        java.util.List<String> groupMembers = xmlHandler.getGroupMembers(groupName);
-                        for (String member : groupMembers) {
-                            try {
-                                byte[] memberFileContent = Files.readAllBytes(Paths.get("src/main/resources/XMLFiles/" + member + "Account.xml"));
+                        break;
+                    case "SEND_MESSAGE":
+                        String sender = getSender(xmlMsg);
+                        String receiver = getReceiver(xmlMsg);
 
-                                // Send updated XML to member if they're online
-                                ClientThread memberClient = null;
-                                synchronized (clients) {
-                                    for (ClientThread c : clients) {
-                                        if (c.name != null && c.name.equals(member)) {
-                                            memberClient = c;
-                                            break;
-                                        }
+                        // Send updated chat history to both participants
+                        for (ClientThread client : clients) {
+                            if (client.socket.isConnected() &&
+                                    (client.name.equals(sender) || client.name.equals(receiver))) {
+
+                                try {
+                                    // Send the updated chat history for the specific conversation
+                                    File userFile = new File("src/main/resources/XMLFiles/" + client.name + "Account.xml");
+                                    if (userFile.exists()) {
+                                        byte[] fileContent = java.nio.file.Files.readAllBytes(userFile.toPath());
+                                        String encodedContent = java.util.Base64.getEncoder().encodeToString(fileContent);
+                                        client.sendMessage("<Response><reply>NEW_MESSAGE</reply><body>" + encodedContent + "</body></Response>");
                                     }
+                                } catch (Exception e) {
+                                    e.printStackTrace();
                                 }
-
-                                if (memberClient != null) {
-                                    memberClient.sendMessage("<Response><reply>SEND_GROUP_MESSAGE</reply><body>" +
-                                            Base64.getEncoder().encodeToString(memberFileContent) + "</body></Response>");
-                                }
-                            } catch (Exception e) {
-                                System.out.println("Failed to update XML for group member: " + member);
-                                e.printStackTrace();
                             }
                         }
-                        break;
-
-                    default:
-                        sendMessage("<Response status=\"ERROR\"><body>Unknown request</body></Response>");
                         break;
                 }
             }
@@ -229,7 +192,7 @@ public class ClientThread implements Runnable {
     // Broadcasts message to all connected clients
     private void broadcast(String message) {
         synchronized (clients) {
-            for (ClientThread c : new ArrayList<>(clients)) {
+            for (ClientThread c : clients) {
                 try {
                     c.writeMSG.write(message);
                     c.writeMSG.newLine();
@@ -252,6 +215,22 @@ public class ClientThread implements Runnable {
         } catch (IOException e) {
             System.out.println("Failed to send message to " + name);
         }
+    }
+    private String getSender(String xmlString) throws Exception {
+        DocumentBuilderFactory senderFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder senderBuilder = senderFactory.newDocumentBuilder();
+        Document senderDocument = (Document) senderBuilder.parse(new ByteArrayInputStream(xmlString.getBytes("UTF-8")));
+        String[] content = senderDocument.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
+        String sender = content[0];
+        return sender;
+    }
+    private String getReceiver(String xmlString) throws Exception {
+        DocumentBuilderFactory senderFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder senderBuilder = senderFactory.newDocumentBuilder();
+        Document senderDocument = (Document) senderBuilder.parse(new ByteArrayInputStream(xmlString.getBytes("UTF-8")));
+        String[] content = senderDocument.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
+        String receiver = content[1];
+        return receiver;
     }
 
     // Extract username from <content> (split by "waw")
@@ -278,6 +257,18 @@ public class ClientThread implements Runnable {
             clients.remove(this);
         }
         socket.close();
+    }
+    private void debugClientState() {
+        System.out.println("=== CLIENT DEBUG INFO ===");
+        System.out.println("Client name: " + this.name);
+        System.out.println("Socket connected: " + !socket.isClosed());
+        System.out.println("Total connected clients: " + clients.size());
+        synchronized (clients) {
+            for (ClientThread c : clients) {
+                System.out.println("  - Client: " + c.name + " (connected: " + !c.socket.isClosed() + ")");
+            }
+        }
+        System.out.println("========================");
     }
 
     //This for the Friend Getting index 0 as requester and then 1index 1 as friend

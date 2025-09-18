@@ -149,27 +149,159 @@
             </chat>
             <chat>
                 <sender>bob</sender>
-                <msg>bob istg</msg>
+                <msg>yeahhhh</msg>
             </chat>
             <chat>
                 <sender>alice</sender>
-                <msg>ano ba alice</msg>
+                <msg>hiiii boooob</msg>
             </chat>
             <chat>
                 <sender>bob</sender>
-                <msg>aaaaaa</msg>
+                <msg>yeahhh</msg>
             </chat>
             <chat>
                 <sender>alice</sender>
-                <msg>ughhhhhh</msg>
-            </chat>
-            <chat>
-                <sender>alice</sender>
-                <msg>please gumana ka na</msg>
+                <msg>will this work</msg>
             </chat>
             <chat>
                 <sender>bob</sender>
-                <msg>it's not working!!!!!!!!!!!!</msg>
+                <msg>yeahh??</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>hello work please</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>Hello there you got P1000 in your account just load ....</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>okayyy</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>okayyy</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>Hi there </msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>Hi there </msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>Hello there!</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>Hello there!</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>Carl!!!!! may chika akooooooooo</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>Carl!!!!! may chika akooooooooo</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>yooo pree</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>yooo pree</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>hi pre</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>hi pre</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>hello rin </msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>hello rin </msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>hi alice</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>hi alice</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>hi alice</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>hi alice</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>hi bob</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>hi bob</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>i said hi bob</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>i said hi bob</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>hi rin</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>hi?</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>hello?</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>help me fix this</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>okay I will</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>are you sure?</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>no not really</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>WHY NOT?</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>IS IT FINALLY WORKING?</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>YES</msg>
             </chat>
         </chathistory>
     </friend>
