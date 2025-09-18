@@ -303,6 +303,14 @@
                 <sender>alice</sender>
                 <msg>YES</msg>
             </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>HOW ABOUT NOW?</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>IT STILL IS</msg>
+            </chat>
         </chathistory>
     </friend>
     <group>
