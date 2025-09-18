@@ -16,9 +16,12 @@ public class AccountJFXController {
     private AnchorPane rightFrame, titleBar;
     @FXML
     private Label userLabel;
-
     @FXML
     private Button minimizeButton, closeButton;
+    @FXML
+    private Button profileAccountButton, requestsAccountButton, settingsAccountButton;
+
+    private Runnable profileAccountListener, requestsAccountListener, settingsAccountListener;
 
     // Top Section for Draggable
     private double xOffset = 0;
@@ -26,7 +29,26 @@ public class AccountJFXController {
 
     @FXML
     public void initialize() {
-        // Existing drag and window control code
+
+        profileAccountButton.setOnAction(event -> {
+            if (profileAccountListener != null) {
+                profileAccountListener.run();
+            }
+        });
+
+        requestsAccountButton.setOnAction(event -> {
+            if (requestsAccountListener != null) {
+                requestsAccountListener.run();
+            }
+        });
+
+        settingsAccountButton.setOnAction(event -> {
+            if (settingsAccountListener != null) {
+                settingsAccountListener.run();
+            }
+        });
+
+        // Drag the window when mouse is pressed and dragged
         titleBar.setOnMousePressed(event -> {
             Stage stage = (Stage) titleBar.getScene().getWindow();
             xOffset = event.getSceneX();
@@ -62,7 +84,10 @@ public class AccountJFXController {
     public void displayContent(String fxmlPath) {
         try {
             Parent view = FXMLLoader.load(getClass().getResource(fxmlPath));
+            // calls the fxml
+            // closes the
             rightFrame.getChildren().setAll(view);
+            // making sure that every fxml is aligned
             AnchorPane.setTopAnchor(view, 0.0);
             AnchorPane.setBottomAnchor(view, 0.0);
             AnchorPane.setLeftAnchor(view, 0.0);
@@ -71,4 +96,17 @@ public class AccountJFXController {
             e.printStackTrace();
         }
     }
+
+    public void setProfileButtonListener(Runnable listener) {
+        this.profileAccountListener = listener;
+    }
+
+    public void setRequestsAccountListener(Runnable listener) {
+        this.requestsAccountListener = listener;
+    }
+
+    public void setSettingsAccountListener(Runnable listener) {
+        this.settingsAccountListener = listener;
+    }
+
 }

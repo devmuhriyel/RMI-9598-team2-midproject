@@ -11,8 +11,6 @@ import javafx.stage.StageStyle;
 
 public class AccountView extends Application {
     private AccountJFXController accountJFXController;
-    @FXML
-
 
     @Override
     public void start(Stage stage) {
@@ -20,12 +18,13 @@ public class AccountView extends Application {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/ClientAccountView.fxml"));
             Parent root = loader.load();
             accountJFXController = loader.getController();
-            accountJFXController.showProfile();
+            accountJFXController.showProfile(); // default
 
             Scene scene = new Scene(root);
-            stage.initStyle(StageStyle.UNDECORATED);
-            stage.initStyle(StageStyle.TRANSPARENT);
+            stage.initStyle(javafx.stage.StageStyle.UNDECORATED); // Removes title bar
+            stage.initStyle(javafx.stage.StageStyle.TRANSPARENT);
             scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+            stage.initStyle(StageStyle.TRANSPARENT);
             stage.setResizable(false);
             stage.setScene(scene);
             stage.show();

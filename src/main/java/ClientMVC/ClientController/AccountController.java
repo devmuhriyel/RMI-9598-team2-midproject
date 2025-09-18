@@ -10,9 +10,9 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 
 public class AccountController {
-    private AccountModel model;
-    private AccountView view;
-    private AccountJFXController accountJFXController;
+    private final AccountModel model;
+    private final AccountView view;
+    private final AccountJFXController accountJFXController;
     private BufferedWriter serverWriter;
 
     //This for the Friend Function
@@ -21,18 +21,29 @@ public class AccountController {
         this.serverWriter = serverWriter;
         this.view = view;
         this.accountJFXController = accountJFXController;
+        accountJFXController.showProfile();
+        initialize();
     }
 
-    // Action
-    public void showProfile(ActionEvent event) {
+    public void initialize () {
+        // Initialize Runanble
+        accountJFXController.setProfileButtonListener(() -> showProfile());
+        accountJFXController.setRequestsAccountListener(()-> showRequests());
+        accountJFXController.setSettingsAccountListener(() -> showSettings());
+
+    }
+
+    // Action Events when Button were clicked
+    // Displays the Profile
+    public void showProfile() {
         accountJFXController.showProfile();
     }
-
-    public void showRequests(ActionEvent event) {
+    // Displays the Friend Requests
+    public void showRequests() {
         accountJFXController.showRequests();
     }
-
-    public void showSettings(ActionEvent event) {
+    // Displays the Settings
+    public void showSettings() {
         accountJFXController.showSettings();
     }
 
