@@ -1,4 +1,4 @@
-package ClientMVC.ClientView.homepageVersion2;
+package ClientMVC.ClientView.HomepageV2;
 
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -10,7 +10,7 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 
-public class homepageJFXController {
+public class HomepageJFXController {
 
 
     @FXML
@@ -20,6 +20,8 @@ public class homepageJFXController {
 
     @FXML
     private Button minimizeButton, closeButton;
+
+    private Runnable set;
 
     // Top Section for Draggable
     private double xOffset = 0;
@@ -47,34 +49,29 @@ public class homepageJFXController {
             ((Stage) minimizeButton.getScene().getWindow()).setIconified(true);
         });
 
-        // Load default content (Profile)
-        try {
-            showFriendsLists(); // This will load the profile by default
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println("Failed to load default profile view: " + e.getMessage());
-        }
     }
     public void showFriendsLists() throws IOException {
-        loadContent("/FXMLFiles/FriendsHomeTab.fxml");
+        displayContent("/FXMLFiles/FriendsHomeTab.fxml");
     }
 
     public void showGroupsLists() throws IOException {
-        loadContent("/FXMLFiles/FriendsHomeTab.fxml");
+        displayContent("/FXMLFiles/GroupsHomeTab.fxml");
     }
 
-
-    private void loadContent(String fxmlPath) throws IOException {
-        Parent view = FXMLLoader.load(getClass().getResource(fxmlPath));
-        // Use rightFrame directly
-        // This already close the existing FXML then it adds the new one
-        listContainterFrame.getChildren().setAll(view);
-
-        // Ensure child fills entire content container
-        AnchorPane.setTopAnchor(view, 0.0);
-        AnchorPane.setBottomAnchor(view, 0.0);
-        AnchorPane.setLeftAnchor(view, 0.0);
-        AnchorPane.setRightAnchor(view, 0.0);
+    public void displayContent(String fxmlPath) {
+        try {
+            Parent view = FXMLLoader.load(getClass().getResource(fxmlPath));
+            // calls the fxml
+            // closes the
+            listContainterFrame.getChildren().setAll(view);
+            //
+            // making sure that every fxml is aligned
+            AnchorPane.setTopAnchor(view, 0.0);
+            AnchorPane.setBottomAnchor(view, 0.0);
+            AnchorPane.setLeftAnchor(view, 0.0);
+            AnchorPane.setRightAnchor(view, 0.0);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
-
 }

@@ -1,4 +1,4 @@
-package ClientMVC.ClientView.homepageVersion2;
+package ClientMVC.ClientView.HomepageV2;
 
 import ClientMVC.ClientView.Account.AccountJFXController;
 import javafx.application.Application;
@@ -8,16 +8,17 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
-public class homepageView {
+public class HomepageView {
     public class AccountView extends Application {
-        private AccountJFXController accountJFXController;
+        private HomepageJFXController homepageJFXController;
 
         @Override
         public void start(Stage stage) {
             try {
                 FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/homepage-version2.fxml"));
                 Parent root = loader.load();
-                accountJFXController = loader.getController();
+                homepageJFXController = loader.getController();
+//                homepageJFXController = loader.showFriendsTab();
 
                 Scene scene = new Scene(root);
                 stage.initStyle(StageStyle.UNDECORATED);
@@ -32,8 +33,8 @@ public class homepageView {
             }
         }
 
-        public AccountJFXController getFXController() {
-            return accountJFXController;
+        public HomepageJFXController getFXController() {
+            return homepageJFXController;
         }
     }
 }
