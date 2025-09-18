@@ -6,9 +6,7 @@ import ClientMVC.ClientView.Connection.ConnectionView;
 import javafx.application.Platform;
 import javafx.stage.Stage;
 
-
 import java.io.IOException;
-import java.net.Socket;
 
 public class Main{
 
@@ -25,6 +23,4 @@ public class Main{
             }
         });
     }
-
 }
-

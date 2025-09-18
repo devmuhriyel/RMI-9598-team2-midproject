@@ -58,10 +58,6 @@ public class ChatJFXController {
         }
     }
 
-    public void addMessage(String message) {
-        addMessage(message, true);
-    }
-
     public void addMessage(String message, boolean isSender) {
         // Use "You" for sender, or extract from message if it contains sender info
         String senderName = isSender ? "You" : "Friend";

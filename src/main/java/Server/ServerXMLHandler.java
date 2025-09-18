@@ -10,15 +10,11 @@ import javax.xml.transform.stream.StreamResult;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 
 public class ServerXMLHandler {
     private static final String FILE_PATH = "src/main/resources/XMLFiles/Users.xml";
-    private static String chatHistoryFile = "src/main/resources/XMLFiles/bobAccount.xml";
 
     public void registerUser(String username, String password) throws Exception {
         File file = new File(FILE_PATH);
@@ -149,6 +145,15 @@ public class ServerXMLHandler {
                 }
                 break;
             }
+            case "CREATE_GROUP":
+                reply = "CREATE_GROUP";
+                break;
+            case "JOIN_GROUP":
+                reply = "JOIN_GROUP";
+                break;
+            case "LIST_GROUPS":
+                reply = "LIST_GROUPS";
+                break;
             case "SEND_MESSAGE":
                 //Parse the xml string
                 String sender = content[0];
@@ -159,9 +164,21 @@ public class ServerXMLHandler {
                 updateXMLs(receiver, sender, receiver, message);
                 reply = "SEND_MESSAGE";
                 break;
+            case "SEND_GROUP_MESSAGE":
+                String groupSender = content[0];
+                String targetGroup = content[1];
+                String groupMessage = content[2];
+
+                handleGroupMessage(groupSender, targetGroup, groupMessage);
+                reply = "SEND_GROUP_MESSAGE";
+                break;
+
+            case "SEND_COMMUNITY_MESSAGE":
+
+                reply = "SEND_COMMUNITY_MESSAGE";
+                break;
             case "GET_CHAT_HISTORY":
                 String requestingUser = content[0];
-                String friendName = content[1];
                 try {
                     File userFile = new File("src/main/resources/XMLFiles/" + requestingUser + "Account.xml");
                     if (userFile.exists()) {
@@ -174,25 +191,6 @@ public class ServerXMLHandler {
                     e.printStackTrace();
                 }
                 break;
-            case "CREATE_GROUP":
-                reply = "CREATE_GROUP";
-                break;
-            case "JOIN_GROUP":
-                reply = "JOIN_GROUP";
-                break;
-            case "LIST_GROUPS":
-                reply = "LIST_GROUPS";
-                break;
-            // Add this case to your readMessage() method in ServerXMLHandler.java
-            case "SEND_GROUP_MESSAGE":
-                String groupSender = content[0];
-                String targetGroup = content[1];
-                String groupMessage = content[2];
-
-                // Update XML for all group members
-                handleGroupMessage(groupSender, targetGroup, groupMessage);
-                reply = "SEND_GROUP_MESSAGE";
-                break;
         }
         return reply;
     }
@@ -200,12 +198,12 @@ public class ServerXMLHandler {
     private void handleGroupMessage(String sender, String groupName, String message) {
         try {
             List<String> groupMembers = getGroupMembers(groupName);
+            System.out.println("Handling group message for group: " + groupName + " with " + groupMembers.size() + " members");
 
-            // Send message to all group members (including sender for their own record)
             for (String member : groupMembers) {
+                System.out.println("Updating XML for member: " + member);
                 updateGroupXML(member, sender, groupName, message);
             }
-
             System.out.println("Group message sent from " + sender + " to group " + groupName + ": " + message);
 
         } catch (Exception e) {
@@ -213,6 +211,8 @@ public class ServerXMLHandler {
             e.printStackTrace();
         }
     }
+
+
 
     public List<String> getGroupMembers(String groupName) {
         List<String> members = new ArrayList<>();
@@ -223,24 +223,27 @@ public class ServerXMLHandler {
             for (int i = 0; i < groupList.getLength(); i++) {
                 Element group = (Element) groupList.item(i);
                 if (group.getAttribute("name").equals(groupName)) {
-                    // Add group creator
+                    // Add group creator FIRST
                     String creator = group.getAttribute("creator");
                     if (creator != null && !creator.isEmpty()) {
                         members.add(creator);
+                        System.out.println("Added creator to group members: " + creator);
                     }
 
-                    // Add all members
+                    // Add all other members
                     NodeList memberList = group.getElementsByTagName("member");
                     for (int j = 0; j < memberList.getLength(); j++) {
                         Element member = (Element) memberList.item(j);
                         String memberName = member.getAttribute("username");
                         if (!members.contains(memberName)) { // Avoid duplicates
                             members.add(memberName);
+                            System.out.println("Added member to group: " + memberName);
                         }
                     }
                     break;
                 }
             }
+            System.out.println("Total members found for group " + groupName + ": " + members.size());
         } catch (Exception e) {
             System.err.println("Error getting group members: " + e.getMessage());
             e.printStackTrace();
@@ -324,7 +327,10 @@ public class ServerXMLHandler {
         chatHistory.appendChild(chat);
 
         saveDocument(doc, file);
+
+        System.out.println("Updated group XML for user: " + owner + " in group: " + groupName);
     }
+
 
     public void updateXMLs(String owner, String sender, String receiver, String msg) throws IOException, SAXException, ParserConfigurationException, TransformerException {
         File file = new File("src/main/resources/XMLFiles/" + owner + "Account.xml");

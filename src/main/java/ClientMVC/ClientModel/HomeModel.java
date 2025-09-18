@@ -30,50 +30,22 @@ public class HomeModel implements Runnable{
         String msg;
         try {
             while ((msg = readMSG.readLine()) != null) {
+                System.out.println("HomeModel received: " + msg); // Debug log
+
                 if (msg.startsWith("<")) {
                     String trimmed = msg.trim();
                     String reply = userXMLHandler.getReply(msg);
+                    System.out.println("Reply type: " + reply); // Debug log
+
                     if (reply != null) {
                         switch (reply) {
                             case "GET_CHAT_HISTORY":
-                                // Handle the response containing the updated XML file
                                 String body = userXMLHandler.getBody(msg);
-                                if (body != null && !body.isEmpty()) {
-                                    // Decode the Base64 encoded XML content and save it locally
-                                    userXMLHandler.saveUpdatedAccountXML(username, body);
-                                }
-                                break;
-                            case "GET_GROUP_CHAT_HISTORY":
-                                // Handle group chat history response
-                                String groupBody = userXMLHandler.getBody(msg);
-                                if (groupBody != null && !groupBody.isEmpty()) {
-                                    userXMLHandler.saveUpdatedAccountXML(username, groupBody);
-                                }
-                                break;
-                            case "SEND_MESSAGE":
-                                // Handle incoming messages - update local XML
-                                String msgBody = userXMLHandler.getBody(msg);
-                                if (msgBody != null && !msgBody.isEmpty()) {
-                                    userXMLHandler.saveUpdatedAccountXML(username, msgBody);
-                                }
-                                // Also notify message listener for UI updates
-                                if (messageListener != null) {
-                                    messageListener.accept(msg);
-                                }
-                                break;
-                            case "SEND_GROUP_MESSAGE":
-                                // Handle incoming group messages - update local XML
-                                String groupMsgBody = userXMLHandler.getBody(msg);
-                                if (groupMsgBody != null && !groupMsgBody.isEmpty()) {
-                                    userXMLHandler.saveUpdatedAccountXML(username, groupMsgBody);
-                                }
-                                // Also notify message listener for UI updates
-                                if (messageListener != null) {
-                                    messageListener.accept(msg);
+                                if (body != null && !body.isEmpty() && body.equals("CHAT")) {
+
                                 }
                                 break;
                             case "FORCE_LOGOUT":
-                                // Handle force logout
                                 System.out.println("Logged out from another location");
                                 break;
                         }
@@ -81,10 +53,37 @@ public class HomeModel implements Runnable{
                 }
             }
         } catch (Exception e) {
+            System.err.println("Error in HomeModel: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
+    private String extractLatestMessageFromBase64(String base64Content) {
+        try {
+            byte[] decodedXML = java.util.Base64.getDecoder().decode(base64Content);
+            String xmlContent = new String(decodedXML, "UTF-8");
+
+            javax.xml.parsers.DocumentBuilderFactory factory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
+            javax.xml.parsers.DocumentBuilder builder = factory.newDocumentBuilder();
+            org.w3c.dom.Document doc = builder.parse(new java.io.ByteArrayInputStream(xmlContent.getBytes("UTF-8")));
+
+            org.w3c.dom.NodeList chatNodes = doc.getElementsByTagName("chat");
+
+            if (chatNodes.getLength() > 0) {
+                org.w3c.dom.Element lastChat = (org.w3c.dom.Element) chatNodes.item(chatNodes.getLength() - 1);
+                String sender = lastChat.getElementsByTagName("sender").item(0).getTextContent();
+                String message = lastChat.getElementsByTagName("msg").item(0).getTextContent();
+
+                // Only return messages that are NOT from the current user
+                if (!sender.equals(username)) {
+                    return message;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error extracting latest message: " + e.getMessage());
+        }
+        return null;
+    }
 
     //MVC Methods
     public void requestChatHistory(String friendName) {
@@ -110,8 +109,6 @@ public class HomeModel implements Runnable{
     public void setMessageListener(Consumer<String> messageListener) {
         this.messageListener = messageListener;
     }
-
-    // Add this method to your HomeModel class
 
     public void requestGroupChatHistory(String groupName) {
         try {

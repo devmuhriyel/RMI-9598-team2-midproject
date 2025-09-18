@@ -1,6 +1,6 @@
 package ClientMVC.ClientController;
 
-import ClientMVC.ClientModel.LoginModel;
+import ClientMVC.ClientModel.UnifiedClientModel;
 import ClientMVC.ClientView.Connection.ConnectionView;
 import ClientMVC.ClientModel.ConnectionModel;
 import ClientMVC.ClientView.Connection.ConnectionJFXController;
@@ -17,30 +17,29 @@ public class ConnectionController {
         this.view = view;
         this.model = model;
         this.connectionJFXController = jfxController;
-
         setupListeners();
     }
 
-    //MVC METHODS
     public void connect() {
         String ip = connectionJFXController.getIpAddress();
         String portText = connectionJFXController.getPortText();
         ConnectionModel.ConnectionResult result = model.connect(ip, portText);
+
         switch(result.getStatus()) {
             case SUCCESS:
                 Platform.runLater(() -> {
                     Stage stage = (Stage) connectionJFXController.getConnectButton().getScene().getWindow();
                     stage.close();
 
-                    // Launch Login GUI
                     try {
                         LoginView lView = new LoginView();
                         Stage loginStage = new Stage();
                         lView.start(loginStage);
 
-                        LoginModel lModel = new LoginModel(model.getSocket());
-                        new LoginController(lView, lModel, lView.getFXController());
-                        new Thread(lModel, "Logged In").start();
+                        // Create unified model for login phase
+                        UnifiedClientModel unifiedModel = new UnifiedClientModel(model.getSocket(), "");
+                        new LoginController(lView, unifiedModel, lView.getFXController());
+                        new Thread(unifiedModel, "Client Communication").start();
 
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -64,7 +63,6 @@ public class ConnectionController {
         }
     }
 
-    //LISTENER SETUP
     private void setupListeners(){
         connectionJFXController.setConnectButtonListener(() -> {
             connect();

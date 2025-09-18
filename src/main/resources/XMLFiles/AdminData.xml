@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<AdminData>
+    <users>
+        <user>
+            <username>alice</username>
+            <password>pass123</password>
+        </user>
+        <user>
+            <username>bob</username>
+            <password>secret456</password>
+        </user>
+        <user>
+            <username>charlie</username>
+            <password>mypwd789</password>
+        </user>
+    </users>
+
+    <groups>
+        <group>
+            <owner>alice</owner>
+            <groupName>Project A</groupName>
+        </group>
+        <group>
+            <owner>bob</owner>
+            <groupName>Team X</groupName>
+        </group>
+        <group>
+            <owner>charlie</owner>
+            <groupName>Alpha Squad</groupName>
+        </group>
+    </groups>
+</AdminData>

@@ -62,8 +62,8 @@
                 <TableView fx:id="tableView" prefHeight="400" prefWidth="600"
                            style="-fx-background-color: #2a2a2a; -fx-text-fill: white;">
                     <columns>
-                        <TableColumn fx:id="ownerCol" prefWidth="310" text="Username"/>
-                        <TableColumn fx:id="groupChatCol" prefWidth="310" text="Password"/>
+                        <TableColumn fx:id="usernameCol" prefWidth="310" text="Username"/>
+                        <TableColumn fx:id="passwordCol" prefWidth="310" text="Password"/>
                     </columns>
                 </TableView>
             </center>
