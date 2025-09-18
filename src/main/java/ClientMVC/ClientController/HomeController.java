@@ -9,6 +9,7 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class HomeController {
@@ -56,7 +57,12 @@ public class HomeController {
         // Handle group clicks
         ui.setGroupClickListener(groupName -> {
             try {
-                openGroupChat(groupName);
+                // Check if it's community chat
+                if (groupName.equals("Community Chat")) {
+                    openCommunityChat();
+                } else {
+                    openGroupChat(groupName);
+                }
                 view.openChatWithFriend();
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -95,6 +101,16 @@ public class HomeController {
 
         ChatController chatController = new ChatController(model, chatView, chatView.getFXController());
         chatController.loadGroupChatHistory(model.getUsername(), groupName);
+    }
+
+    private void openCommunityChat() throws IOException {
+        ChatView chatView = new ChatView();
+        Stage stage = new Stage();
+        chatView.start(stage);
+        chatView.getFXController().setLabel("Community Chat");
+
+        ChatController chatController = new ChatController(model, chatView, chatView.getFXController());
+        chatController.loadCommunityChatHistory(model.getUsername());
     }
 
     private List<String> filterList(List<String> source, String queryLower) {

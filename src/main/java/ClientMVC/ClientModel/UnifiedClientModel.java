@@ -20,6 +20,7 @@ public class UnifiedClientModel implements Runnable {
     private Consumer<String> chatHistoryListener;
     private Consumer<String> forceLogoutListener;
     private Consumer<String> newMessageListener;
+    private Consumer<String> communityMessageListener; // New listener for community chat
 
     public UnifiedClientModel(Socket socket, String username) throws IOException {
         this.socket = socket;
@@ -60,6 +61,14 @@ public class UnifiedClientModel implements Runnable {
                     handleNewMessageResponse(xmlResponse);
                     break;
 
+                case "NEW_GROUP_MESSAGE":
+                    handleNewGroupMessageResponse(xmlResponse);
+                    break;
+
+                case "COMMUNITY_MESSAGE":
+                    handleCommunityMessageResponse(xmlResponse);
+                    break;
+
                 case "FORCE_LOGOUT":
                     if (forceLogoutListener != null) {
                         Platform.runLater(() -> forceLogoutListener.accept("Logged out from another location"));
@@ -82,6 +91,27 @@ public class UnifiedClientModel implements Runnable {
             }
         } catch (Exception e) {
             System.err.println("Error handling XML response: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void handleCommunityMessageResponse(String xmlResponse) {
+        try {
+            String body = xmlHandler.getResponseBody(xmlResponse);
+            if (body != null && !body.isEmpty()) {
+                // Parse community message: sender![]!message
+                String[] parts = body.split("!\\[]!", 2);
+                if (parts.length == 2) {
+                    String sender = parts[0];
+                    String message = parts[1];
+
+                    if (communityMessageListener != null) {
+                        Platform.runLater(() -> communityMessageListener.accept(sender + ": " + message));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling community message response: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -122,11 +152,7 @@ public class UnifiedClientModel implements Runnable {
             String body = xmlHandler.getResponseBody(xmlResponse);
             if (body != null && !body.isEmpty()) {
                 if (isValidBase64(body)) {
-                    // Save the updated XML locally
                     xmlHandler.saveUpdatedAccountXML(username, body);
-
-                    // Instead of trying to extract the latest message, just trigger a refresh
-                    // This ensures the ChatController loads the complete, correct conversation
                     if (chatHistoryListener != null) {
                         System.out.println("NEW_MESSAGE received, triggering chat refresh");
                         Platform.runLater(() -> chatHistoryListener.accept("MESSAGE_RECEIVED"));
@@ -135,6 +161,24 @@ public class UnifiedClientModel implements Runnable {
             }
         } catch (Exception e) {
             System.err.println("Error handling new message response: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void handleNewGroupMessageResponse(String xmlResponse) {
+        try {
+            String body = xmlHandler.getResponseBody(xmlResponse);
+            if (body != null && !body.isEmpty()) {
+                if (isValidBase64(body)) {
+                    xmlHandler.saveUpdatedAccountXML(username, body);
+                    if (chatHistoryListener != null) {
+                        System.out.println("NEW_GROUP_MESSAGE received, triggering chat refresh");
+                        Platform.runLater(() -> chatHistoryListener.accept("MESSAGE_RECEIVED"));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling new group message response: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -195,6 +239,19 @@ public class UnifiedClientModel implements Runnable {
             String xmlMessage = "<Request><type>SEND_GROUP_MESSAGE</type><content>" +
                     username + "![]!" + groupName + "![]!" + message + "</content></Request>";
             System.out.println("Sending group message: " + xmlMessage);
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public synchronized void sendCommunityMessage(String message) {
+        try {
+            String xmlMessage = "<Request><type>SEND_COMMUNITY_MESSAGE</type><content>" +
+                    username + "![]!" + message + "</content></Request>";
+            System.out.println("Sending community message: " + xmlMessage);
             writeMSG.write(xmlMessage);
             writeMSG.newLine();
             writeMSG.flush();
@@ -275,6 +332,10 @@ public class UnifiedClientModel implements Runnable {
         this.newMessageListener = newMessageListener;
     }
 
+    public void setCommunityMessageListener(Consumer<String> communityMessageListener) {
+        this.communityMessageListener = communityMessageListener;
+    }
+
     // Utility methods
     public List<String> getFriends() {
         return xmlHandler.getFriends(username);
@@ -285,8 +346,13 @@ public class UnifiedClientModel implements Runnable {
     }
 
     // Getters
-    public Socket getSocket() { return socket; }
-    public String getUsername() { return username; }
+    public Socket getSocket() {
+        return socket;
+    }
+
+    public String getUsername() {
+        return username;
+    }
 
     public void disconnect() {
         try {

@@ -145,6 +145,15 @@ public class ServerXMLHandler {
                 }
                 break;
             }
+            case "CREATE_GROUP":
+                reply = "CREATE_GROUP";
+                break;
+            case "JOIN_GROUP":
+                reply = "JOIN_GROUP";
+                break;
+            case "LIST_GROUPS":
+                reply = "LIST_GROUPS";
+                break;
             case "SEND_MESSAGE":
                 //Parse the xml string
                 String sender = content[0];
@@ -154,6 +163,19 @@ public class ServerXMLHandler {
                 updateXMLs(sender, sender, receiver, message);
                 updateXMLs(receiver, sender, receiver, message);
                 reply = "SEND_MESSAGE";
+                break;
+            case "SEND_GROUP_MESSAGE":
+                String groupSender = content[0];
+                String targetGroup = content[1];
+                String groupMessage = content[2];
+
+                handleGroupMessage(groupSender, targetGroup, groupMessage);
+                reply = "SEND_GROUP_MESSAGE";
+                break;
+
+            case "SEND_COMMUNITY_MESSAGE":
+
+                reply = "SEND_COMMUNITY_MESSAGE";
                 break;
             case "GET_CHAT_HISTORY":
                 String requestingUser = content[0];
@@ -169,25 +191,6 @@ public class ServerXMLHandler {
                     e.printStackTrace();
                 }
                 break;
-            case "CREATE_GROUP":
-                reply = "CREATE_GROUP";
-                break;
-            case "JOIN_GROUP":
-                reply = "JOIN_GROUP";
-                break;
-            case "LIST_GROUPS":
-                reply = "LIST_GROUPS";
-                break;
-            // Add this case to your readMessage() method in ServerXMLHandler.java
-            case "SEND_GROUP_MESSAGE":
-                String groupSender = content[0];
-                String targetGroup = content[1];
-                String groupMessage = content[2];
-
-                // Update XML for all group members
-                handleGroupMessage(groupSender, targetGroup, groupMessage);
-                reply = "SEND_GROUP_MESSAGE";
-                break;
         }
         return reply;
     }
@@ -195,12 +198,9 @@ public class ServerXMLHandler {
     private void handleGroupMessage(String sender, String groupName, String message) {
         try {
             List<String> groupMembers = getGroupMembers(groupName);
-
-            // Send message to all group members (including sender for their own record)
             for (String member : groupMembers) {
                 updateGroupXML(member, sender, groupName, message);
             }
-
             System.out.println("Group message sent from " + sender + " to group " + groupName + ": " + message);
 
         } catch (Exception e) {

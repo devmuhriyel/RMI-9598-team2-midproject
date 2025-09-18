@@ -13,6 +13,7 @@ public class ChatController {
     private ChatJFXController chatJFXController;
     private String currentChatPartner;
     private boolean isGroupChat = false;
+    private boolean isCommunityChat = false;
 
     public ChatController(UnifiedClientModel model, ChatView view, ChatJFXController uiElements) {
         this.model = model;
@@ -33,6 +34,20 @@ public class ChatController {
                     } else {
                         // Handle individual message updates
                         handleIncomingMessage(message);
+                    }
+                });
+            }
+        });
+
+        // Set up community message listener
+        model.setCommunityMessageListener(message -> {
+            if (message != null && !message.trim().isEmpty() && isCommunityChat) {
+                javafx.application.Platform.runLater(() -> {
+                    String[] parts = message.split(": ", 2);
+                    if (parts.length == 2) {
+                        String sender = parts[0];
+                        String msg = parts[1];
+                        chatJFXController.addChatMessage(sender, msg, model.getUsername());
                     }
                 });
             }
@@ -60,6 +75,8 @@ public class ChatController {
 
         if (isGroupChat) {
             return true; // Show all group messages
+        } else if (isCommunityChat) {
+            return true; // Show all community messages
         } else {
             return sender.equals(currentChatPartner) || sender.equals(model.getUsername());
         }
@@ -73,6 +90,7 @@ public class ChatController {
     private void goToHome() {
         currentChatPartner = null;
         isGroupChat = false;
+        isCommunityChat = false;
         view.goToHome();
     }
 
@@ -85,7 +103,9 @@ public class ChatController {
             chatJFXController.addChatMessage(model.getUsername(), textToSend, model.getUsername());
 
             // Send message through unified model
-            if (receiver.startsWith("Group: ")) {
+            if (receiver.equals("Community Chat")) {
+                model.sendCommunityMessage(textToSend);
+            } else if (receiver.startsWith("Group: ")) {
                 String groupName = receiver.substring(7);
                 model.sendGroupMessage(textToSend, groupName);
             } else {
@@ -97,7 +117,7 @@ public class ChatController {
     }
 
     public void refreshChatHistory() {
-        if (currentChatPartner != null) {
+        if (currentChatPartner != null && !isCommunityChat) {
             String currentUser = model.getUsername();
             System.out.println("Refreshing chat history for: " + currentChatPartner);
 
@@ -112,6 +132,7 @@ public class ChatController {
     public void loadChatHistory(String currentUser, String friend) {
         this.currentChatPartner = friend;
         this.isGroupChat = false;
+        this.isCommunityChat = false;
 
         UserXMLHandler xmlHandler = new UserXMLHandler();
         List<UserXMLHandler.ChatMessage> history = xmlHandler.getChatHistoryWithSenders(currentUser, friend);
@@ -127,6 +148,7 @@ public class ChatController {
     public void loadGroupChatHistory(String currentUser, String groupName) {
         this.currentChatPartner = groupName;
         this.isGroupChat = true;
+        this.isCommunityChat = false;
 
         UserXMLHandler xmlHandler = new UserXMLHandler();
         List<UserXMLHandler.ChatMessage> history = xmlHandler.getGroupChatHistoryWithSenders(currentUser, groupName);
@@ -139,11 +161,28 @@ public class ChatController {
         }
     }
 
+    public void loadCommunityChatHistory(String currentUser) {
+        this.currentChatPartner = "Community Chat";
+        this.isGroupChat = false;
+        this.isCommunityChat = true;
+
+        chatJFXController.clearMessages();
+
+        // Community chat doesn't have history, just show welcome message
+        chatJFXController.addChatMessage("System", "Welcome to Community Chat! Messages here are not saved.", currentUser);
+
+        System.out.println("Community chat loaded - no history available");
+    }
+
     public String getCurrentChatPartner() {
         return currentChatPartner;
     }
 
     public boolean isGroupChat() {
         return isGroupChat;
+    }
+
+    public boolean isCommunityChat() {
+        return isCommunityChat;
     }
 }

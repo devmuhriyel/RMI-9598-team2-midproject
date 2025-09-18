@@ -90,10 +90,10 @@ public class ClientThread implements Runnable {
                                 sendMessage("<Response><reply>GET_CHAT_HISTORY</reply><body>FILE_NOT_FOUND</body></Response>");
                             }
                         } catch (Exception e) {
-
                             e.printStackTrace();
                         }
                         break;
+
                     case "ADD_FRIEND_REQUEST":
                         String[] addContent = extractContent(xmlMsg);
                         if (xmlHandler.addFriendRequest(addContent[0], addContent[1])) {
@@ -150,9 +150,32 @@ public class ClientThread implements Runnable {
                         java.util.List<String> groups = xmlHandler.getUserGroups(listGroupsContent[0]);
                         sendMessage("<Response status=\"GROUPS_LIST\"><body>" + String.join(",", groups) + "</body></Response>");
                         break;
-                    case "SEND_GROUP_MESSAGE":
 
+                    case "SEND_GROUP_MESSAGE":
+                        String groupSender = getSender(xmlMsg);
+                        String targetGroup = getGroupName(xmlMsg);
+                        String groupMessage = getGroupMessage(xmlMsg);
+
+                        // Send updated chat history to all group members
+                        java.util.List<String> groupMembers = xmlHandler.getGroupMembers(targetGroup);
+                        for (String member : groupMembers) {
+                            for (ClientThread client : clients) {
+                                if (client.socket.isConnected() && client.name != null && client.name.equals(member)) {
+                                    try {
+                                        File userFile = new File("src/main/resources/XMLFiles/" + client.name + "Account.xml");
+                                        if (userFile.exists()) {
+                                            byte[] fileContent = java.nio.file.Files.readAllBytes(userFile.toPath());
+                                            String encodedContent = java.util.Base64.getEncoder().encodeToString(fileContent);
+                                            client.sendMessage("<Response><reply>NEW_GROUP_MESSAGE</reply><body>" + encodedContent + "</body></Response>");
+                                        }
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
+                        }
                         break;
+
                     case "SEND_MESSAGE":
                         String sender = getSender(xmlMsg);
                         String receiver = getReceiver(xmlMsg);
@@ -176,6 +199,16 @@ public class ClientThread implements Runnable {
                             }
                         }
                         break;
+
+                    case "SEND_COMMUNITY_MESSAGE":
+                        String communitySender = getSender(xmlMsg);
+                        String communityMessage = getCommunityMessage(xmlMsg);
+
+                        // Broadcast community message to all connected clients (no history saved)
+                        String communityBroadcast = "<Response><reply>COMMUNITY_MESSAGE</reply>" +
+                                "<body>" + communitySender + "![]!" + communityMessage + "</body></Response>";
+                        broadcastCommunityMessage(communityBroadcast);
+                        break;
                 }
             }
         } catch (Exception e) {
@@ -185,6 +218,25 @@ public class ClientThread implements Runnable {
                 logOut();
             } catch (IOException e) {
                 e.printStackTrace();
+            }
+        }
+    }
+
+    // Broadcasts community message to all connected clients
+    private void broadcastCommunityMessage(String message) {
+        synchronized (clients) {
+            for (ClientThread c : clients) {
+                if (c.socket.isConnected() && c.name != null) {
+                    try {
+                        c.writeMSG.write(message);
+                        c.writeMSG.newLine();
+                        c.writeMSG.flush();
+                    } catch (IOException e) {
+                        try {
+                            c.logOut();
+                        } catch (IOException ignored) {}
+                    }
+                }
             }
         }
     }
@@ -216,6 +268,7 @@ public class ClientThread implements Runnable {
             System.out.println("Failed to send message to " + name);
         }
     }
+
     private String getSender(String xmlString) throws Exception {
         DocumentBuilderFactory senderFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder senderBuilder = senderFactory.newDocumentBuilder();
@@ -224,6 +277,7 @@ public class ClientThread implements Runnable {
         String sender = content[0];
         return sender;
     }
+
     private String getReceiver(String xmlString) throws Exception {
         DocumentBuilderFactory senderFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder senderBuilder = senderFactory.newDocumentBuilder();
@@ -231,6 +285,30 @@ public class ClientThread implements Runnable {
         String[] content = senderDocument.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
         String receiver = content[1];
         return receiver;
+    }
+
+    private String getGroupName(String xmlString) throws Exception {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document document = builder.parse(new ByteArrayInputStream(xmlString.getBytes("UTF-8")));
+        String[] content = document.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
+        return content[1]; // Group name is at index 1
+    }
+
+    private String getGroupMessage(String xmlString) throws Exception {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document document = builder.parse(new ByteArrayInputStream(xmlString.getBytes("UTF-8")));
+        String[] content = document.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
+        return content[2]; // Message is at index 2
+    }
+
+    private String getCommunityMessage(String xmlString) throws Exception {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document document = builder.parse(new ByteArrayInputStream(xmlString.getBytes("UTF-8")));
+        String[] content = document.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
+        return content[1]; // Community message is at index 1
     }
 
     // Extract username from <content> (split by "waw")
@@ -258,6 +336,7 @@ public class ClientThread implements Runnable {
         }
         socket.close();
     }
+
     private void debugClientState() {
         System.out.println("=== CLIENT DEBUG INFO ===");
         System.out.println("Client name: " + this.name);
@@ -303,6 +382,4 @@ public class ClientThread implements Runnable {
             }
         }
     }
-
-
 }

@@ -311,6 +311,22 @@
                 <sender>bob</sender>
                 <msg>IT STILL IS</msg>
             </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>wazzup</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>hello bob</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>wadifjioedawdwdwd</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>bavsfdghasdhgasdas</msg>
+            </chat>
         </chathistory>
     </friend>
     <friend>

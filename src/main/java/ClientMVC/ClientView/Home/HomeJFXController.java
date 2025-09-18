@@ -40,7 +40,7 @@ public class HomeJFXController {
     private List<String> originalFriends = Collections.emptyList();
     private List<String> originalGroups = Collections.emptyList();
 
-    private static final List<String> PLACEHOLDER_GROUPS = Arrays.asList("General Chat", "Project Team", "Study Group");
+    private static final List<String> PLACEHOLDER_GROUPS = Arrays.asList("Community Chat", "General Chat", "Project Team", "Study Group");
 
     private Consumer<String> searchListener;
 
@@ -143,28 +143,55 @@ public class HomeJFXController {
     public void renderGroups(List<String> groups) {
         Platform.runLater(() -> {
             messagesArea1.getChildren().clear();
-            List<String> groupsToRender;
+
+            // Always show Community Chat first
+            Button communityBtn = new Button("🌐 Community Chat");
+            communityBtn.setMaxWidth(Double.MAX_VALUE);
+            communityBtn.setStyle("-fx-background-color: #e8f5e8; -fx-text-fill: black; -fx-padding: 10;");
+            communityBtn.setOnAction(event -> {
+                if (groupClickListener != null) {
+                    groupClickListener.accept("Community Chat");
+                }
+                System.out.println("Selected Community Chat");
+            });
+            messagesArea1.getChildren().add(communityBtn);
+
+            // Add user's actual groups if any
             if (groups != null && !groups.isEmpty()) {
-                groupsToRender = new ArrayList<>(groups);
+                for (String group : groups) {
+                    Button groupBtn = new Button("📁 " + group);
+                    groupBtn.setMaxWidth(Double.MAX_VALUE);
+                    groupBtn.setOnAction(event -> {
+                        if (groupClickListener != null) {
+                            groupClickListener.accept(group);
+                        }
+                        System.out.println("Selected group: " + group);
+                    });
+                    messagesArea1.getChildren().add(groupBtn);
+                }
             } else {
-                groupsToRender = new ArrayList<>(PLACEHOLDER_GROUPS);
+                // Show placeholder groups (excluding Community Chat since it's already added)
+                List<String> otherPlaceholders = Arrays.asList("General Chat", "Project Team", "Study Group");
+                for (String group : otherPlaceholders) {
+                    Button groupBtn = new Button("📁 " + group);
+                    groupBtn.setMaxWidth(Double.MAX_VALUE);
+                    groupBtn.setOnAction(event -> {
+                        if (groupClickListener != null) {
+                            groupClickListener.accept(group);
+                        }
+                        System.out.println("Selected group: " + group);
+                    });
+                    messagesArea1.getChildren().add(groupBtn);
+                }
             }
-            for (String group : groupsToRender) {
-                Button groupBtn = new Button("📁 " + group);
-                groupBtn.setMaxWidth(Double.MAX_VALUE);
-                groupBtn.setOnAction(event -> {
-                    if (groupClickListener != null) {
-                        groupClickListener.accept(group);
-                    }
-                    System.out.println("Selected group: " + group);
-                });
-                messagesArea1.getChildren().add(groupBtn);
-            }
+
+            // Add create group button
             Button createGroupBtn = new Button("+ Create New Group");
             createGroupBtn.setMaxWidth(Double.MAX_VALUE);
             createGroupBtn.setStyle("-fx-background-color: #dedcff; -fx-text-fill: black; -fx-padding: 10;");
             createGroupBtn.setOnAction(event -> {
                 System.out.println("Create new group clicked");
+                // TODO: Implement group creation functionality
             });
             messagesArea1.getChildren().add(createGroupBtn);
         });
