@@ -8,19 +8,21 @@ import javafx.stage.Stage;
 
 public class AdminPage extends Application {
 
-    private static Stage primaryStage;
     private AdminPageJFXController jfxController;
 
     @Override
     public void start(Stage stage) throws Exception {
-        primaryStage = stage;
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/Admin.fxml"));
         Parent root = loader.load();
         jfxController = loader.getController();
-        primaryStage.setTitle("Admin Page");
-        primaryStage.setScene(new Scene(root, 800, 600));
-        primaryStage.setResizable(true);
-        primaryStage.show();
+
+        // Initialize Controller
+        new ClientMVC.ClientController.AdminController(jfxController);
+
+        stage.setTitle("Admin Page");
+        stage.setScene(new Scene(root, 800, 600));
+        stage.setResizable(true);
+        stage.show();
     }
 
     public AdminPageJFXController getFXController() {
