@@ -526,6 +526,65 @@ public class UserXMLHandler {
         }
         return null;
     }
+    public static boolean deleteUserFromXML(String filePath, String username) {
+        try {
+            File xmlFile = new File(filePath);
+            if (!xmlFile.exists()) return false;
 
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(xmlFile);
+            doc.getDocumentElement().normalize();
 
+            NodeList userList = doc.getElementsByTagName("user");
+            for (int i = 0; i < userList.getLength(); i++) {
+                Element userElement = (Element) userList.item(i);
+                String uname = userElement.getElementsByTagName("username").item(0).getTextContent();
+                if (uname.equals(username)) {
+                    userElement.getParentNode().removeChild(userElement);
+
+                    // Save back to file
+                    TransformerFactory tf = TransformerFactory.newInstance();
+                    Transformer transformer = tf.newTransformer();
+                    transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                    transformer.transform(new DOMSource(doc), new StreamResult(xmlFile));
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    public static boolean deleteGroupFromXML(String filePath, String groupName) {
+        try {
+            File xmlFile = new File(filePath);
+            if (!xmlFile.exists()) return false;
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(xmlFile);
+            doc.getDocumentElement().normalize();
+
+            NodeList groupList = doc.getElementsByTagName("group");
+            for (int i = 0; i < groupList.getLength(); i++) {
+                Element groupElement = (Element) groupList.item(i);
+                String gName = groupElement.getElementsByTagName("groupName").item(0).getTextContent();
+
+                if (gName.equals(groupName)) {
+                    groupElement.getParentNode().removeChild(groupElement);
+
+                    // Save updated XML
+                    TransformerFactory tf = TransformerFactory.newInstance();
+                    Transformer transformer = tf.newTransformer();
+                    transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                    transformer.transform(new DOMSource(doc), new StreamResult(xmlFile));
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 }

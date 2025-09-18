@@ -2,6 +2,7 @@ package ClientMVC.ClientController;
 
 import ClientMVC.ClientModel.AdminModel;
 import ClientMVC.ClientView.Admin.AdminPageJFXController;
+import ClientMVC.UserXMLHandler;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
@@ -52,6 +53,14 @@ public class AdminController {
         }
         if (view.getBackToUsersButton() != null) {
             view.getBackToUsersButton().setOnAction(e -> switchToUsers());
+        }
+        // ✅ Delete button
+        if (view.getDeleteButton() != null) {
+            view.getDeleteButton().setOnAction(e -> onDeleteUser());
+        }
+        // ✅ Delete group
+        if (view.getGroupDeleteButton() != null) {
+            view.getGroupDeleteButton().setOnAction(e -> onDeleteGroup());
         }
     }
 
@@ -124,5 +133,32 @@ public class AdminController {
             }
         } catch (Exception e) { e.printStackTrace(); }
         return groups;
+    }
+
+    private void onDeleteUser() {
+        AdminModel selected = view.getTableView().getSelectionModel().getSelectedItem();
+        if (selected != null) {
+            boolean success = UserXMLHandler.deleteUserFromXML(
+                    "src/main/resources/XMLFiles/AdminData.xml",
+                    selected.getUsername()
+            );
+
+            if (success) {
+                view.getTableView().getItems().remove(selected);
+            }
+        }
+    }
+    private void onDeleteGroup() {
+        AdminModel selected = view.getGroupsTableView().getSelectionModel().getSelectedItem();
+        if (selected != null) {
+            boolean success = UserXMLHandler.deleteGroupFromXML(
+                    "src/main/resources/XMLFiles/AdminData.xml",
+                    selected.getGroupName()
+            );
+
+            if (success) {
+                view.getGroupsTableView().getItems().remove(selected);
+            }
+        }
     }
 }
