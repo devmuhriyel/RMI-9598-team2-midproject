@@ -2,7 +2,6 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
-<?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.Font?>
@@ -55,10 +54,11 @@
             </top>
 
             <center>
+                <!-- 🔹 Groups Table -->
                 <TableView fx:id="groupsTableView" prefHeight="400" prefWidth="600"
                            style="-fx-background-color: #2a2a2a; -fx-text-fill: white;">
                     <columns>
-                        <TableColumn fx:id="ownerCol" prefWidth="310" text="Owner"/>
+                        <TableColumn fx:id="groupOwnerCol" prefWidth="310" text="Owner"/>
                         <TableColumn fx:id="groupCol" prefWidth="310" text="Group"/>
                     </columns>
                 </TableView>

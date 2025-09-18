@@ -1,91 +1,60 @@
 package ClientMVC.ClientView.Admin;
 
+import ClientMVC.ClientModel.AdminModel;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.stage.Stage;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.VBox;
 
 public class AdminPageJFXController {
 
-    @FXML
-    private TableView<?> tableView;
+    // Users Table
+    @FXML private TableView<AdminModel> tableView;
+    @FXML private TableColumn<AdminModel, String> usernameCol;
+    @FXML private TableColumn<AdminModel, String> passwordCol;
 
-    @FXML
-    private TextField searchField;
+    // Groups Table
+    @FXML private TableView<AdminModel> groupsTableView;
+    @FXML private TableColumn<AdminModel, String> groupOwnerCol;
+    @FXML private TableColumn<AdminModel, String> groupCol;
 
-    @FXML
-    private Button searchButton;
+    // Users form fields
+    @FXML private TextField searchField;
+    @FXML private Button searchButton;
 
-    @FXML
-    private TextField usernameField;
+    // Groups form fields
+    @FXML private TextField groupSearchField;
+    @FXML private Button groupSearchButton;
 
-    @FXML
-    private PasswordField newPasswordField;
-
-    @FXML
-    private PasswordField confirmPasswordField;
-
-    @FXML
-    private Button deleteButton;
-
-    @FXML
-    private Button editButton;
-
-    @FXML
-    private Button groupsButton;   // 🔹 button in Admin.fxml to open Groups.fxml
-
-    @FXML
-    private Button backToUsersButton;     // 🔹 button in Groups.fxml to go back to Admin.fxml
+    // Navigation
+    @FXML private Button groupsButton;        // Switch to Groups
+    @FXML private Button backToUsersButton;   // Switch to Users
 
     @FXML
     private void initialize() {
-        if (searchButton != null) {
-            searchButton.setOnAction(e -> {
-                System.out.println("Searching for: " + searchField.getText());
-            });
+        // Users Table setup
+        if (tableView != null) {
+            usernameCol.setCellValueFactory(new PropertyValueFactory<>("username"));
+            passwordCol.setCellValueFactory(new PropertyValueFactory<>("password"));
         }
 
-        if (groupsButton != null) {
-            groupsButton.setOnAction(e -> openGroupsPage());
-        }
-
-        if (backToUsersButton != null) {
-            backToUsersButton.setOnAction(e -> goBackToUsersPage());
+        // Groups Table setup
+        if (groupsTableView != null) {
+            groupOwnerCol.setCellValueFactory(new PropertyValueFactory<>("owner"));
+            groupCol.setCellValueFactory(new PropertyValueFactory<>("groupName"));
         }
     }
 
-    private void openGroupsPage() {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/AdminGroups.fxml"));
-            Parent root = loader.load();
-            Stage stage = (Stage) groupsButton.getScene().getWindow();
-            stage.setScene(new Scene(root, 800, 600));
-            stage.setTitle("AdminGroups Page");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+    // --- Getters for Controller ---
+    public TableView<AdminModel> getTableView() { return tableView; }
+    public TableView<AdminModel> getGroupsTableView() { return groupsTableView; }
 
-    private void goBackToUsersPage() {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/Admin.fxml"));
-            Parent root = loader.load();
-            Stage stage = (Stage) backToUsersButton.getScene().getWindow();
-            stage.setScene(new Scene(root, 800, 600));
-            stage.setTitle("Admin Page");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+    public TextField getSearchField() { return searchField; }
+    public Button getSearchButton() { return searchButton; }
 
-    // Getters
-    public Button getDeleteButton(){ return deleteButton; }
-    public Button getEditButton(){ return editButton; }
-    public TableView<?> getTableView(){ return tableView; }
+    public TextField getGroupSearchField() { return groupSearchField; }
+    public Button getGroupSearchButton() { return groupSearchButton; }
 
-    public String getUsername() { return usernameField.getText(); }
-    public String getNewPassword() { return newPasswordField.getText(); }
-    public String getConfirmPassword() { return confirmPasswordField.getText(); }
+    public Button getGroupsButton() { return groupsButton; }
+    public Button getBackToUsersButton() { return backToUsersButton; }
 }
