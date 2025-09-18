@@ -1,6 +1,7 @@
 package ClientMVC.ClientController;
 
 import ClientMVC.ClientModel.UnifiedClientModel;
+import ClientMVC.ClientView.Admin.AdminPage;
 import ClientMVC.ClientView.Home.HomeView;
 import ClientMVC.ClientView.Login.LoginJFXController;
 import ClientMVC.ClientView.Login.LoginView;
@@ -55,21 +56,43 @@ public class LoginController {
     public void handleLoginResponse(String msg) {
         try {
             String reply = userXMLHandler.getReply(msg.trim());
+
             if (reply != null && reply.equals("LOGIN_SUCCESS")) {
-                view.login();
-                Platform.runLater(() -> {
-                    try {
-                        HomeView homeView = new HomeView();
-                        Stage stage1 = new Stage();
-                        homeView.start(stage1);
+                String username = loginJFXController.getUsername();
 
-                        // Pass the same unified model to home controller
-                        new HomeController(model, homeView, homeView.getFXController());
+                if (username.equalsIgnoreCase("admin")) {
 
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                });
+                    Platform.runLater(() -> {
+                        try {
+                            AdminPage adminPage = new AdminPage();
+                            Stage stage = new Stage();
+                            adminPage.start(stage);
+
+                            // Hook controller if needed
+                            new AdminController(adminPage.getFXController());
+
+                            // Close login window
+                            LoginView.getPrimaryStage().close();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    });
+                } else {
+                    view.login();
+                    Platform.runLater(() -> {
+                        try {
+                            HomeView homeView = new HomeView();
+                            Stage stage1 = new Stage();
+                            homeView.start(stage1);
+
+                            // Pass the same unified model to home controller
+                            new HomeController(model, homeView, homeView.getFXController());
+
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    });
+                }
             } else if (reply != null && reply.equals("LOGIN_FAILED")) {
                 Platform.runLater(() -> {
                     System.out.println("Invalid username or password");

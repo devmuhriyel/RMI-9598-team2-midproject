@@ -46,4 +46,10 @@
     <password>123</password>
   </user>
 
+  //Admin
+  <user>
+    <username>admin</username>
+    <password>admin123</password>
+    <role>admin</role>
+  </user>
 </users>

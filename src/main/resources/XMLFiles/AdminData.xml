@@ -1,51 +1,46 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <AdminData>
-                
+                    
+    
     
     
     <users>
+                                        
+        
+        
+        
+        
                                 
         
         
         
         <user>
-                                                
+                                                            
             
-            
-            <username>bob</username>
-                                                
-            
-            
-            <password>secret456</password>
-                                            
-        
-        
-        </user>
-                                
-        
-        
-        <user>
-                                                
             
             
             <username>charlie</username>
-                                                
+                                                            
+            
             
             
             <password>mypwd789</password>
-                                            
+                                                        
+        
         
         
         </user>
-                            
+                                    
+    
     
     
     </users>
-                
+                    
+    
     
     
     <groups>
-                                
+                                        
         
                 
         
@@ -53,24 +48,30 @@
                         
         
         
+        
         <group>
-                                                
+                                                            
+            
             
             
             <owner>charlie</owner>
-                                                
+                                                            
+            
             
             
             <groupName>Alpha Squad</groupName>
-                                            
+                                                        
+        
         
         
         </group>
-                            
+                                    
+    
     
     
     </groups>
-            
+                
+
 
 
 </AdminData>
