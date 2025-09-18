@@ -1,22 +1,16 @@
 package ClientMVC.ClientView.Admin;
 
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.BorderPane;
+import javafx.stage.Stage;
 
 public class AdminPageJFXController {
 
     @FXML
     private TableView<?> tableView;
-
-    @FXML
-    private TableColumn<?, ?> ownerCol;
-
-    @FXML
-    private TableColumn<?, ?> groupChatCol;
-
-    @FXML
-    private TableColumn<?, ?> configCol;
 
     @FXML
     private TextField searchField;
@@ -40,50 +34,58 @@ public class AdminPageJFXController {
     private Button editButton;
 
     @FXML
-    private TabPane tabPane;
+    private Button groupsButton;   // 🔹 button in Admin.fxml to open Groups.fxml
 
     @FXML
-    private BorderPane usersPane;
-
-    @FXML
-    private BorderPane groupsPane;
-
-    @FXML
-    private Button groupDeleteButton;
-
-    @FXML
-    private Button groupEditButton;
+    private Button backToUsersButton;     // 🔹 button in Groups.fxml to go back to Admin.fxml
 
     @FXML
     private void initialize() {
-        searchButton.setOnAction(e -> {
-            System.out.println("Searching for : " + searchField.getText());
-        });
-
-        if (tabPane != null) {
-            tabPane.getSelectionModel().selectedIndexProperty().addListener((obs, oldIdx, newIdx) -> {
-                boolean showUsers = newIdx.intValue() == 0;
-                usersPane.setVisible(showUsers);
-                usersPane.setManaged(showUsers);
-                groupsPane.setVisible(!showUsers);
-                groupsPane.setManaged(!showUsers);
+        if (searchButton != null) {
+            searchButton.setOnAction(e -> {
+                System.out.println("Searching for: " + searchField.getText());
             });
+        }
+
+        if (groupsButton != null) {
+            groupsButton.setOnAction(e -> openGroupsPage());
+        }
+
+        if (backToUsersButton != null) {
+            backToUsersButton.setOnAction(e -> goBackToUsersPage());
         }
     }
 
+    private void openGroupsPage() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/AdminGroups.fxml"));
+            Parent root = loader.load();
+            Stage stage = (Stage) groupsButton.getScene().getWindow();
+            stage.setScene(new Scene(root, 800, 600));
+            stage.setTitle("AdminGroups Page");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void goBackToUsersPage() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/Admin.fxml"));
+            Parent root = loader.load();
+            Stage stage = (Stage) backToUsersButton.getScene().getWindow();
+            stage.setScene(new Scene(root, 800, 600));
+            stage.setTitle("Admin Page");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Getters
     public Button getDeleteButton(){ return deleteButton; }
     public Button getEditButton(){ return editButton; }
     public TableView<?> getTableView(){ return tableView; }
 
-    public String getUsername() {
-        return usernameField.getText();
-    }
-
-    public String getNewPassword() {
-        return newPasswordField.getText();
-    }
-
-    public String getConfirmPassword() {
-        return confirmPasswordField.getText();
-    }
+    public String getUsername() { return usernameField.getText(); }
+    public String getNewPassword() { return newPasswordField.getText(); }
+    public String getConfirmPassword() { return confirmPasswordField.getText(); }
 }

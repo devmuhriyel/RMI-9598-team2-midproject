@@ -33,9 +33,6 @@ public class LoginController {
     private void initialize() {
         loginJFXController.setLoginButtonListener(() -> {
 
-            //Disable multi click to avoid multi call for the next GUI
-            //loginJFXController.getLoginButton().setDisable(true);
-
             String username = loginJFXController.getUsername();
             String password = loginJFXController.getPassword();
             model.login(username, password);

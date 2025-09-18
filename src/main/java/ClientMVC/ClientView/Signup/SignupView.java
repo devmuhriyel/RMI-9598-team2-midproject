@@ -7,25 +7,20 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 public class SignupView extends Application {
-
     private static Stage primaryStage;
-    private SignupJFXController jfxController;
+    private SignupJFXController fxController;
 
     @Override
     public void start(Stage stage) throws Exception {
-        primaryStage = stage; // keep reference
+        primaryStage = stage;
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/Signup.fxml"));
         Parent root = loader.load();
-        jfxController = loader.getController();
+        fxController = loader.getController();
+
         primaryStage.setTitle("Sign Up");
         primaryStage.setScene(new Scene(root, 400, 450));
         primaryStage.setResizable(false);
         primaryStage.show();
-    }
-
-    // === expose the same stage ===
-    public Stage getStage() {
-        return primaryStage;
     }
 
     public static Stage getPrimaryStage() {
@@ -33,6 +28,6 @@ public class SignupView extends Application {
     }
 
     public SignupJFXController getFXController() {
-        return jfxController;
+        return fxController;
     }
 }
