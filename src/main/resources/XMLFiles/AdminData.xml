@@ -1,77 +1,32 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<AdminData>
-                    
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><data>
+        
     
     
-    
-    <users>
-                                        
         
-        
-        
-        
-                                
-        
-        
-        
-        <user>
-                                                            
-            
-            
-            
-            <username>charlie</username>
-                                                            
-            
-            
-            
-            <password>mypwd789</password>
-                                                        
-        
-        
-        
-        </user>
-                                    
-    
-    
-    
-    </users>
-                    
-    
-    
-    
-    <groups>
-                                        
-        
+    <user>
                 
-        
-        
-                        
-        
-        
-        
-        <group>
-                                                            
-            
-            
-            
-            <owner>charlie</owner>
-                                                            
-            
-            
-            
-            <groupName>Alpha Squad</groupName>
-                                                        
-        
-        
-        
-        </group>
-                                    
-    
-    
-    
-    </groups>
+        <username>alice1</username>
                 
-
-
-
-</AdminData>
+        <password>12323</password>
+            
+    </user>
+        
+    
+        
+    <user>
+                
+        <username>alice2</username>
+                
+        <password>1233</password>
+            
+    </user>
+        
+    <group>
+                
+        <owner>alice2</owner>
+                
+        <groupName>GroupAD</groupName>
+            
+    </group>
+    
+</data>

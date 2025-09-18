@@ -54,11 +54,11 @@ public class AdminController {
         if (view.getBackToUsersButton() != null) {
             view.getBackToUsersButton().setOnAction(e -> switchToUsers());
         }
-        // ✅ Delete button
+
+        // Delete buttons
         if (view.getDeleteButton() != null) {
             view.getDeleteButton().setOnAction(e -> onDeleteUser());
         }
-        // ✅ Delete group
         if (view.getGroupDeleteButton() != null) {
             view.getGroupDeleteButton().setOnAction(e -> onDeleteGroup());
         }
@@ -76,7 +76,6 @@ public class AdminController {
 
     private void switchToGroups() {
         view.getTableView().getScene().getWindow().hide();
-        // Load AdminGroups.fxml
         loadFXML("/FXMLFiles/AdminGroups.fxml", "Groups Page");
     }
 
@@ -138,22 +137,43 @@ public class AdminController {
     private void onDeleteUser() {
         AdminModel selected = view.getTableView().getSelectionModel().getSelectedItem();
         if (selected != null) {
+            String username = selected.getUsername();
+
             boolean success = UserXMLHandler.deleteUserFromXML(
                     "src/main/resources/XMLFiles/AdminData.xml",
-                    selected.getUsername()
+                    username
             );
 
             if (success) {
+                // Remove user from table
                 view.getTableView().getItems().remove(selected);
+
+                // Also remove groups owned by this user
+                List<AdminModel> ownedGroups = allGroups.stream()
+                        .filter(g -> g.getOwner().equals(username))
+                        .collect(Collectors.toList());
+
+                for (AdminModel g : ownedGroups) {
+                    boolean groupDeleted = UserXMLHandler.deleteGroupFromXML(
+                            "src/main/resources/XMLFiles/AdminData.xml",
+                            g.getGroupName(),
+                            g.getOwner() // ✅ pass owner too
+                    );
+                    if (groupDeleted) {
+                        view.getGroupsTableView().getItems().remove(g);
+                    }
+                }
             }
         }
     }
+
     private void onDeleteGroup() {
         AdminModel selected = view.getGroupsTableView().getSelectionModel().getSelectedItem();
         if (selected != null) {
             boolean success = UserXMLHandler.deleteGroupFromXML(
                     "src/main/resources/XMLFiles/AdminData.xml",
-                    selected.getGroupName()
+                    selected.getGroupName(),
+                    selected.getOwner() // ✅ now uses groupName + owner
             );
 
             if (success) {
