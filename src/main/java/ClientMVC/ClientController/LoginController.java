@@ -6,22 +6,23 @@ import ClientMVC.ClientView.Home.HomeView;
 import ClientMVC.ClientView.Login.LoginJFXController;
 import ClientMVC.ClientView.Login.LoginView;
 import ClientMVC.ClientView.Signup.SignupView;
-import ClientMVC.UserXMLHandler;
 import javafx.application.Platform;
 import javafx.stage.Stage;
+import org.w3c.dom.*;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.File;
 
 public class LoginController {
     private final LoginJFXController loginJFXController;
     private final LoginView view;
     private final UnifiedClientModel model;
-    private UserXMLHandler userXMLHandler = new UserXMLHandler();
 
     public LoginController(LoginView loginView, UnifiedClientModel unifiedModel, LoginJFXController loginJFXController) {
         this.loginJFXController = loginJFXController;
         this.view = loginView;
         this.model = unifiedModel;
 
-        // Set up message listener for login responses
         model.setMessageListener(this::handleLoginResponse);
         initialize();
     }
@@ -32,7 +33,18 @@ public class LoginController {
 
             String username = loginJFXController.getUsername();
             String password = loginJFXController.getPassword();
-            model.login(username, password);
+
+            // Instead of model.login → directly check here
+            String role = checkCredentials(username, password);
+
+            if (role != null) {
+                handleLoginResponse(role); // role will be "admin" or "user"
+            } else {
+                Platform.runLater(() -> {
+                    System.out.println("Invalid username or password");
+                    loginJFXController.getLoginButton().setDisable(false);
+                });
+            }
         });
 
         loginJFXController.setSignupLinkListener(() -> {
@@ -44,7 +56,6 @@ public class LoginController {
                     Stage signupStage = new Stage();
                     signupView.start(signupStage);
 
-                    // Pass the unified model to signup controller
                     new SignupController(model, signupView, signupView.getFXController());
                 } catch (Exception ex) {
                     ex.printStackTrace();
@@ -53,50 +64,70 @@ public class LoginController {
         });
     }
 
-    public void handleLoginResponse(String msg) {
+    // ✅ This method reads User.xml and checks credentials
+    private String checkCredentials(String username, String password) {
         try {
-            String reply = userXMLHandler.getReply(msg.trim());
+            File file = new File("src/main/resources/XMLFiles/Users.xml"); // adjust path if needed
+            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+            Document doc = dBuilder.parse(file);
+            doc.getDocumentElement().normalize();
 
-            if (reply != null && reply.equals("LOGIN_SUCCESS")) {
-                String username = loginJFXController.getUsername();
+            NodeList userList = doc.getElementsByTagName("user");
 
-                if (username.equalsIgnoreCase("admin")) {
+            for (int i = 0; i < userList.getLength(); i++) {
+                Node node = userList.item(i);
 
-                    Platform.runLater(() -> {
-                        try {
-                            AdminPage adminPage = new AdminPage();
-                            Stage stage = new Stage();
-                            adminPage.start(stage);
+                if (node.getNodeType() == Node.ELEMENT_NODE) {
+                    Element userElement = (Element) node;
 
-                            // Hook controller if needed
-                            new AdminController(adminPage.getFXController());
+                    String xmlUsername = userElement.getElementsByTagName("username").item(0).getTextContent();
+                    String xmlPassword = userElement.getElementsByTagName("password").item(0).getTextContent();
 
-                            // Close login window
-                            LoginView.getPrimaryStage().close();
-                        } catch (Exception e) {
-                            e.printStackTrace();
+                    if (xmlUsername.equalsIgnoreCase(username) && xmlPassword.equals(password)) {
+                        if (userElement.getElementsByTagName("role").getLength() > 0) {
+                            return userElement.getElementsByTagName("role").item(0).getTextContent();
+                        } else {
+                            return "user"; // default role
                         }
-                    });
-                } else {
-                    view.login();
-                    Platform.runLater(() -> {
-                        try {
-                            HomeView homeView = new HomeView();
-                            Stage stage1 = new Stage();
-                            homeView.start(stage1);
-
-                            // Pass the same unified model to home controller
-                            new HomeController(model, homeView, homeView.getFXController());
-
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    });
+                    }
                 }
-            } else if (reply != null && reply.equals("LOGIN_FAILED")) {
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null; // invalid login
+    }
+
+    // ✅ Simplified handleLoginResponse: uses role instead of XML handler
+    public void handleLoginResponse(String role) {
+        try {
+            if ("admin".equalsIgnoreCase(role)) {
                 Platform.runLater(() -> {
-                    System.out.println("Invalid username or password");
-                    loginJFXController.getLoginButton().setDisable(false);
+                    try {
+                        AdminPage adminPage = new AdminPage();
+                        Stage stage = new Stage();
+                        adminPage.start(stage);
+
+                        new AdminController(adminPage.getFXController());
+
+                        LoginView.getPrimaryStage().close();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
+            } else if ("user".equalsIgnoreCase(role)) {
+                view.login();
+                Platform.runLater(() -> {
+                    try {
+                        HomeView homeView = new HomeView();
+                        Stage stage1 = new Stage();
+                        homeView.start(stage1);
+
+                        new HomeController(model, homeView, homeView.getFXController());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 });
             }
         } catch (Exception e) {

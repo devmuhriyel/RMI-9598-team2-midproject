@@ -34,6 +34,10 @@ public class AdminPageJFXController {
     @FXML private Button groupsButton;        // Switch to Groups
     @FXML private Button backToUsersButton;   // Switch to Users
 
+    @FXML private Button editButton;
+
+    @FXML private Button groupEditButton;
+
     @FXML
     private void initialize() {
         // Users Table setup
@@ -63,4 +67,8 @@ public class AdminPageJFXController {
     public Button getBackToUsersButton() { return backToUsersButton; }
     public Button getDeleteButton() { return deleteButton; }
     public Button getGroupDeleteButton() { return groupDeleteButton; }
+
+    public Button getEditButton() { return editButton; }
+
+    public Button getGroupsEditButton() { return groupEditButton; }
 }

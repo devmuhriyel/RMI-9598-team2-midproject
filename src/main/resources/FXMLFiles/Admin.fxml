@@ -71,19 +71,6 @@
             <bottom>
                 <VBox spacing="10" BorderPane.alignment="CENTER">
                     <children>
-                        <HBox spacing="61">
-                            <Label text="Username:" textFill="white"/>
-                            <TextField fx:id="usernameField" promptText="Enter username"/>
-                        </HBox>
-                        <HBox spacing="10">
-                            <Label text="Change Password:" textFill="white"/>
-                            <PasswordField fx:id="newPasswordField" promptText="Enter new password"/>
-                        </HBox>
-                        <HBox spacing="10" alignment="CENTER_LEFT">
-                            <Button fx:id="ConfirmButton" text="Confirm"
-                                    style="-fx-background-color: #008000; -fx-text-fill: white;"
-                                    prefWidth="120" prefHeight="30"/>
-                    </HBox>
                         <HBox alignment="CENTER_RIGHT" spacing="10">
                             <Region HBox.hgrow="ALWAYS"/>
                             <Button fx:id="deleteButton" text="Delete"

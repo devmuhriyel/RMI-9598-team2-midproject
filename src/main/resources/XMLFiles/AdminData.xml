@@ -1,32 +1,61 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?><data>
-        
-    
-    
-        
-    <user>
-                
-        <username>alice1</username>
-                
-        <password>12323</password>
-            
-    </user>
-        
-    
-        
-    <user>
-                
-        <username>alice2</username>
-                
-        <password>1233</password>
-            
-    </user>
-        
-    <group>
-                
-        <owner>alice2</owner>
-                
-        <groupName>GroupAD</groupName>
-            
-    </group>
-    
-</data>
+<?xml version="1.0" encoding="UTF-8"?>
+<adminData>
+    <users>
+        <user>
+            <username>alice</username>
+            <password>password123</password>
+            <group>
+                <groupName>AlphaTeam</groupName>
+                <owner>alice</owner>
+            </group>
+        </user>
+        <user>
+            <username>bob</username>
+            <password>qwerty456</password>
+            <group>
+                <groupName>BetaGroup</groupName>
+                <owner>bob</owner>
+            </group>
+        </user>
+        <user>
+            <username>charlie</username>
+            <password>abc123</password>
+            <group>
+                <groupName>GammaSquad</groupName>
+                <owner>charlie</owner>
+            </group>
+        </user>
+        <user>
+            <username>rea</username>
+            <password>benjamin</password>
+            <group>
+                <groupName>DeltaForce</groupName>
+                <owner>rea</owner>
+            </group>
+        </user>
+        <user>
+            <username>steven</username>
+            <password>baguio</password>
+            <group>
+                <groupName>EpsilonUnit</groupName>
+                <owner>steven</owner>
+            </group>
+        </user>
+        <user>
+            <username>joshua</username>
+            <password>123</password>
+            <group>
+                <groupName>ZetaCrew</groupName>
+                <owner>joshua</owner>
+            </group>
+        </user>
+        <user>
+            <username>admin</username>
+            <password>admin123</password>
+            <group>
+                <groupName>SystemAdmins</groupName>
+                <owner>admin</owner>
+            </group>
+        </user>
+    </users>
+</adminData>

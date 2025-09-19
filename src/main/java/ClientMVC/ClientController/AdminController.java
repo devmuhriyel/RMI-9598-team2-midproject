@@ -5,6 +5,11 @@ import ClientMVC.ClientView.Admin.AdminPageJFXController;
 import ClientMVC.UserXMLHandler;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
+import javafx.scene.control.TextField;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.*;
@@ -62,6 +67,12 @@ public class AdminController {
         if (view.getGroupDeleteButton() != null) {
             view.getGroupDeleteButton().setOnAction(e -> onDeleteGroup());
         }
+        if (view.getEditButton() != null) {
+            view.getEditButton().setOnAction(e -> onEditUser());
+        }
+        if (view.getGroupsEditButton() != null) {
+            view.getGroupsEditButton().setOnAction(e -> onEditGroups());
+        }
     }
 
     private void onSearchUsers() {
@@ -83,6 +94,7 @@ public class AdminController {
         view.getGroupsTableView().getScene().getWindow().hide();
         loadFXML("/FXMLFiles/Admin.fxml", "Users Page");
     }
+
 
     private void loadFXML(String path, String title) {
         try {
@@ -179,6 +191,72 @@ public class AdminController {
             if (success) {
                 view.getGroupsTableView().getItems().remove(selected);
             }
+        }
+    }
+    private void onEditUser() {
+        AdminModel selected = view.getTableView().getSelectionModel().getSelectedItem();
+
+        if (selected == null) {
+            // No row selected
+            System.out.println("⚠ Please select a user first.");
+            return;
+        }
+
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/UserEdit.fxml"));
+            Parent root = loader.load();
+
+            // Find fields from UserEdit.fxml
+            TextField usernameField = (TextField) root.lookup("#usernameField");
+            TextField passwordField = (TextField) root.lookup("#passwordField");
+
+            // Pre-fill with selected user’s data
+            if (usernameField != null) usernameField.setText(selected.getUsername());
+            if (passwordField != null) passwordField.setText(selected.getPassword());
+
+            Stage stage = new Stage();
+            stage.setTitle("Edit User");
+            stage.setScene(new Scene(root, 400, 250));
+            stage.showAndWait();
+
+            // After closing, update table
+            view.getTableView().refresh();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    private void onEditGroups() {
+        AdminModel selected = view.getGroupsTableView().getSelectionModel().getSelectedItem();
+
+        if (selected == null) {
+            // No row selected
+            System.out.println("⚠ Please select a group first.");
+            return;
+        }
+
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/GroupsEdit.fxml"));
+            Parent root = loader.load();
+
+            // Find fields in EditGroups.fxml
+            TextField ownerField = (TextField) root.lookup("#ownerField");
+            TextField groupsField = (TextField) root.lookup("#groupsField");
+
+            // Pre-fill with selected group data
+            if (ownerField != null) ownerField.setText(selected.getOwner());
+            if (groupsField != null) groupsField.setText(selected.getGroupName());
+
+            Stage stage = new Stage();
+            stage.setTitle("Edit Group");
+            stage.setScene(new Scene(root, 400, 250));
+            stage.showAndWait();
+
+            // After closing, refresh groups table
+            view.getGroupsTableView().refresh();
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
