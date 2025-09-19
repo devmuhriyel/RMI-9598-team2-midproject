@@ -27,8 +27,6 @@
             <HBox spacing="10" alignment="CENTER">
                 <Button fx:id="confirmButton" text="Confirm"
                         style="-fx-background-color: #8700b1; -fx-text-fill: white;"/>
-                <Button fx:id="cancelButton" text="Back"
-                        style="-fx-background-color: #555555; -fx-text-fill: white;"/>
             </HBox>
         </VBox>
     </children>
