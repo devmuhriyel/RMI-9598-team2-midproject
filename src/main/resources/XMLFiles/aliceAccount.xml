@@ -632,6 +632,74 @@
                 <sender>charlie</sender>
                 <msg>[FILE: Screenshot 2024-12-22 003810.png]</msg>
             </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>hello</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>hello</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>waazup</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>allelujah</msg>
+            </chat>
+            <chat>
+                <sender>rea</sender>
+                <msg>hi</msg>
+            </chat>
+            <chat>
+                <sender>rea</sender>
+                <msg>weh</msg>
+            </chat>
+            <chat>
+                <sender>rea</sender>
+                <msg>nope</msg>
+            </chat>
+            <chat>
+                <sender>rea</sender>
+                <msg>hulaan mo</msg>
+            </chat>
+            <chat>
+                <sender>rea</sender>
+                <msg>sino me</msg>
+            </chat>
+            <chat>
+                <sender>rea</sender>
+                <msg>flores</msg>
+            </chat>
+            <chat>
+                <sender>rea</sender>
+                <msg>bat nandito me</msg>
+            </chat>
+            <chat>
+                <sender>rea</sender>
+                <msg>hiii</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>ewde2ddd</msg>
+            </chat>
+            <chat>
+                <sender>rea</sender>
+                <msg>yea wala ata</msg>
+            </chat>
+            <chat>
+                <sender>alice</sender>
+                <msg>wdwdwdwd</msg>
+            </chat>
+            <chat>
+                <sender>rea</sender>
+                <msg>may ano ngay group chat agad pagka login ko</msg>
+            </chat>
+            <chat>
+                <sender>rea</sender>
+                <msg>pero pag binack ko to mawawala yung group chat</msg>
+            </chat>
         </chathistory>
     </group>
 </user>
