@@ -2,7 +2,7 @@ package ClientMVC.ClientController;
 
 import ClientMVC.ClientModel.AdminModel;
 import ClientMVC.ClientView.Admin.AdminPageJFXController;
-import ClientMVC.UserXMLHandler;
+import Server.ServerXMLHandler;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXMLLoader;
@@ -30,15 +30,15 @@ public class AdminController {
     }
 
     private void loadData() {
-        allUsers = loadUsersFromXML("src/main/resources/XMLFiles/AdminData.xml");
+        allUsers = loadUsersFromXML("src/main/resources/XMLFiles/Users.xml");
         if (view.getTableView() != null) {
             view.getTableView().setItems(allUsers);
         }
 
-        allGroups = loadGroupsFromXML("src/main/resources/XMLFiles/AdminData.xml");
-        if (view.getGroupsTableView() != null) {
-            view.getGroupsTableView().setItems(allGroups);
-        }
+//        allGroups = loadGroupsFromXML("src/main/resources/XMLFiles/Users.xml");
+//        if (view.getGroupsTableView() != null) {
+//            view.getGroupsTableView().setItems(allGroups);
+//        }
     }
 
     private void initListeners() {
@@ -129,29 +129,29 @@ public class AdminController {
         return users;
     }
 
-    private ObservableList<AdminModel> loadGroupsFromXML(String filePath) {
-        ObservableList<AdminModel> groups = FXCollections.observableArrayList();
-        try {
-            File xmlFile = new File(filePath);
-            Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(xmlFile);
-            doc.getDocumentElement().normalize();
-            NodeList list = doc.getElementsByTagName("group");
-            for (int i = 0; i < list.getLength(); i++) {
-                Element elem = (Element) list.item(i);
-                String owner = elem.getElementsByTagName("owner").item(0).getTextContent();
-                String groupName = elem.getElementsByTagName("groupName").item(0).getTextContent();
-                groups.add(new AdminModel(owner, groupName, true));
-            }
-        } catch (Exception e) { e.printStackTrace(); }
-        return groups;
-    }
+//    private ObservableList<AdminModel> loadGroupsFromXML(String filePath) {
+//        ObservableList<AdminModel> groups = FXCollections.observableArrayList();
+//        try {
+//            File xmlFile = new File(filePath);
+//            Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(xmlFile);
+//            doc.getDocumentElement().normalize();
+//            NodeList list = doc.getElementsByTagName("group");
+//            for (int i = 0; i < list.getLength(); i++) {
+//                Element elem = (Element) list.item(i);
+//                String owner = elem.getElementsByTagName("owner").item(0).getTextContent();
+//                String groupName = elem.getElementsByTagName("groupName").item(0).getTextContent();
+//                groups.add(new AdminModel(owner, groupName, true));
+//            }
+//        } catch (Exception e) { e.printStackTrace(); }
+//        return groups;
+//    }
 
     private void onDeleteUser() {
         AdminModel selected = view.getTableView().getSelectionModel().getSelectedItem();
         if (selected != null) {
             String username = selected.getUsername();
 
-            boolean success = UserXMLHandler.deleteUserFromXML(
+            boolean success = ServerXMLHandler.deleteUserFromXML(
                     "src/main/resources/XMLFiles/AdminData.xml",
                     username
             );
@@ -166,7 +166,7 @@ public class AdminController {
                         .collect(Collectors.toList());
 
                 for (AdminModel g : ownedGroups) {
-                    boolean groupDeleted = UserXMLHandler.deleteGroupFromXML(
+                    boolean groupDeleted = ServerXMLHandler.deleteGroupFromXML(
                             "src/main/resources/XMLFiles/AdminData.xml",
                             g.getGroupName(),
                             g.getOwner() // ✅ pass owner too
@@ -182,7 +182,7 @@ public class AdminController {
     private void onDeleteGroup() {
         AdminModel selected = view.getGroupsTableView().getSelectionModel().getSelectedItem();
         if (selected != null) {
-            boolean success = UserXMLHandler.deleteGroupFromXML(
+            boolean success = ServerXMLHandler.deleteGroupFromXML(
                     "src/main/resources/XMLFiles/AdminData.xml",
                     selected.getGroupName(),
                     selected.getOwner() // ✅ now uses groupName + owner

@@ -37,26 +37,13 @@ public class HomeController {
                 ui.renderGroups(ui.getOriginalGroups());
                 return;
             }
-            ui.renderFriends(filterList(ui.getOriginalFriends(), q));
-            ui.renderGroups(filterList(ui.getOriginalGroups(), q));
-        });
 
-        if (model.getUsername() != null) {
-            ui.setUserLabel(model.getUsername());
-        }
+            List<String> allUsers = model.getAllUsers();
+            List<String> matchedUsers = filterList(allUsers, q);
 
-        ui.setFriends(model.getFriends());
-        ui.setGroups(model.getGroups());
+            System.out.println("Matched users: " + matchedUsers); // Debug print
 
-        // Set up search functionality
-        ui.setSearchListener(queryText -> {
-            String q = (queryText == null) ? "" : queryText.trim().toLowerCase();
-            if (q.isEmpty()) {
-                ui.renderFriends(ui.getOriginalFriends());
-                ui.renderGroups(ui.getOriginalGroups());
-                return;
-            }
-            ui.renderFriends(filterList(ui.getOriginalFriends(), q));
+            ui.renderFriends(matchedUsers);
             ui.renderGroups(filterList(ui.getOriginalGroups(), q));
         });
 

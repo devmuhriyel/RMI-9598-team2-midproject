@@ -104,22 +104,45 @@ public class HomeJFXController {
 
 
     //search integrated, alanganin, lilipat ba to sa HomeController TwT
-    public void renderFriends(List<String> friends) {
+    public void renderFriends(List<String> users) {
         Platform.runLater(() -> {
             friendsList.getChildren().clear();
-            if (friends == null || friends.isEmpty()) {
-                friendsList.getChildren().add(new Label("No friends match your search"));
+            if (users == null || users.isEmpty()) {
+                friendsList.getChildren().add(new Label("No users match your search"));
                 return;
             }
-            for (String friend : friends) {
-                Button friendBtn = new Button(friend);
-                friendBtn.setMaxWidth(Double.MAX_VALUE);
-                friendBtn.setOnAction(event -> {
-                    if (friendClickListener != null) {
-                        friendClickListener.accept(friend);
-                    }
-                });
-                friendsList.getChildren().add(friendBtn);
+            for (String user : users) {
+                boolean isFriend = originalFriends.contains(user);
+                Button userBtn = new Button(user);
+                userBtn.setMaxWidth(Double.MAX_VALUE);
+
+                if (isFriend) {
+                    // Normal style for friends
+                    userBtn.setStyle(""); // Default or your preferred style
+                    userBtn.setOnAction(event -> {
+                        if (friendClickListener != null) {
+                            friendClickListener.accept(user);
+                        }
+                    });
+                    friendsList.getChildren().add(userBtn);
+                } else {
+                    // Gray style for non-friends
+                    userBtn.setStyle("-fx-background-color: #e0e0e0; -fx-text-fill: #888;");
+                    userBtn.setPrefWidth(175);
+                    // Add "+" button to add as friend
+                    Button addBtn = new Button("+");
+                    addBtn.setStyle("-fx-background-color: #b3e5fc; -fx-text-fill: #333;");
+                    
+                    addBtn.setOnAction(event -> {
+                        // TODO: Implement add friend logic here
+                        System.out.println("Add friend: " + user);
+                        // You might want to call a method like: addFriend(user);
+                    });
+
+                    // Layout: horizontal box for userBtn and addBtn
+                    javafx.scene.layout.HBox hbox = new javafx.scene.layout.HBox(5, userBtn, addBtn);
+                    friendsList.getChildren().add(hbox);
+                }
             }
         });
     }

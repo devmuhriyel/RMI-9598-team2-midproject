@@ -741,6 +741,10 @@ public class UnifiedClientModel implements Runnable {
     public List<String> getGroups() {
         return xmlHandler.getUserGroups(username);
     }
+    public List<String> getAllUsers() {
+        return xmlHandler.getAllUsers();
+    }
+
 
     public Socket getSocket() {
         return socket;

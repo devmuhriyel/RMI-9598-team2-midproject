@@ -4,10 +4,9 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.effect.DropShadow?>
+<?import javafx.scene.effect.Bloom?>
 <?import javafx.scene.effect.Glow?>
 <?import javafx.scene.layout.AnchorPane?>
-<?import javafx.scene.paint.Color?>
 <?import javafx.scene.text.Font?>
 
 <AnchorPane fx:id="rightFrame" prefHeight="365.0" prefWidth="390.0" style="-fx-background-color: #202020;" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1">
@@ -18,21 +17,12 @@
          </font>
       </Label>
       <TextField id="ipAddressInput" fx:id="accountUsernameTextField" layoutX="139.0" layoutY="82.0" prefHeight="38.0" prefWidth="220.0" promptText="Username" stylesheets="@../style.css" />
-      <Label fx:id="oldPasswordTextField" contentDisplay="CENTER" layoutX="69.0" layoutY="158.0" prefHeight="20.0" prefWidth="100.0" text="Old Password" textAlignment="CENTER" textFill="WHITE">
+      <Label fx:id="oldPasswordLabel" contentDisplay="CENTER" layoutX="69.0" layoutY="158.0" prefHeight="20.0" prefWidth="100.0" text="Old Password" textAlignment="CENTER" textFill="WHITE">
          <font>
             <Font name="Gill Sans MT" size="12.0" />
          </font>
       </Label>
-      <Button fx:id="updateButton" alignment="CENTER" layoutX="146.0" layoutY="296.0" mnemonicParsing="false" prefHeight="38.0" prefWidth="98.0" style="-fx-background-color: dedcff;" stylesheets="@../style.css" text="Update Profile">
-         <effect>
-            <DropShadow>
-               <color>
-                  <Color red="1.0" green="1.0" blue="1.0" />
-               </color>
-            </DropShadow>
-         </effect>
-      </Button>
-      <Label fx:id="newPasswordTextField" contentDisplay="CENTER" layoutX="69.0" layoutY="193.0" prefHeight="20.0" prefWidth="100.0" text="New Password" textAlignment="CENTER" textFill="WHITE">
+      <Label fx:id="newPasswordLabel" contentDisplay="CENTER" layoutX="69.0" layoutY="193.0" prefHeight="20.0" prefWidth="100.0" text="New Password" textAlignment="CENTER" textFill="WHITE">
          <font>
             <Font name="Gill Sans MT" size="12.0" />
          </font>
@@ -53,5 +43,10 @@
             <Glow />
          </effect>
       </Label>
+      <Button id="updateProfileButton" fx:id="updateProfileButton" alignment="CENTER" layoutX="156.0" layoutY="306.0" mnemonicParsing="false" prefHeight="38.0" prefWidth="98.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" stylesheets="@../style.css" text="Update Profile">
+         <effect>
+            <Bloom threshold="0.6" />
+         </effect>
+      </Button>
    </children>
 </AnchorPane>
