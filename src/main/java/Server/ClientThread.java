@@ -6,6 +6,7 @@ import org.w3c.dom.Document;
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.List;
 
 
 public class ClientThread implements Runnable {
@@ -59,7 +60,6 @@ public class ClientThread implements Runnable {
                             }
                         }
 
-                        // Set this client's name and send success response
                         this.name = newUsername;
                         sendMessage("<Response><reply>LOGIN_SUCCESS</reply><body>Welcome " + this.name + "!</body></Response>");
                         break;
@@ -138,8 +138,19 @@ public class ClientThread implements Runnable {
 
                     case "JOIN_GROUP":
                         String[] joinGroupContent = extractContent(xmlMsg);
-                        if (xmlHandler.joinGroup(joinGroupContent[0], joinGroupContent[1])) {
-                            sendMessage("<Response status=\"GROUP_JOINED\"><body>Joined group " + joinGroupContent[0] + "</body></Response>");
+                        if (xmlHandler.joinGroupWithHistory(joinGroupContent[0], joinGroupContent[1])) {
+                            sendMessage("<Response status=\"GROUP_JOINED\"><body>Joined group " + joinGroupContent[0] + " with full chat history</body></Response>");
+                            try {
+                                File userFile = new File("src/main/resources/XMLFiles/" + joinGroupContent[1] + "Account.xml");
+                                if (userFile.exists()) {
+                                    byte[] fileContent = java.nio.file.Files.readAllBytes(userFile.toPath());
+                                    String encodedContent = java.util.Base64.getEncoder().encodeToString(fileContent);
+                                    sendMessage("<Response><reply>GET_CHAT_HISTORY</reply><body>" + encodedContent + "</body></Response>");
+                                }
+                            } catch (Exception e) {
+                                System.err.println("Error sending updated chat history to new group member: " + e.getMessage());
+                                e.printStackTrace();
+                            }
                         } else {
                             sendMessage("<Response status=\"GROUP_JOIN_FAILED\"><body>Failed to join group</body></Response>");
                         }
@@ -157,14 +168,23 @@ public class ClientThread implements Runnable {
                         String groupMessage = getGroupMessage(xmlMsg);
 
                         System.out.println("Processing group message from " + groupSender + " to group " + targetGroup);
+                        if (!xmlHandler.isUserInGroup(groupSender, targetGroup)) {
+                            sendMessage("<Response status=\"GROUP_ACCESS_DENIED\"><body>You are not a member of group " + targetGroup + "</body></Response>");
+                            System.out.println("Access denied: " + groupSender + " is not a member of group " + targetGroup);
+                            break;
+                        }
 
-                        // FIXED: Send updated chat history to ALL group members AFTER server processes the message
+                        if (targetGroup.equals("Project Team") || targetGroup.equals("Study Group")) {
+                            List<String> actualUserGroups = xmlHandler.getUserGroups(groupSender);
+                            if (!actualUserGroups.contains(targetGroup)) {
+                                sendMessage("<Response status=\"GROUP_NOT_FOUND\"><body>Group " + targetGroup + " does not exist or you are not a member</body></Response>");
+                                System.out.println("Group access denied: " + targetGroup + " is not a real group for user " + groupSender);
+                                break;
+                            }
+                        }
                         try {
-                            // Get all group members (including sender)
                             java.util.List<String> groupMembers = xmlHandler.getGroupMembers(targetGroup);
                             System.out.println("Found " + groupMembers.size() + " members in group " + targetGroup);
-
-                            // Send updated chat history to each group member who is online
                             for (String member : groupMembers) {
                                 ClientThread memberClient = findClientByName(member);
                                 if (memberClient != null && memberClient.socket.isConnected()) {
@@ -195,14 +215,11 @@ public class ClientThread implements Runnable {
                     case "SEND_MESSAGE":
                         String sender = getSender(xmlMsg);
                         String receiver = getReceiver(xmlMsg);
-
-                        // Send updated chat history to both participants
                         for (ClientThread client : clients) {
                             if (client.socket.isConnected() &&
                                     (client.name.equals(sender) || client.name.equals(receiver))) {
 
                                 try {
-                                    // Send the updated chat history for the specific conversation
                                     File userFile = new File("src/main/resources/XMLFiles/" + client.name + "Account.xml");
                                     if (userFile.exists()) {
                                         byte[] fileContent = java.nio.file.Files.readAllBytes(userFile.toPath());
@@ -219,11 +236,119 @@ public class ClientThread implements Runnable {
                     case "SEND_COMMUNITY_MESSAGE":
                         String communitySender = getSender(xmlMsg);
                         String communityMessage = getCommunityMessage(xmlMsg);
-
-                        // Broadcast community message to all connected clients (no history saved)
                         String communityBroadcast = "<Response><reply>COMMUNITY_MESSAGE</reply>" +
                                 "<body>" + communitySender + "![]!" + communityMessage + "</body></Response>";
                         broadcastCommunityMessage(communityBroadcast);
+                        break;
+                    case "SEND_FILE":
+                        String fileSender = getSender(xmlMsg);
+                        String fileReceiver = getReceiver(xmlMsg);
+                        System.out.println("Processing file transfer from " + fileSender + " to " + fileReceiver);
+
+                        // Send success/failure response to sender
+                        String fileResponse = reply.equals("SEND_FILE_SUCCESS") ?
+                                "<Response><reply>FILE_SENT</reply><body>File sent successfully</body></Response>" :
+                                "<Response><reply>FILE_SEND_FAILED</reply><body>Failed to send file</body></Response>";
+
+                        sendMessage(fileResponse);
+
+                        // Only update XMLs if transfer was successful
+                        if (reply.equals("SEND_FILE_SUCCESS")) {
+                            // Update both sender and receiver XMLs with new message
+                            for (ClientThread client : clients) {
+                                if (client.socket.isConnected() &&
+                                        (client.name.equals(fileSender) || client.name.equals(fileReceiver))) {
+
+                                    try {
+                                        File userFile = new File("src/main/resources/XMLFiles/" + client.name + "Account.xml");
+                                        if (userFile.exists()) {
+                                            byte[] fileContent = java.nio.file.Files.readAllBytes(userFile.toPath());
+                                            String encodedContent = java.util.Base64.getEncoder().encodeToString(fileContent);
+                                            client.sendMessage("<Response><reply>NEW_MESSAGE</reply><body>" + encodedContent + "</body></Response>");
+                                            System.out.println("Sent file update to: " + client.name);
+                                        } else {
+                                            System.err.println("Account file not found for: " + client.name);
+                                        }
+                                    } catch (Exception e) {
+                                        System.err.println("Error sending file update to " + client.name + ": " + e.getMessage());
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    case "SEND_GROUP_FILE":
+                        String groupFileSender = getSender(xmlMsg);
+                        String targetGroupForFile = getGroupName(xmlMsg);
+
+                        System.out.println("Processing group file transfer from " + groupFileSender + " to group " + targetGroupForFile);
+
+                        // Send response to sender
+                        String groupFileResponse;
+                        switch (reply) {
+                            case "SEND_GROUP_FILE_SUCCESS":
+                                groupFileResponse = "<Response><reply>GROUP_FILE_SENT</reply><body>File sent successfully</body></Response>";
+                                break;
+                            case "GROUP_ACCESS_DENIED":
+                                groupFileResponse = "<Response><reply>GROUP_ACCESS_DENIED</reply><body>You are not a member of this group</body></Response>";
+                                break;
+                            default:
+                                groupFileResponse = "<Response><reply>GROUP_FILE_SEND_FAILED</reply><body>Failed to send file to group</body></Response>";
+                                break;
+                        }
+
+                        sendMessage(groupFileResponse);
+
+                        // Only update XMLs if transfer was successful
+                        if (reply.equals("SEND_GROUP_FILE_SUCCESS")) {
+                            if (!xmlHandler.isUserInGroup(groupFileSender, targetGroupForFile)) {
+                                System.out.println("Access denied: " + groupFileSender + " is not a member of group " + targetGroupForFile);
+                                break;
+                            }
+
+                            try {
+                                java.util.List<String> groupMembers = xmlHandler.getGroupMembers(targetGroupForFile);
+                                System.out.println("Found " + groupMembers.size() + " members in group " + targetGroupForFile);
+
+                                for (String member : groupMembers) {
+                                    ClientThread memberClient = findClientByName(member);
+                                    if (memberClient != null && memberClient.socket.isConnected()) {
+                                        try {
+                                            File userFile = new File("src/main/resources/XMLFiles/" + member + "Account.xml");
+                                            if (userFile.exists()) {
+                                                byte[] fileContent = java.nio.file.Files.readAllBytes(userFile.toPath());
+                                                String encodedContent = java.util.Base64.getEncoder().encodeToString(fileContent);
+                                                memberClient.sendMessage("<Response><reply>NEW_GROUP_MESSAGE</reply><body>" + encodedContent + "</body></Response>");
+                                                System.out.println("Sent group file update to: " + member);
+                                            }
+                                        } catch (Exception e) {
+                                            System.err.println("Error sending group file to " + member + ": " + e.getMessage());
+                                            e.printStackTrace();
+                                        }
+                                    } else {
+                                        System.out.println("Member " + member + " is not online");
+                                    }
+                                }
+                            } catch (Exception e) {
+                                System.err.println("Error processing group file message: " + e.getMessage());
+                                e.printStackTrace();
+                            }
+                        }
+                        break;
+                    case "FILE_SENT":
+                        sendMessage("<Response><reply>FILE_SENT</reply><body>File sent successfully</body></Response>");
+                        break;
+
+                    case "FILE_SEND_FAILED":
+                        sendMessage("<Response><reply>FILE_SEND_FAILED</reply><body>Failed to send file</body></Response>");
+                        break;
+
+                    case "GROUP_FILE_SENT":
+                        sendMessage("<Response><reply>GROUP_FILE_SENT</reply><body>File sent to group successfully</body></Response>");
+                        break;
+
+                    case "GROUP_FILE_SEND_FAILED":
+                        sendMessage("<Response><reply>GROUP_FILE_SEND_FAILED</reply><body>Failed to send file to group</body></Response>");
                         break;
                 }
             }
@@ -238,9 +363,6 @@ public class ClientThread implements Runnable {
         }
     }
 
-    /**
-     * HELPER: Find a client by their username
-     */
     private ClientThread findClientByName(String username) {
         synchronized (clients) {
             for (ClientThread client : clients) {
@@ -252,7 +374,6 @@ public class ClientThread implements Runnable {
         return null;
     }
 
-    // Broadcasts community message to all connected clients
     private void broadcastCommunityMessage(String message) {
         synchronized (clients) {
             for (ClientThread c : clients) {
@@ -270,25 +391,6 @@ public class ClientThread implements Runnable {
             }
         }
     }
-
-    // Broadcasts message to all connected clients
-    private void broadcast(String message) {
-        synchronized (clients) {
-            for (ClientThread c : clients) {
-                try {
-                    c.writeMSG.write(message);
-                    c.writeMSG.newLine();
-                    c.writeMSG.flush();
-                } catch (IOException e) {
-                    try {
-                        c.logOut();
-                    } catch (IOException ignored) {}
-                }
-            }
-        }
-    }
-
-    // Sends a direct message to this client
     private void sendMessage(String msg) {
         try {
             writeMSG.write(msg.trim());
@@ -322,7 +424,7 @@ public class ClientThread implements Runnable {
         DocumentBuilder builder = factory.newDocumentBuilder();
         Document document = builder.parse(new ByteArrayInputStream(xmlString.getBytes("UTF-8")));
         String[] content = document.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
-        return content[1]; // Group name is at index 1
+        return content[1];
     }
 
     private String getGroupMessage(String xmlString) throws Exception {
@@ -330,7 +432,7 @@ public class ClientThread implements Runnable {
         DocumentBuilder builder = factory.newDocumentBuilder();
         Document document = builder.parse(new ByteArrayInputStream(xmlString.getBytes("UTF-8")));
         String[] content = document.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
-        return content[2]; // Message is at index 2
+        return content[2];
     }
 
     private String getCommunityMessage(String xmlString) throws Exception {
@@ -338,28 +440,17 @@ public class ClientThread implements Runnable {
         DocumentBuilder builder = factory.newDocumentBuilder();
         Document document = builder.parse(new ByteArrayInputStream(xmlString.getBytes("UTF-8")));
         String[] content = document.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
-        return content[1]; // Community message is at index 1
+        return content[1];
     }
 
-    // Extract username from <content> (split by "waw")
     private String extractUsername(String xmlMsg) throws Exception {
         javax.xml.parsers.DocumentBuilderFactory factory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
         javax.xml.parsers.DocumentBuilder builder = factory.newDocumentBuilder();
         org.w3c.dom.Document doc = builder.parse(new ByteArrayInputStream(xmlMsg.getBytes("UTF-8")));
         String[] content = doc.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
-        return content[0]; // username
+        return content[0];
     }
 
-    // Extract message body from <content> (for SEND_MESSAGE)
-    private String extractBody(String xmlMsg) throws Exception {
-        javax.xml.parsers.DocumentBuilderFactory factory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
-        javax.xml.parsers.DocumentBuilder builder = factory.newDocumentBuilder();
-        org.w3c.dom.Document doc = builder.parse(new ByteArrayInputStream(xmlMsg.getBytes("UTF-8")));
-        String[] content = doc.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
-        return content.length > 1 ? content[1] : ""; // return the message part after "waw"
-    }
-
-    // Logout and notify others
     public void logOut() throws IOException {
         synchronized (clients) {
             clients.remove(this);
@@ -367,20 +458,6 @@ public class ClientThread implements Runnable {
         socket.close();
     }
 
-    private void debugClientState() {
-        System.out.println("=== CLIENT DEBUG INFO ===");
-        System.out.println("Client name: " + this.name);
-        System.out.println("Socket connected: " + !socket.isClosed());
-        System.out.println("Total connected clients: " + clients.size());
-        synchronized (clients) {
-            for (ClientThread c : clients) {
-                System.out.println("  - Client: " + c.name + " (connected: " + !c.socket.isClosed() + ")");
-            }
-        }
-        System.out.println("========================");
-    }
-
-    //This for the Friend Getting index 0 as requester and then 1index 1 as friend
     private String[] extractContent(String xmlMsg) throws Exception {
         javax.xml.parsers.DocumentBuilderFactory factory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
         javax.xml.parsers.DocumentBuilder builder = factory.newDocumentBuilder();
@@ -390,26 +467,6 @@ public class ClientThread implements Runnable {
             return doc.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
         } else {
             return doc.getDocumentElement().getTextContent().split("!\\[]!");
-        }
-    }
-
-    // Broadcast message to all members of a specific group
-    private void broadcastToGroup(String groupName, String message) {
-        synchronized (clients) {
-            for (ClientThread c : new ArrayList<>(clients)) {
-                try {
-                    // Check if this client is a member of the group
-                    if (xmlHandler.isUserInGroup(c.name, groupName)) {
-                        c.writeMSG.write(message);
-                        c.writeMSG.newLine();
-                        c.writeMSG.flush();
-                    }
-                } catch (IOException e) {
-                    try {
-                        c.logOut();
-                    } catch (IOException ignored) {}
-                }
-            }
         }
     }
 }

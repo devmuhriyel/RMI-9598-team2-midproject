@@ -27,7 +27,7 @@ public class UserXMLHandler {
         doc.getDocumentElement().normalize();
         String type = doc.getElementsByTagName("type").item(0).getTextContent();
         String reply = "";
-        String[] content = doc.getElementsByTagName("content").item(0).getTextContent().split("waw");
+        String[] content = doc.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
         ;
         switch (type) {
             case "LOGIN":
@@ -70,17 +70,17 @@ public class UserXMLHandler {
                 }
                 Element root = registerDoc.getDocumentElement();
                 Element user = registerDoc.createElement("user");
-                Element uname = registerDoc.createElement("username"); // Fixed: was using 'doc'
-                uname.appendChild(registerDoc.createTextNode(content[0])); // Fixed: was using 'doc'
+                Element uname = registerDoc.createElement("username");
+                uname.appendChild(registerDoc.createTextNode(content[0]));
                 user.appendChild(uname);
-                Element pass = registerDoc.createElement("password"); // Fixed: was using 'doc'
-                pass.appendChild(registerDoc.createTextNode(content[1])); // Fixed: was using 'doc'
+                Element pass = registerDoc.createElement("password");
+                pass.appendChild(registerDoc.createTextNode(content[1]));
                 user.appendChild(pass);
                 root.appendChild(user);
                 TransformerFactory tf = TransformerFactory.newInstance();
                 Transformer transformer = tf.newTransformer();
                 transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-                transformer.transform(new DOMSource(registerDoc), new StreamResult(file)); // Fixed: was using 'doc'
+                transformer.transform(new DOMSource(registerDoc), new StreamResult(file));
                 reply = "REGISTER_SUCCESS";
                 break;
             case "SEND_MESSAGE":
@@ -93,28 +93,20 @@ public class UserXMLHandler {
 
     public String getReply(String xmlString) {
         try {
-            // Clean and validate
             xmlString = xmlString.trim();
             if (xmlString.startsWith("\uFEFF")) {
                 xmlString = xmlString.substring(1);
             }
-
-            // Check if it's actually XML
             if (!xmlString.startsWith("<") || !xmlString.endsWith(">")) {
                 System.out.println("Not a valid XML message: " + xmlString.substring(0, Math.min(100, xmlString.length())));
                 return null;
             }
-
-            // Check for truncated XML by counting opening/closing tags
             if (!isBalancedXML(xmlString)) {
                 System.out.println("XML appears to be truncated or malformed");
                 return null;
             }
-
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
-
-            // Set error handler to catch parsing issues
             builder.setErrorHandler(new org.xml.sax.ErrorHandler() {
                 @Override
                 public void warning(org.xml.sax.SAXParseException exception) {
@@ -136,14 +128,10 @@ public class UserXMLHandler {
             doc.getDocumentElement().normalize();
 
             Element root = doc.getDocumentElement();
-
-            // First try to get <reply> tag (preferred format)
             NodeList replyNodes = doc.getElementsByTagName("reply");
             if (replyNodes.getLength() > 0) {
                 return replyNodes.item(0).getTextContent();
             }
-
-            // Fall back to status attribute if needed
             if (root.hasAttribute("status")) {
                 return root.getAttribute("status");
             }
@@ -160,14 +148,10 @@ public class UserXMLHandler {
     }
 
     private boolean isBalancedXML(String xml) {
-        // Simple check for balanced XML tags
         int openTags = 0;
         int closeTags = 0;
-
-        // Count opening tags (not self-closing)
         for (int i = 0; i < xml.length() - 1; i++) {
             if (xml.charAt(i) == '<' && xml.charAt(i + 1) != '/' && xml.charAt(i + 1) != '?') {
-                // Check if it's not a self-closing tag
                 int tagEnd = xml.indexOf('>', i);
                 if (tagEnd > i && xml.charAt(tagEnd - 1) != '/') {
                     openTags++;
@@ -179,6 +163,7 @@ public class UserXMLHandler {
 
         return openTags == closeTags;
     }
+
 
     public String getResponseBody(String xmlString) throws Exception {
         xmlString = xmlString.trim();
@@ -218,34 +203,22 @@ public class UserXMLHandler {
         try {
             System.out.println("Attempting to save XML for user: " + username);
             System.out.println("Base64 content length: " + base64Content.length());
-
-            // Decode Base64 content
             byte[] xmlContent = Base64.getDecoder().decode(base64Content);
             String xmlString = new String(xmlContent, "UTF-8");
-
             System.out.println("Decoded XML length: " + xmlString.length());
             System.out.println("XML preview: " + xmlString.substring(0, Math.min(200, xmlString.length())));
-
-            // Validate XML structure
             if (!xmlString.trim().startsWith("<") || !xmlString.trim().endsWith(">")) {
                 throw new IllegalArgumentException("Invalid XML structure");
             }
 
             String filePath = "src/main/resources/XMLFiles/" + username + "Account.xml";
             File file = new File(filePath);
-
-            // Create directories if they don't exist
             file.getParentFile().mkdirs();
-
-            // Write to file
             try (FileOutputStream fos = new FileOutputStream(file)) {
                 fos.write(xmlContent);
                 fos.flush();
             }
-
             System.out.println("Successfully updated " + username + "Account.xml");
-
-            // Verify the file was written correctly
             if (file.exists() && file.length() > 0) {
                 System.out.println("File verification successful. Size: " + file.length() + " bytes");
             } else {
@@ -258,7 +231,6 @@ public class UserXMLHandler {
         }
     }
 
-    // Enhanced method to handle complete server response parsing
     public ServerResponse parseServerResponse(String xmlString) throws Exception {
         xmlString = xmlString.trim();
         if (xmlString.startsWith("\uFEFF")) {
@@ -291,8 +263,6 @@ public class UserXMLHandler {
         }
     }
 
-    // Add these methods to your UserXMLHandler class
-
     public List<ChatMessage> getGroupChatHistoryWithSenders(String username, String groupName) {
         List<ChatMessage> messages = new ArrayList<>();
         try {
@@ -314,37 +284,6 @@ public class UserXMLHandler {
                         String sender = chatElement.getElementsByTagName("sender").item(0).getTextContent();
                         String msg = chatElement.getElementsByTagName("msg").item(0).getTextContent();
                         messages.add(new ChatMessage(sender, msg));
-                    }
-                    break;
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return messages;
-    }
-
-    public List<String> getGroupChatHistory(String username, String groupName) {
-        List<String> messages = new ArrayList<>();
-        try {
-            File file = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document doc = builder.parse(file);
-            doc.getDocumentElement().normalize();
-
-            NodeList groupNodes = doc.getElementsByTagName("group");
-            for (int i = 0; i < groupNodes.getLength(); i++) {
-                Element groupElement = (Element) groupNodes.item(i);
-                String gName = groupElement.getElementsByTagName("groupname").item(0).getTextContent();
-
-                if (gName.equals(groupName)) {
-                    NodeList chatNodes = groupElement.getElementsByTagName("chat");
-                    for (int j = 0; j < chatNodes.getLength(); j++) {
-                        Element chatElement = (Element) chatNodes.item(j);
-                        String sender = chatElement.getElementsByTagName("sender").item(0).getTextContent();
-                        String msg = chatElement.getElementsByTagName("msg").item(0).getTextContent();
-                        messages.add(sender + ": " + msg);
                     }
                     break;
                 }
@@ -404,7 +343,6 @@ public class UserXMLHandler {
         }
     }
 
-    // Inner class to hold server response data
     public static class ServerResponse {
         private final String status;
         private final String body;
@@ -443,8 +381,6 @@ public class UserXMLHandler {
             DocumentBuilder builder = factory.newDocumentBuilder();
             Document doc = builder.parse(file);
             doc.getDocumentElement().normalize();
-
-            // Root <user>
             NodeList friendNodes = doc.getElementsByTagName("friend");
 
             for (int i = 0; i < friendNodes.getLength(); i++) {
@@ -463,26 +399,27 @@ public class UserXMLHandler {
         List<String> groups = new ArrayList<>();
         try {
             File file = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
+            if (!file.exists()) {
+                System.out.println("Account XML file not found for user: " + username);
+                return groups;
+            }
+
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
             Document doc = builder.parse(file);
             doc.getDocumentElement().normalize();
-
             NodeList groupList = doc.getElementsByTagName("group");
             for (int i = 0; i < groupList.getLength(); i++) {
                 Element group = (Element) groupList.item(i);
-                NodeList members = group.getElementsByTagName("member");
-
-                for (int j = 0; j < members.getLength(); j++) {
-                    Element member = (Element) members.item(j);
-                    if (member.getAttribute("username").equals(username)) {
-                        groups.add(group.getAttribute("name"));
-                        break;
-                    }
+                NodeList groupNameNodes = group.getElementsByTagName("groupname");
+                if (groupNameNodes.getLength() > 0) {
+                    String groupName = groupNameNodes.item(0).getTextContent();
+                    groups.add(groupName);
+                    System.out.println("Found group for user " + username + ": " + groupName);
                 }
             }
-
         } catch (Exception e) {
+            System.err.println("Error getting user groups for " + username + ": " + e.getMessage());
             e.printStackTrace();
         }
         return groups;

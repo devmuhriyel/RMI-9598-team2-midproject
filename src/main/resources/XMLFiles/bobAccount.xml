@@ -419,6 +419,14 @@
                 <sender>alice</sender>
                 <msg>dwdwdwdwd</msg>
             </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>[FILE: Screenshot 2024-10-12 232508.png]</msg>
+            </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>[FILE: RobloxScreenShot20240806_230456934.png]</msg>
+            </chat>
         </chathistory>
     </friend>
     <group>
@@ -544,8 +552,8 @@
                 <msg>allelujah</msg>
             </chat>
             <chat>
-                <sender>joshua</sender>
-                <msg>hello guys</msg>
+                <sender>charlie</sender>
+                <msg>IM INNN</msg>
             </chat>
         </chathistory>
     </group>

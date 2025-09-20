@@ -14,7 +14,7 @@
         <TextField fx:id="messageField" layoutX="74.0" layoutY="361.0" prefHeight="25.0" prefWidth="452.0" style="-fx-background-color: #4a4a4a; -fx-text-fill: white;" />
 
         <!-- Extra button (not linked in controller) -->
-        <Button layoutX="14.0" layoutY="361.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="50.0" style="-fx-background-color: dedcff;" text="File" textAlignment="CENTER" />
+        <Button fx:id="fileButton" layoutX="14.0" layoutY="361.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="50.0" style="-fx-background-color: dedcff;" text="File" textAlignment="CENTER" />
 
         <!-- Send button -->
         <Button fx:id="sendButton" layoutX="534.0" layoutY="361.0" mnemonicParsing="false" style="-fx-background-color: dedcff;" text="Send" />

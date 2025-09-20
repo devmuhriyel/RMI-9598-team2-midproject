@@ -20,10 +20,10 @@ public class HomeJFXController {
     private Button userProfileButton;
 
     @FXML
-    private VBox friendsList; // private messages
+    private VBox friendsList;
 
     @FXML
-    private VBox messagesArea1; // "Groups" messages area
+    private VBox messagesArea1;
 
     @FXML
     private Label userLabel;
@@ -34,14 +34,8 @@ public class HomeJFXController {
 
     @FXML
     private TextField searchField;
-    @FXML
-    private Button searchButton;
-
     private List<String> originalFriends = Collections.emptyList();
     private List<String> originalGroups = Collections.emptyList();
-
-    private static final List<String> PLACEHOLDER_GROUPS = Arrays.asList("Community Chat", "General Chat", "Project Team", "Study Group");
-
     private Consumer<String> searchListener;
 
     @FXML
@@ -53,11 +47,10 @@ public class HomeJFXController {
                 }
             });
         }
-
-        if (searchButton != null) {
-            searchButton.setOnAction(event -> {
-                if (searchListener != null && searchField != null) {
-                    searchListener.accept(searchField.getText());
+        if (searchField != null) {
+            searchField.textProperty().addListener((observable, oldValue, newValue) -> {
+                if (searchListener != null) {
+                    searchListener.accept(newValue); // send text to controller
                 }
             });
         }
@@ -75,8 +68,6 @@ public class HomeJFXController {
         this.groupClickListener = groupClickListener;
     }
 
-
-    // Method to update user label with username
     public void setUserLabel(String username) {
         if (userLabel != null) {
             userLabel.setText(username);
@@ -101,25 +92,18 @@ public class HomeJFXController {
         renderGroups(originalGroups);
     }
 
-    // Expose originals for controller-side search
     public List<String> getOriginalFriends() {
         return originalFriends;
     }
-
     public List<String> getOriginalGroups() {
         return originalGroups;
     }
-
-    // Allow controller to listen for search actions
     public void setSearchListener(Consumer<String> listener) {
         this.searchListener = listener;
     }
 
 
-
     //search integrated, alanganin, lilipat ba to sa HomeController TwT
-
-    // Rendering helpers used by controller
     public void renderFriends(List<String> friends) {
         Platform.runLater(() -> {
             friendsList.getChildren().clear();
@@ -155,8 +139,6 @@ public class HomeJFXController {
                 System.out.println("Selected Community Chat");
             });
             messagesArea1.getChildren().add(communityBtn);
-
-            // Add user's actual groups if any
             if (groups != null && !groups.isEmpty()) {
                 for (String group : groups) {
                     Button groupBtn = new Button("👥 " + group);
@@ -169,24 +151,8 @@ public class HomeJFXController {
                     });
                     messagesArea1.getChildren().add(groupBtn);
                 }
-            } else {
-
-                List<String> otherPlaceholders = Arrays.asList("Project Team", "Study Group");
-                for (String group : otherPlaceholders) {
-                    Button groupBtn = new Button("👥 " + group);
-                    groupBtn.setMaxWidth(Double.MAX_VALUE);
-                    groupBtn.setStyle("-fx-opacity: 0.6;"); // Make them look inactive/placeholder
-                    groupBtn.setOnAction(event -> {
-                        if (groupClickListener != null) {
-                            groupClickListener.accept(group);
-                        }
-                        System.out.println("Selected placeholder group: " + group);
-                    });
-                    messagesArea1.getChildren().add(groupBtn);
-                }
             }
 
-            // Add create group button
             Button createGroupBtn = new Button("+ Create New Group");
             createGroupBtn.setMaxWidth(Double.MAX_VALUE);
             createGroupBtn.setStyle("-fx-background-color: #dedcff; -fx-text-fill: black; -fx-padding: 10;");
