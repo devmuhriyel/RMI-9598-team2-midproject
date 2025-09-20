@@ -29,6 +29,22 @@ public class HomeController {
             ui.setUserLabel(model.getUsername());
         }
 
+        refreshUserData();
+        ui.setSearchListener(queryText -> {
+            String q = (queryText == null) ? "" : queryText.trim().toLowerCase();
+            if (q.isEmpty()) {
+                ui.renderFriends(ui.getOriginalFriends());
+                ui.renderGroups(ui.getOriginalGroups());
+                return;
+            }
+            ui.renderFriends(filterList(ui.getOriginalFriends(), q));
+            ui.renderGroups(filterList(ui.getOriginalGroups(), q));
+        });
+
+        if (model.getUsername() != null) {
+            ui.setUserLabel(model.getUsername());
+        }
+
         ui.setFriends(model.getFriends());
         ui.setGroups(model.getGroups());
 
@@ -75,6 +91,25 @@ public class HomeController {
                 System.out.println("Force logged out: " + message);
                 // Handle logout UI updates
             });
+        });
+    }
+
+    public void refreshUserData() {
+        Platform.runLater(() -> {
+            // Refresh friends and groups from the model
+            List<String> friends = model.getFriends();
+            List<String> groups = model.getGroups();
+
+            System.out.println("Refreshing user data - Friends: " + friends.size() + ", Groups: " + groups.size());
+
+            // Update the UI
+            ui.setFriends(friends);
+            ui.setGroups(groups);
+
+            // Log the groups for debugging
+            for (String group : groups) {
+                System.out.println("User is in group: " + group);
+            }
         });
     }
 

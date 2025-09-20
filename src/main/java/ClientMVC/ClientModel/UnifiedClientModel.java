@@ -5,6 +5,9 @@ import javafx.application.Platform;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Base64;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -15,12 +18,12 @@ public class UnifiedClientModel implements Runnable {
     private String username;
     private UserXMLHandler xmlHandler;
 
-    // Listeners for different types of responses
     private Consumer<String> messageListener;
     private Consumer<String> chatHistoryListener;
     private Consumer<String> forceLogoutListener;
     private Consumer<String> newMessageListener;
-    private Consumer<String> communityMessageListener; // New listener for community chat
+    private Consumer<String> communityMessageListener;
+    private Consumer<String> fileReceivedListener;
 
     public UnifiedClientModel(Socket socket, String username) throws IOException {
         this.socket = socket;
@@ -79,7 +82,6 @@ public class UnifiedClientModel implements Runnable {
                 case "LOGIN_FAILED":
                 case "REGISTER_SUCCESS":
                 case "REGISTER_FAILED":
-                    // Handle login/register responses
                     if (messageListener != null) {
                         Platform.runLater(() -> messageListener.accept(xmlResponse));
                     }
@@ -99,7 +101,6 @@ public class UnifiedClientModel implements Runnable {
         try {
             String body = xmlHandler.getResponseBody(xmlResponse);
             if (body != null && !body.isEmpty()) {
-                // Parse community message: sender![]!message
                 String[] parts = body.split("!\\[]!", 2);
                 if (parts.length == 2) {
                     String sender = parts[0];
@@ -121,21 +122,17 @@ public class UnifiedClientModel implements Runnable {
             String body = xmlHandler.getResponseBody(xmlResponse);
             if (body != null && !body.isEmpty()) {
                 if (isValidBase64(body)) {
-                    // Save the updated XML locally
                     xmlHandler.saveUpdatedAccountXML(username, body);
 
                     if (chatHistoryListener != null) {
                         if (isNewMessage) {
-                            // Extract the latest message for real-time display
                             String latestMessage = extractLatestMessageFromBase64(body);
                             if (latestMessage != null) {
                                 Platform.runLater(() -> chatHistoryListener.accept(latestMessage));
                             } else {
-                                // If we can't extract the latest message, trigger a refresh
                                 Platform.runLater(() -> chatHistoryListener.accept("MESSAGE_RECEIVED"));
                             }
                         } else {
-                            // For GET_CHAT_HISTORY, trigger a refresh
                             Platform.runLater(() -> chatHistoryListener.accept("MESSAGE_RECEIVED"));
                         }
                     }
@@ -153,6 +150,11 @@ public class UnifiedClientModel implements Runnable {
             if (body != null && !body.isEmpty()) {
                 if (isValidBase64(body)) {
                     xmlHandler.saveUpdatedAccountXML(username, body);
+                    String latestMessage = extractLatestMessageFromBase64(body);
+                    if (latestMessage != null && isFileMessage(latestMessage)) {
+                        handleFileMessage(latestMessage);
+                    }
+
                     if (chatHistoryListener != null) {
                         System.out.println("NEW_MESSAGE received, triggering chat refresh");
                         Platform.runLater(() -> chatHistoryListener.accept("MESSAGE_RECEIVED"));
@@ -171,6 +173,11 @@ public class UnifiedClientModel implements Runnable {
             if (body != null && !body.isEmpty()) {
                 if (isValidBase64(body)) {
                     xmlHandler.saveUpdatedAccountXML(username, body);
+                    String latestMessage = extractLatestMessageFromBase64(body);
+                    if (latestMessage != null && isFileMessage(latestMessage)) {
+                        handleFileMessage(latestMessage);
+                    }
+
                     if (chatHistoryListener != null) {
                         System.out.println("NEW_GROUP_MESSAGE received, triggering chat refresh");
                         Platform.runLater(() -> chatHistoryListener.accept("MESSAGE_RECEIVED"));
@@ -183,9 +190,24 @@ public class UnifiedClientModel implements Runnable {
         }
     }
 
+    private boolean isFileMessage(String message) {
+        return message.contains("[FILE: ") && message.contains("]");
+    }
+
+    private void handleFileMessage(String message) {
+        if (fileReceivedListener != null) {
+            int startIndex = message.indexOf("[FILE: ") + 7;
+            int endIndex = message.lastIndexOf("]");
+            if (startIndex < endIndex) {
+                String fileName = message.substring(startIndex, endIndex);
+                Platform.runLater(() -> fileReceivedListener.accept(fileName));
+            }
+        }
+    }
+
     private String extractLatestMessageFromBase64(String base64Content) {
         try {
-            byte[] decodedXML = java.util.Base64.getDecoder().decode(base64Content);
+            byte[] decodedXML = Base64.getDecoder().decode(base64Content);
             String xmlContent = new String(decodedXML, "UTF-8");
 
             javax.xml.parsers.DocumentBuilderFactory factory = javax.xml.parsers.DocumentBuilderFactory.newInstance();
@@ -195,7 +217,6 @@ public class UnifiedClientModel implements Runnable {
             org.w3c.dom.NodeList chatNodes = doc.getElementsByTagName("chat");
 
             if (chatNodes.getLength() > 0) {
-                // Get the last chat message
                 org.w3c.dom.Element lastChat = (org.w3c.dom.Element) chatNodes.item(chatNodes.getLength() - 1);
                 String sender = lastChat.getElementsByTagName("sender").item(0).getTextContent();
                 String message = lastChat.getElementsByTagName("msg").item(0).getTextContent();
@@ -212,7 +233,7 @@ public class UnifiedClientModel implements Runnable {
 
     private boolean isValidBase64(String base64) {
         try {
-            byte[] decoded = java.util.Base64.getDecoder().decode(base64);
+            byte[] decoded = Base64.getDecoder().decode(base64);
             String xmlContent = new String(decoded, "UTF-8");
             return xmlContent.contains("<") && xmlContent.contains(">");
         } catch (Exception e) {
@@ -220,7 +241,185 @@ public class UnifiedClientModel implements Runnable {
         }
     }
 
-    // Communication methods
+    public synchronized boolean sendFile(String filePath, String receiver) {
+        try {
+            File file = new File(filePath);
+            if (!file.exists() || !file.isFile()) {
+                System.err.println("File not found or is not a valid file: " + filePath);
+                return false;
+            }
+            long fileSize = file.length();
+            if (fileSize > 10 * 1024 * 1024) {
+                System.err.println("File too large. Maximum size is 10MB");
+                return false;
+            }
+            byte[] fileContent = Files.readAllBytes(file.toPath());
+            String encodedContent = Base64.getEncoder().encodeToString(fileContent);
+            String fileName = file.getName();
+            String fileExtension = getFileExtension(fileName);
+            String fileMessage = "FILE_TRANSFER![]!" + fileName + "![]!" + fileExtension + "![]!" + encodedContent;
+            String xmlMessage = "<Request><type>SEND_FILE</type><content>" +
+                    username + "![]!" + receiver + "![]!" + fileMessage + "</content></Request>";
+
+            System.out.println("Sending file: " + fileName + " (" + fileSize + " bytes)");
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+
+            return true;
+
+        } catch (IOException e) {
+            System.err.println("Error sending file: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public synchronized boolean sendGroupFile(String filePath, String groupName) {
+        try {
+            if (!canAccessGroup(groupName)) {
+                System.err.println("Access denied: User " + username + " is not a member of group " + groupName);
+                return false;
+            }
+            File file = new File(filePath);
+            if (!file.exists() || !file.isFile()) {
+                System.err.println("File not found or is not a valid file: " + filePath);
+                return false;
+            }
+            long fileSize = file.length();
+            if (fileSize > 10 * 1024 * 1024) {
+                System.err.println("File too large. Maximum size is 10MB");
+                return false;
+            }
+            byte[] fileContent = Files.readAllBytes(file.toPath());
+            String encodedContent = Base64.getEncoder().encodeToString(fileContent);
+
+            String fileName = file.getName();
+            String fileExtension = getFileExtension(fileName);
+
+            String fileMessage = "FILE_TRANSFER![]!" + fileName + "![]!" + fileExtension + "![]!" + encodedContent;
+            String xmlMessage = "<Request><type>SEND_GROUP_FILE</type><content>" +
+                    username + "![]!" + groupName + "![]!" + fileMessage + "</content></Request>";
+            System.out.println("Sending file to group: " + fileName + " (" + fileSize + " bytes)");
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+
+            return true;
+
+        } catch (IOException e) {
+            System.err.println("Error sending group file: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean saveReceivedFile(String fileName) {
+        try {
+            String userFilesPath = "src/main/resources/XMLFiles/userFiles/" + username;
+            File userDir = new File(userFilesPath);
+            if (!userDir.exists()) {
+                userDir.mkdirs();
+            }
+            File[] files = userDir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.getName().contains(fileName)) {
+                        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                            reader.readLine();
+                            String originalNameLine = reader.readLine();
+                            String extensionLine = reader.readLine();
+                            reader.readLine();
+                            String contentLine = reader.readLine();
+                            if (contentLine != null && contentLine.startsWith("CONTENT:")) {
+                                String base64Content = contentLine.substring(8);
+                                String originalName = originalNameLine.split(":", 2)[1];
+
+                                return saveFileToDownloads(originalName, base64Content);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error saving received file: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    private boolean saveFileToDownloads(String fileName, String base64Content) {
+        try {
+            String downloadsPath = System.getProperty("user.home") + "/Downloads/ChatApp";
+            File downloadsDir = new File(downloadsPath);
+            if (!downloadsDir.exists()) {
+                downloadsDir.mkdirs();
+            }
+            File outputFile = new File(downloadsDir, fileName);
+            int counter = 1;
+            String baseName = fileName;
+            String extension = getFileExtension(fileName);
+
+            if (!extension.isEmpty()) {
+                baseName = fileName.substring(0, fileName.lastIndexOf('.'));
+            }
+
+            while (outputFile.exists()) {
+                String newFileName = baseName + "(" + counter + ")" + extension;
+                outputFile = new File(downloadsDir, newFileName);
+                counter++;
+            }
+            byte[] fileContent = Base64.getDecoder().decode(base64Content);
+            Files.write(outputFile.toPath(), fileContent);
+
+            System.out.println("File saved to: " + outputFile.getAbsolutePath());
+            return true;
+
+        } catch (Exception e) {
+            System.err.println("Error saving file to downloads: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean openFile(String fileName) {
+        try {
+            String downloadsPath = System.getProperty("user.home") + "/Downloads/ChatApp";
+            File downloadsDir = new File(downloadsPath);
+
+            if (downloadsDir.exists()) {
+                File[] files = downloadsDir.listFiles();
+                if (files != null) {
+                    for (File file : files) {
+                        if (file.getName().startsWith(fileName) || file.getName().equals(fileName)) {
+                            if (java.awt.Desktop.isDesktopSupported()) {
+                                java.awt.Desktop desktop = java.awt.Desktop.getDesktop();
+                                if (desktop.isSupported(java.awt.Desktop.Action.OPEN)) {
+                                    desktop.open(file);
+                                    System.out.println("Opening file: " + file.getAbsolutePath());
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            System.err.println("File not found in downloads: " + fileName);
+            return false;
+
+        } catch (Exception e) {
+            System.err.println("Error opening file: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private String getFileExtension(String fileName) {
+        int lastDot = fileName.lastIndexOf('.');
+        return (lastDot > 0) ? fileName.substring(lastDot) : "";
+    }
+
     public synchronized void sendMessage(String message, String receiver) {
         try {
             String xmlMessage = "<Request><type>SEND_MESSAGE</type><content>" +
@@ -236,6 +435,13 @@ public class UnifiedClientModel implements Runnable {
 
     public synchronized void sendGroupMessage(String message, String groupName) {
         try {
+            List<String> userGroups = xmlHandler.getUserGroups(username);
+
+            if (!groupName.equals("Community Chat") && !userGroups.contains(groupName)) {
+                System.err.println("Access denied: User " + username + " is not a member of group " + groupName);
+                return;
+            }
+
             String xmlMessage = "<Request><type>SEND_GROUP_MESSAGE</type><content>" +
                     username + "![]!" + groupName + "![]!" + message + "</content></Request>";
             System.out.println("Sending group message: " + xmlMessage);
@@ -245,6 +451,15 @@ public class UnifiedClientModel implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public boolean canAccessGroup(String groupName) {
+        if ("Community Chat".equals(groupName)) {
+            return true;
+        }
+
+        List<String> userGroups = xmlHandler.getUserGroups(username);
+        return userGroups != null && userGroups.contains(groupName);
     }
 
     public synchronized void sendCommunityMessage(String message) {
@@ -298,7 +513,6 @@ public class UnifiedClientModel implements Runnable {
         }
     }
 
-    // Add method for sending raw XML messages
     public synchronized void sendRawMessage(String xmlMessage) {
         try {
             System.out.println("Sending raw message: " + xmlMessage);
@@ -309,13 +523,10 @@ public class UnifiedClientModel implements Runnable {
             e.printStackTrace();
         }
     }
-
-    // Add method to update username after login
     public void setUsername(String username) {
         this.username = username;
     }
 
-    // Listener setters
     public void setMessageListener(Consumer<String> messageListener) {
         this.messageListener = messageListener;
     }
@@ -336,7 +547,10 @@ public class UnifiedClientModel implements Runnable {
         this.communityMessageListener = communityMessageListener;
     }
 
-    // Utility methods
+    public void setFileReceivedListener(Consumer<String> fileReceivedListener) {
+        this.fileReceivedListener = fileReceivedListener;
+    }
+
     public List<String> getFriends() {
         return xmlHandler.getFriends(username);
     }
@@ -345,7 +559,6 @@ public class UnifiedClientModel implements Runnable {
         return xmlHandler.getUserGroups(username);
     }
 
-    // Getters
     public Socket getSocket() {
         return socket;
     }

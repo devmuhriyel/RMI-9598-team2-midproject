@@ -8,7 +8,7 @@ import java.util.Scanner;
 
 public class ChatServer {
 
-    private ServerSocket serverSocket;
+    private final ServerSocket serverSocket;
     private boolean running = true;
 
     public ChatServer(ServerSocket serverSckt) {
@@ -17,6 +17,8 @@ public class ChatServer {
 
     public void start() {
         try{
+            ServerXMLHandler xmlHandler = new ServerXMLHandler();
+            xmlHandler.fixExistingGroupMemberships();
             while(!serverSocket.isClosed()){
                 Socket socket = serverSocket.accept();
                 System.out.println("A new client has connected");
@@ -29,7 +31,6 @@ public class ChatServer {
             e.printStackTrace();
         }
     }
-
     public void stop() {
         running = false;
         try {
@@ -41,18 +42,16 @@ public class ChatServer {
             e.printStackTrace();
         }
     }
-
-
-    //TYPE EXIT IF CLOSEEEE OR PWEDE NAMAN YUNG STOP BUTTON (Wala maangas lang kaya i added it :>)
     public static void main(String[] args) throws IOException {
-//        InetAddress bindAddress = InetAddress.getByName("26.141.158.76");
-        ServerSocket serverSocket = new ServerSocket(1234);
+        String ip = "";
+        InetAddress bindAddress = InetAddress.getByName(ip);
+        ServerSocket serverSocket = new ServerSocket(1234, 50, bindAddress);
         ChatServer chatServer = new ChatServer(serverSocket);
         chatServer.start();
-
         Scanner scanner = new Scanner(System.in);
-        while (true) {
-            String command = scanner.nextLine();
+        String command = "";
+        while (!command.equals("exit")) {
+            command = scanner.nextLine();
             if (command.equalsIgnoreCase("exit")) {
                 chatServer.stop();
                 break;
