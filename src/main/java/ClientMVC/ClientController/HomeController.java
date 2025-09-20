@@ -151,7 +151,7 @@ public class HomeController {
     private List<String> filterList(List<String> source, String queryLower) {
         List<String> result = new ArrayList<>();
         for (String item : source) {
-            if (item != null && item.toLowerCase().contains(queryLower)) {
+            if (item != null && item.toLowerCase().startsWith(queryLower)) {
                 result.add(item);
             }
         }

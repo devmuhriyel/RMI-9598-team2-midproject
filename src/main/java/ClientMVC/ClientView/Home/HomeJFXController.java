@@ -34,9 +34,6 @@ public class HomeJFXController {
 
     @FXML
     private TextField searchField;
-    @FXML
-    private Button searchButton;
-
     private List<String> originalFriends = Collections.emptyList();
     private List<String> originalGroups = Collections.emptyList();
     private Consumer<String> searchListener;
@@ -50,11 +47,10 @@ public class HomeJFXController {
                 }
             });
         }
-
-        if (searchButton != null) {
-            searchButton.setOnAction(event -> {
-                if (searchListener != null && searchField != null) {
-                    searchListener.accept(searchField.getText());
+        if (searchField != null) {
+            searchField.textProperty().addListener((observable, oldValue, newValue) -> {
+                if (searchListener != null) {
+                    searchListener.accept(newValue); // send text to controller
                 }
             });
         }

@@ -75,6 +75,5 @@
          </font>
       </Label>
       <TextField fx:id="searchField" layoutX="447.0" layoutY="31.0" prefHeight="26.0" prefWidth="158.0" promptText="Search friends and groups" />
-      <Button fx:id="searchButton" layoutX="606.0" layoutY="30.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="30.0" text="🔍" />
    </children>
 </AnchorPane>
