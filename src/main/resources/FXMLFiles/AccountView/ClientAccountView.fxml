@@ -65,7 +65,7 @@
       </AnchorPane>
       <AnchorPane fx:id="backNavigation" layoutY="36.0" prefHeight="79.0" prefWidth="210.0">
          <children>
-            <Button fx:id="sendButton" alignment="CENTER" layoutX="14.0" layoutY="11.0" mnemonicParsing="false" prefHeight="35.0" prefWidth="42.0" style="-fx-background-radius: 100; -fx-background-color: dedcff;" stylesheets="@../../style.css" text="🔙">
+            <Button fx:id="backButton" alignment="CENTER" layoutX="14.0" layoutY="11.0" mnemonicParsing="false" prefHeight="35.0" prefWidth="42.0" style="-fx-background-radius: 100; -fx-background-color: dedcff;" stylesheets="@../../style.css" text="🔙">
                <font>
                   <Font size="16.0" />
                </font>

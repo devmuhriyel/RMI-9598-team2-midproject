@@ -38,6 +38,15 @@ public class AccountJFXController {
     @FXML
     private Label usernameStatusLabel, passwordStatusLabel;
 
+    @FXML
+    private Button logoutAccountButton;
+
+    @FXML
+    private Button backButton;
+
+    private Runnable backButtonListener;
+    private Runnable LogoutAccountButtonListener;
+
     // Cache for loaded content
     private Parent profileView;
     private Parent requestsView;
@@ -54,6 +63,27 @@ public class AccountJFXController {
     public void initialize() {
         // Be applied to all upcoming FXML sub-frames
         setupWindowControls();
+        setUpButtons();
+    }
+
+    private void setUpButtons() {
+        // Only set up backButton if it exists (main view only)
+        if (backButton != null) {
+            backButton.setOnAction(event -> {
+                if (backButtonListener != null) {
+                    backButtonListener.run();
+                }
+            });
+        }
+
+        // Only set up logoutButton if it exists (main view only)
+        if (logoutAccountButton != null) {
+            logoutAccountButton.setOnAction(event -> {
+                if (LogoutAccountButtonListener != null) {
+                    LogoutAccountButtonListener.run();
+                }
+            });
+        }
     }
 
     private void setupWindowControls() {
@@ -85,8 +115,6 @@ public class AccountJFXController {
             });
         }
     }
-
-    // Main navigation methods
     @FXML
     public void showProfile() throws IOException {
         if (profileView == null) {
@@ -97,7 +125,7 @@ public class AccountJFXController {
     }
 
     @FXML
-    public void showRequests() throws IOException {
+    private void showRequests() throws IOException {
         if (requestsView == null) {
             requestsView = FXMLLoader.load(getClass().getResource("/FXMLFiles/AccountView/ClientAccountRequests.fxml"));
             setupViewAnchors(requestsView);
@@ -106,7 +134,7 @@ public class AccountJFXController {
     }
 
     @FXML
-    public void showSettings() throws IOException {
+    private void showSettings() throws IOException {
         if (settingsView == null) {
             settingsView = FXMLLoader.load(getClass().getResource("/FXMLFiles/AccountView/ClientAccountSettings.fxml"));
             setupViewAnchors(settingsView);
@@ -249,5 +277,14 @@ public class AccountJFXController {
     public String getConfirmPassword() {
         return confirmPasswordTextField.getText();
     }
+
+    public void setBackButtonListener(Runnable listener) {
+        this.backButtonListener = listener;
+    }
+
+    public void setLogoutAccountButtonListener(Runnable listener) {
+        this.LogoutAccountButtonListener = listener;
+    }
+
 
 }

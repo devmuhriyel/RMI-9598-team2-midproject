@@ -10,12 +10,15 @@ import javafx.stage.StageStyle;
 
 public class AccountView extends Application {
     private AccountJFXController accountJFXController;
+    private static Stage primaryStage;
+
 
     @Override
     public void start(Stage stage) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/AccountView/ClientAccountView.fxml"));
             Parent root = loader.load();
+            primaryStage = stage;
             accountJFXController = loader.getController();
             accountJFXController.showProfile(); // opens default
 
@@ -32,8 +35,16 @@ public class AccountView extends Application {
             e.printStackTrace();
         }
     }
-
     public AccountJFXController getFXController() {
         return accountJFXController;
+    }
+    // expose stage for reuse
+    public Stage getStage() {
+        return primaryStage;
+    }
+
+    // static access (optional, for global usage)
+    public static Stage getPrimaryStage() {
+        return primaryStage;
     }
 }

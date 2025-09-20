@@ -22,6 +22,8 @@ public class HomeView extends Application {
     private LoginJFXController loginJFXController;
     private static HomeView instance;
     private Stage stage;
+    private static Stage primaryStage;
+
 
     public HomeView() {
         instance = this;
@@ -31,6 +33,7 @@ public class HomeView extends Application {
     public void start(Stage stage){
         this.stage = stage;
         try {
+            primaryStage = stage;
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/Home.fxml"));
             Parent root = loader.load();
             homeJFXController = loader.getController();
@@ -58,6 +61,16 @@ public class HomeView extends Application {
         if (homeJFXController != null) {
             homeJFXController.setUserLabel(username);
         }
+    }
+
+    // expose stage for reuse
+    public Stage getStage() {
+        return primaryStage;
+    }
+
+    // static access (optional, for global usage)
+    public static Stage getPrimaryStage() {
+        return primaryStage;
     }
 
 }

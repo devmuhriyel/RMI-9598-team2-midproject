@@ -1,6 +1,7 @@
 package ClientMVC.ClientController;
 
 import ClientMVC.ClientModel.UnifiedClientModel;
+import ClientMVC.ClientView.Account.AccountView;
 import ClientMVC.ClientView.Home.HomeJFXController;
 import ClientMVC.ClientView.Home.HomeView;
 import ClientMVC.ClientView.Chat.ChatView;
@@ -25,6 +26,22 @@ public class HomeController {
     }
 
     private void initialize() {
+        //forda UserProfile
+        ui.setAccountButtonListener(() -> {
+            Platform.runLater(() -> {
+                try {
+                    view.getStage().close();
+
+                    AccountView accountView = new AccountView();
+                    Stage accountStage = new Stage();
+                    accountView.start(accountStage);
+                    new AccountController(model, accountView, accountView.getFXController());
+
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            });
+        });
         if (model.getUsername() != null) {
             ui.setUserLabel(model.getUsername());
         }

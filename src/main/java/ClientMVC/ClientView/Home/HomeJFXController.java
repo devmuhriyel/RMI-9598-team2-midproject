@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class HomeJFXController {
+    @FXML
+    private Button accountButton;
 
     @FXML
     private Button userProfileButton;
@@ -30,6 +32,7 @@ public class HomeJFXController {
 
     private Consumer<String> groupClickListener;
     private Runnable userProfileButtonListener;
+    private Runnable accountButtonListener;
     private Consumer<String> friendClickListener;
 
     @FXML
@@ -40,6 +43,13 @@ public class HomeJFXController {
 
     @FXML
     private void initialize() {
+        if (accountButton != null) {
+            accountButton.setOnAction(event -> {
+                if (accountButtonListener != null) {
+                    accountButtonListener.run();
+                }
+            });
+        }
         if (userProfileButton != null) {
             userProfileButton.setOnAction(event -> {
                 if (userProfileButtonListener != null) {
@@ -162,5 +172,8 @@ public class HomeJFXController {
             });
             messagesArea1.getChildren().add(createGroupBtn);
         });
+    }
+    public void setAccountButtonListener(Runnable listener) {
+        this.accountButtonListener = listener;
     }
 }
