@@ -27,7 +27,7 @@ public class UserXMLHandler {
         doc.getDocumentElement().normalize();
         String type = doc.getElementsByTagName("type").item(0).getTextContent();
         String reply = "";
-        String[] content = doc.getElementsByTagName("content").item(0).getTextContent().split("waw");
+        String[] content = doc.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
         ;
         switch (type) {
             case "LOGIN":

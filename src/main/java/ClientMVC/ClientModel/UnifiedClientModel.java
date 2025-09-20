@@ -53,7 +53,15 @@ public class UnifiedClientModel implements Runnable {
     private void handleXMLResponse(String xmlResponse) {
         try {
             String reply = xmlHandler.getReply(xmlResponse);
-            if (reply == null) return;
+            if (reply == null) {
+                // Check for status attribute as fallback
+                UserXMLHandler.ServerResponse response = xmlHandler.parseServerResponse(xmlResponse);
+                if (response != null && response.getStatus() != null) {
+                    reply = response.getStatus();
+                } else {
+                    return;
+                }
+            }
 
             switch (reply) {
                 case "GET_CHAT_HISTORY":
@@ -70,6 +78,24 @@ public class UnifiedClientModel implements Runnable {
 
                 case "COMMUNITY_MESSAGE":
                     handleCommunityMessageResponse(xmlResponse);
+                    break;
+
+                // File transfer response handling
+                case "FILE_SENT":
+                    handleFileTransferSuccess(xmlResponse);
+                    break;
+
+                case "FILE_SEND_FAILED":
+                    handleFileTransferFailure(xmlResponse);
+                    break;
+
+                case "GROUP_FILE_SENT":
+                    handleGroupFileTransferSuccess(xmlResponse);
+                    break;
+
+                case "GROUP_FILE_SEND_FAILED":
+                case "GROUP_ACCESS_DENIED":
+                    handleGroupFileTransferFailure(xmlResponse);
                     break;
 
                 case "FORCE_LOGOUT":
@@ -146,26 +172,99 @@ public class UnifiedClientModel implements Runnable {
 
     private void handleNewMessageResponse(String xmlResponse) {
         try {
+            System.out.println("handleNewMessageResponse called");
+            System.out.println("Response length: " + xmlResponse.length());
+
             String body = xmlHandler.getResponseBody(xmlResponse);
             if (body != null && !body.isEmpty()) {
+                System.out.println("Body length: " + body.length());
+
                 if (isValidBase64(body)) {
+                    System.out.println("Valid base64 content, saving to account XML");
                     xmlHandler.saveUpdatedAccountXML(username, body);
+
                     String latestMessage = extractLatestMessageFromBase64(body);
                     if (latestMessage != null && isFileMessage(latestMessage)) {
+                        System.out.println("File message detected: " + latestMessage);
                         handleFileMessage(latestMessage);
                     }
 
                     if (chatHistoryListener != null) {
                         System.out.println("NEW_MESSAGE received, triggering chat refresh");
                         Platform.runLater(() -> chatHistoryListener.accept("MESSAGE_RECEIVED"));
+                    } else {
+                        System.err.println("chatHistoryListener is null!");
                     }
+                } else {
+                    System.err.println("Invalid base64 content in response body");
                 }
+            } else {
+                System.err.println("Empty or null response body");
             }
         } catch (Exception e) {
             System.err.println("Error handling new message response: " + e.getMessage());
             e.printStackTrace();
         }
     }
+    private void handleFileTransferSuccess(String xmlResponse) {
+        try {
+            String body = xmlHandler.getResponseBody(xmlResponse);
+            System.out.println("File transfer successful: " + body);
+
+            if (fileStatusListener != null) {
+                Platform.runLater(() -> fileStatusListener.accept("SUCCESS: " + body));
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling file transfer success: " + e.getMessage());
+        }
+    }
+    private void handleFileTransferFailure(String xmlResponse) {
+        try {
+            String body = xmlHandler.getResponseBody(xmlResponse);
+            System.err.println("File transfer failed: " + body);
+
+            String errorMessage = (body != null && !body.isEmpty()) ? body : "Unknown error occurred";
+
+            if (fileStatusListener != null) {
+                Platform.runLater(() -> fileStatusListener.accept("FAILURE: " + errorMessage));
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling file transfer failure: " + e.getMessage());
+            if (fileStatusListener != null) {
+                Platform.runLater(() -> fileStatusListener.accept("FAILURE: Error processing server response"));
+            }
+        }
+    }
+    private void handleGroupFileTransferSuccess(String xmlResponse) {
+        try {
+            String body = xmlHandler.getResponseBody(xmlResponse);
+            System.out.println("Group file transfer successful: " + body);
+
+            if (fileStatusListener != null) {
+                Platform.runLater(() -> fileStatusListener.accept("SUCCESS: " + body));
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling group file transfer success: " + e.getMessage());
+        }
+    }
+    private void handleGroupFileTransferFailure(String xmlResponse) {
+        try {
+            String body = xmlHandler.getResponseBody(xmlResponse);
+            System.err.println("Group file transfer failed: " + body);
+
+            if (fileStatusListener != null) {
+                Platform.runLater(() -> fileStatusListener.accept("FAILURE: " + body));
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling group file transfer failure: " + e.getMessage());
+        }
+    }
+    private Consumer<String> fileStatusListener;
+
+    public void setFileStatusListener(Consumer<String> fileStatusListener) {
+        this.fileStatusListener = fileStatusListener;
+    }
+
 
     private void handleNewGroupMessageResponse(String xmlResponse) {
         try {
@@ -246,31 +345,65 @@ public class UnifiedClientModel implements Runnable {
             File file = new File(filePath);
             if (!file.exists() || !file.isFile()) {
                 System.err.println("File not found or is not a valid file: " + filePath);
+                if (fileStatusListener != null) {
+                    Platform.runLater(() -> fileStatusListener.accept("FAILURE: File not found"));
+                }
                 return false;
             }
+
             long fileSize = file.length();
+            System.out.println("Preparing to send file: " + file.getName() + " (" + fileSize + " bytes)");
+
             if (fileSize > 10 * 1024 * 1024) {
                 System.err.println("File too large. Maximum size is 10MB");
+                if (fileStatusListener != null) {
+                    Platform.runLater(() -> fileStatusListener.accept("FAILURE: File too large (max 10MB)"));
+                }
                 return false;
             }
+
+            if (fileSize == 0) {
+                System.err.println("Cannot send empty file");
+                if (fileStatusListener != null) {
+                    Platform.runLater(() -> fileStatusListener.accept("FAILURE: Empty file"));
+                }
+                return false;
+            }
+
+            // Read and encode file
             byte[] fileContent = Files.readAllBytes(file.toPath());
             String encodedContent = Base64.getEncoder().encodeToString(fileContent);
             String fileName = file.getName();
             String fileExtension = getFileExtension(fileName);
+
+            System.out.println("File encoded successfully:");
+            System.out.println("- Original size: " + fileSize + " bytes");
+            System.out.println("- Encoded size: " + encodedContent.length() + " characters");
+
+            // Build the file message with proper delimiters
             String fileMessage = "FILE_TRANSFER![]!" + fileName + "![]!" + fileExtension + "![]!" + encodedContent;
             String xmlMessage = "<Request><type>SEND_FILE</type><content>" +
                     username + "![]!" + receiver + "![]!" + fileMessage + "</content></Request>";
+            System.out.println("Full XML message structure:");
+            System.out.println("- Username: " + username);
+            System.out.println("- Receiver: " + receiver);
+            System.out.println("- File message starts with: " + fileMessage.substring(0, Math.min(50, fileMessage.length())));
+            System.out.println("- Total XML length: " + xmlMessage.length());
+            System.out.println("Sending file message (length: " + xmlMessage.length() + ")");
 
-            System.out.println("Sending file: " + fileName + " (" + fileSize + " bytes)");
             writeMSG.write(xmlMessage);
             writeMSG.newLine();
             writeMSG.flush();
 
+            System.out.println("File message sent to server");
             return true;
 
         } catch (IOException e) {
             System.err.println("Error sending file: " + e.getMessage());
             e.printStackTrace();
+            if (fileStatusListener != null) {
+                Platform.runLater(() -> fileStatusListener.accept("FAILURE: " + e.getMessage()));
+            }
             return false;
         }
     }
@@ -316,21 +449,28 @@ public class UnifiedClientModel implements Runnable {
 
     public boolean saveReceivedFile(String fileName) {
         try {
+            // First, check if file exists in server storage for this user
             String userFilesPath = "src/main/resources/XMLFiles/userFiles/" + username;
             File userDir = new File(userFilesPath);
+
             if (!userDir.exists()) {
-                userDir.mkdirs();
+                System.err.println("User files directory not found: " + userFilesPath);
+                return false;
             }
+
             File[] files = userDir.listFiles();
             if (files != null) {
                 for (File file : files) {
+                    // Check if the file matches the requested filename
                     if (file.getName().contains(fileName)) {
                         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-                            reader.readLine();
-                            String originalNameLine = reader.readLine();
-                            String extensionLine = reader.readLine();
-                            reader.readLine();
-                            String contentLine = reader.readLine();
+                            reader.readLine(); // SENDER line
+                            String originalNameLine = reader.readLine(); // ORIGINAL_NAME line
+                            String extensionLine = reader.readLine(); // EXTENSION line
+                            reader.readLine(); // TIMESTAMP line
+                            reader.readLine(); // SIZE line
+                            String contentLine = reader.readLine(); // CONTENT line
+
                             if (contentLine != null && contentLine.startsWith("CONTENT:")) {
                                 String base64Content = contentLine.substring(8);
                                 String originalName = originalNameLine.split(":", 2)[1];
@@ -341,20 +481,31 @@ public class UnifiedClientModel implements Runnable {
                     }
                 }
             }
+
+            System.err.println("File not found in server storage: " + fileName);
+            return false;
+
         } catch (Exception e) {
             System.err.println("Error saving received file: " + e.getMessage());
             e.printStackTrace();
+            return false;
         }
-        return false;
     }
 
     private boolean saveFileToDownloads(String fileName, String base64Content) {
         try {
+            // Create Downloads/ChatApp directory
             String downloadsPath = System.getProperty("user.home") + "/Downloads/ChatApp";
             File downloadsDir = new File(downloadsPath);
             if (!downloadsDir.exists()) {
-                downloadsDir.mkdirs();
+                boolean created = downloadsDir.mkdirs();
+                if (!created) {
+                    System.err.println("Failed to create downloads directory: " + downloadsPath);
+                    return false;
+                }
             }
+
+            // Handle duplicate filenames
             File outputFile = new File(downloadsDir, fileName);
             int counter = 1;
             String baseName = fileName;
@@ -369,6 +520,8 @@ public class UnifiedClientModel implements Runnable {
                 outputFile = new File(downloadsDir, newFileName);
                 counter++;
             }
+
+            // Decode and save file
             byte[] fileContent = Base64.getDecoder().decode(base64Content);
             Files.write(outputFile.toPath(), fileContent);
 
@@ -382,8 +535,10 @@ public class UnifiedClientModel implements Runnable {
         }
     }
 
+
     public boolean openFile(String fileName) {
         try {
+            // First, try to find the file in Downloads
             String downloadsPath = System.getProperty("user.home") + "/Downloads/ChatApp";
             File downloadsDir = new File(downloadsPath);
 
@@ -392,24 +547,53 @@ public class UnifiedClientModel implements Runnable {
                 if (files != null) {
                     for (File file : files) {
                         if (file.getName().startsWith(fileName) || file.getName().equals(fileName)) {
-                            if (java.awt.Desktop.isDesktopSupported()) {
-                                java.awt.Desktop desktop = java.awt.Desktop.getDesktop();
-                                if (desktop.isSupported(java.awt.Desktop.Action.OPEN)) {
-                                    desktop.open(file);
-                                    System.out.println("Opening file: " + file.getAbsolutePath());
-                                    return true;
-                                }
+                            return openFileWithSystem(file);
+                        }
+                    }
+                }
+            }
+
+            // If not found in Downloads, try to download it first
+            System.out.println("File not found in downloads, attempting to retrieve from server storage...");
+            boolean downloaded = saveReceivedFile(fileName);
+
+            if (downloaded) {
+                // Try to open the newly downloaded file
+                if (downloadsDir.exists()) {
+                    File[] files = downloadsDir.listFiles();
+                    if (files != null) {
+                        for (File file : files) {
+                            if (file.getName().startsWith(fileName) || file.getName().equals(fileName)) {
+                                return openFileWithSystem(file);
                             }
                         }
                     }
                 }
             }
 
-            System.err.println("File not found in downloads: " + fileName);
+            System.err.println("Could not find or download file: " + fileName);
             return false;
 
         } catch (Exception e) {
             System.err.println("Error opening file: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    private boolean openFileWithSystem(File file) {
+        try {
+            if (java.awt.Desktop.isDesktopSupported()) {
+                java.awt.Desktop desktop = java.awt.Desktop.getDesktop();
+                if (desktop.isSupported(java.awt.Desktop.Action.OPEN)) {
+                    desktop.open(file);
+                    System.out.println("Opening file: " + file.getAbsolutePath());
+                    return true;
+                }
+            }
+            System.err.println("Desktop operations not supported");
+            return false;
+        } catch (Exception e) {
+            System.err.println("Error opening file with system: " + e.getMessage());
             e.printStackTrace();
             return false;
         }

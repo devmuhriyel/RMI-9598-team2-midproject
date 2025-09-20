@@ -46,23 +46,16 @@ public class ChatServer {
         }
     }
 
-
-    /**
-     * Validates if the given string is a valid IP address
-     * @param ip the IP address string to validate
-     * @return true if valid, false otherwise
-     */
     private static boolean isValidIPAddress(String ip) {
-        // Regular expression for valid IPv4 address
-        String ipPattern = "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$";
+        String ipPattern =
+                "^(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\." +
+                        "(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\." +
+                        "(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\." +
+                        "(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$";
+
         return Pattern.matches(ipPattern, ip);
     }
 
-    /**
-     * Prompts the operator for an IP address and validates it
-     * @param scanner the Scanner object for input
-     * @return a valid IP address string
-     */
     private static String getValidIPAddress(Scanner scanner) {
         String ipAddress;
         while (true) {
@@ -88,7 +81,6 @@ public class ChatServer {
     public static void main(String[] args) throws IOException {
         Scanner scanner = new Scanner(System.in);
 
-        // Get and validate IP address from operator
         String ipAddress = getValidIPAddress(scanner);
 
         try {

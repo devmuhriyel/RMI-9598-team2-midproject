@@ -88,51 +88,144 @@ public class ChatController {
     }
 
     private void setupListeners() {
+        System.out.println("ChatController.setupListeners() called");
+
         chatJFXController.setSendButtonListener(() -> sendMSG());
         chatJFXController.setHomeButtonListener(() -> goToHome());
-        chatJFXController.setFileButtonListener(() -> handleFileSelection());
-        chatJFXController.setFileOpenListener(fileName -> handleFileOpen(fileName));
+
+        System.out.println("About to set file button listener");
+        chatJFXController.setFileButtonListener(() -> {
+            System.out.println("File button listener lambda called - about to call handleFileSelection()");
+            handleFileSelection();
+        });
+
+        chatJFXController.setFileOpenListener(fileName -> {
+            System.out.println("File open requested for: " + fileName);
+            handleFileOpen(fileName);
+        });
+
+        // Set up file status listener to provide feedback on file operations
+        model.setFileStatusListener(status -> {
+            Platform.runLater(() -> {
+                if (status.startsWith("SUCCESS:")) {
+                    String message = status.substring(8).trim();
+                    showStatusMessage("File operation successful: " + message);
+                } else if (status.startsWith("FAILURE:")) {
+                    String message = status.substring(8).trim();
+                    showErrorMessage("File operation failed: " + message);
+                } else {
+                    showStatusMessage("File status: " + status);
+                }
+            });
+        });
     }
 
     private void handleFileSelection() {
+        System.out.println("handleFileSelection() called");
+
         Platform.runLater(() -> {
-            File selectedFile = chatJFXController.showFileChooser();
-            if (selectedFile != null) {
-                String receiver = chatJFXController.getReceiver().getText();
-                boolean success = false;
+            System.out.println("Inside Platform.runLater in handleFileSelection");
 
-                if (receiver.equals("Community Chat")) {
-                    showErrorMessage("File sharing is not available in Community Chat");
-                    return;
-                } else if (receiver.startsWith("Group: ")) {
-                    String groupName = receiver.substring(7);
-                    success = model.sendGroupFile(selectedFile.getAbsolutePath(), groupName);
-                } else {
-                    success = model.sendFile(selectedFile.getAbsolutePath(), receiver);
-                }
+            try {
+                File selectedFile = chatJFXController.showFileChooser();
+                System.out.println("File chooser returned: " + (selectedFile != null ? selectedFile.getName() : "NULL"));
 
-                if (success) {
-                    String fileMessage = "[FILE: " + selectedFile.getName() + "]";
-                    chatJFXController.addChatMessage(model.getUsername(), fileMessage, model.getUsername());
-                    System.out.println("File sent successfully: " + selectedFile.getName());
+                if (selectedFile != null) {
+                    String receiver = chatJFXController.getReceiver().getText();
+                    System.out.println("Receiver: " + receiver);
+
+                    // Validate file before attempting transfer
+                    if (!validateFile(selectedFile)) {
+                        return;
+                    }
+
+                    // Show loading indicator
+                    showStatusMessage("Sending file: " + selectedFile.getName() + "...");
+
+                    boolean success = false;
+
+                    if (receiver.equals("Community Chat")) {
+                        showErrorMessage("File sharing is not available in Community Chat");
+                        return;
+                    } else if (receiver.startsWith("Group: ")) {
+                        String groupName = receiver.substring(7);
+                        System.out.println("Sending file to group: " + groupName);
+
+                        if (!model.canAccessGroup(groupName)) {
+                            showErrorMessage("You are not a member of this group");
+                            return;
+                        }
+
+                        success = model.sendGroupFile(selectedFile.getAbsolutePath(), groupName);
+                    } else {
+                        System.out.println("Sending file to user: " + receiver);
+                        success = model.sendFile(selectedFile.getAbsolutePath(), receiver);
+                    }
+
+                    System.out.println("File send result: " + success);
+
+                    if (success) {
+                        String fileMessage = "[FILE: " + selectedFile.getName() + "]";
+                        chatJFXController.addChatMessage(model.getUsername(), fileMessage, model.getUsername());
+                        showStatusMessage("File sent successfully: " + selectedFile.getName());
+                        System.out.println("File sent successfully: " + selectedFile.getName());
+                    } else {
+                        System.out.println("Failed to send file");
+                        showErrorMessage("Failed to send file. Please check file size (max 10MB) and try again.");
+                    }
                 } else {
-                    showErrorMessage("Failed to send file. Please check file size (max 10MB) and try again.");
+                    System.out.println("No file selected");
                 }
+            } catch (Exception e) {
+                System.err.println("Exception in handleFileSelection: " + e.getMessage());
+                e.printStackTrace();
+                showErrorMessage("Error selecting file: " + e.getMessage());
             }
+        });
+    }
+
+    private boolean validateFile(File file) {
+        if (!file.exists()) {
+            showErrorMessage("Selected file does not exist");
+            return false;
+        }
+
+        if (!file.isFile()) {
+            showErrorMessage("Please select a valid file");
+            return false;
+        }
+
+        long fileSize = file.length();
+        if (fileSize > 10 * 1024 * 1024) { // 10MB limit
+            showErrorMessage("File size exceeds 10MB limit. Current size: " + (fileSize / (1024 * 1024)) + "MB");
+            return false;
+        }
+
+        if (fileSize == 0) {
+            showErrorMessage("Cannot send empty file");
+            return false;
+        }
+
+        return true;
+    }
+
+    private void showStatusMessage(String message) {
+        Platform.runLater(() -> {
+            chatJFXController.addChatMessage("System", message, model.getUsername());
         });
     }
 
     private void handleFileOpen(String fileName) {
         Platform.runLater(() -> {
+            showStatusMessage("Attempting to open file: " + fileName);
+
+            // Try to open the file directly first
             boolean opened = model.openFile(fileName);
 
-            if (!opened) {
-                boolean saved = model.saveReceivedFile(fileName);
-                if (saved) {
-                    model.openFile(fileName);
-                } else {
-                    showErrorMessage("Could not open file: " + fileName);
-                }
+            if (opened) {
+                showStatusMessage("File opened successfully: " + fileName);
+            } else {
+                showErrorMessage("Could not open file: " + fileName + ". File may not be available.");
             }
         });
     }

@@ -243,22 +243,112 @@ public class ClientThread implements Runnable {
                     case "SEND_FILE":
                         String fileSender = getSender(xmlMsg);
                         String fileReceiver = getReceiver(xmlMsg);
-                        for (ClientThread client : clients) {
-                            if (client.socket.isConnected() &&
-                                    (client.name.equals(fileSender) || client.name.equals(fileReceiver))) {
+                        System.out.println("Processing file transfer from " + fileSender + " to " + fileReceiver);
 
-                                try {
-                                    File userFile = new File("src/main/resources/XMLFiles/" + client.name + "Account.xml");
-                                    if (userFile.exists()) {
-                                        byte[] fileContent = java.nio.file.Files.readAllBytes(userFile.toPath());
-                                        String encodedContent = java.util.Base64.getEncoder().encodeToString(fileContent);
-                                        client.sendMessage("<Response><reply>NEW_MESSAGE</reply><body>" + encodedContent + "</body></Response>");
+                        // Send success/failure response to sender
+                        String fileResponse = reply.equals("SEND_FILE_SUCCESS") ?
+                                "<Response><reply>FILE_SENT</reply><body>File sent successfully</body></Response>" :
+                                "<Response><reply>FILE_SEND_FAILED</reply><body>Failed to send file</body></Response>";
+
+                        sendMessage(fileResponse);
+
+                        // Only update XMLs if transfer was successful
+                        if (reply.equals("SEND_FILE_SUCCESS")) {
+                            // Update both sender and receiver XMLs with new message
+                            for (ClientThread client : clients) {
+                                if (client.socket.isConnected() &&
+                                        (client.name.equals(fileSender) || client.name.equals(fileReceiver))) {
+
+                                    try {
+                                        File userFile = new File("src/main/resources/XMLFiles/" + client.name + "Account.xml");
+                                        if (userFile.exists()) {
+                                            byte[] fileContent = java.nio.file.Files.readAllBytes(userFile.toPath());
+                                            String encodedContent = java.util.Base64.getEncoder().encodeToString(fileContent);
+                                            client.sendMessage("<Response><reply>NEW_MESSAGE</reply><body>" + encodedContent + "</body></Response>");
+                                            System.out.println("Sent file update to: " + client.name);
+                                        } else {
+                                            System.err.println("Account file not found for: " + client.name);
+                                        }
+                                    } catch (Exception e) {
+                                        System.err.println("Error sending file update to " + client.name + ": " + e.getMessage());
+                                        e.printStackTrace();
                                     }
-                                } catch (Exception e) {
-                                    e.printStackTrace();
                                 }
                             }
                         }
+                        break;
+                    case "SEND_GROUP_FILE":
+                        String groupFileSender = getSender(xmlMsg);
+                        String targetGroupForFile = getGroupName(xmlMsg);
+
+                        System.out.println("Processing group file transfer from " + groupFileSender + " to group " + targetGroupForFile);
+
+                        // Send response to sender
+                        String groupFileResponse;
+                        switch (reply) {
+                            case "SEND_GROUP_FILE_SUCCESS":
+                                groupFileResponse = "<Response><reply>GROUP_FILE_SENT</reply><body>File sent successfully</body></Response>";
+                                break;
+                            case "GROUP_ACCESS_DENIED":
+                                groupFileResponse = "<Response><reply>GROUP_ACCESS_DENIED</reply><body>You are not a member of this group</body></Response>";
+                                break;
+                            default:
+                                groupFileResponse = "<Response><reply>GROUP_FILE_SEND_FAILED</reply><body>Failed to send file to group</body></Response>";
+                                break;
+                        }
+
+                        sendMessage(groupFileResponse);
+
+                        // Only update XMLs if transfer was successful
+                        if (reply.equals("SEND_GROUP_FILE_SUCCESS")) {
+                            if (!xmlHandler.isUserInGroup(groupFileSender, targetGroupForFile)) {
+                                System.out.println("Access denied: " + groupFileSender + " is not a member of group " + targetGroupForFile);
+                                break;
+                            }
+
+                            try {
+                                java.util.List<String> groupMembers = xmlHandler.getGroupMembers(targetGroupForFile);
+                                System.out.println("Found " + groupMembers.size() + " members in group " + targetGroupForFile);
+
+                                for (String member : groupMembers) {
+                                    ClientThread memberClient = findClientByName(member);
+                                    if (memberClient != null && memberClient.socket.isConnected()) {
+                                        try {
+                                            File userFile = new File("src/main/resources/XMLFiles/" + member + "Account.xml");
+                                            if (userFile.exists()) {
+                                                byte[] fileContent = java.nio.file.Files.readAllBytes(userFile.toPath());
+                                                String encodedContent = java.util.Base64.getEncoder().encodeToString(fileContent);
+                                                memberClient.sendMessage("<Response><reply>NEW_GROUP_MESSAGE</reply><body>" + encodedContent + "</body></Response>");
+                                                System.out.println("Sent group file update to: " + member);
+                                            }
+                                        } catch (Exception e) {
+                                            System.err.println("Error sending group file to " + member + ": " + e.getMessage());
+                                            e.printStackTrace();
+                                        }
+                                    } else {
+                                        System.out.println("Member " + member + " is not online");
+                                    }
+                                }
+                            } catch (Exception e) {
+                                System.err.println("Error processing group file message: " + e.getMessage());
+                                e.printStackTrace();
+                            }
+                        }
+                        break;
+                    case "FILE_SENT":
+                        sendMessage("<Response><reply>FILE_SENT</reply><body>File sent successfully</body></Response>");
+                        break;
+
+                    case "FILE_SEND_FAILED":
+                        sendMessage("<Response><reply>FILE_SEND_FAILED</reply><body>Failed to send file</body></Response>");
+                        break;
+
+                    case "GROUP_FILE_SENT":
+                        sendMessage("<Response><reply>GROUP_FILE_SENT</reply><body>File sent to group successfully</body></Response>");
+                        break;
+
+                    case "GROUP_FILE_SEND_FAILED":
+                        sendMessage("<Response><reply>GROUP_FILE_SEND_FAILED</reply><body>Failed to send file to group</body></Response>");
                         break;
                 }
             }

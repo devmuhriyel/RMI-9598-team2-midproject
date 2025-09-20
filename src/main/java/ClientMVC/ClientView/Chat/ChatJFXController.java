@@ -35,22 +35,35 @@ import java.util.function.Consumer;public class ChatJFXController {
     private Runnable sendButtonListener;
     private Runnable homeButtonListener;    @FXML
     public void initialize() {
+        System.out.println("ChatJFXController initialize() called");
+        System.out.println("File button is: " + (fileButton != null ? "NOT NULL" : "NULL"));
+
+
         if (sendButton != null) {
             sendButton.setOnAction(event -> {
                 if (sendButtonListener != null) {
                     sendButtonListener.run();
                 }
             });
-        }        if (home != null) {
+        }
+
+        if (home != null) {
             home.setOnAction(event -> {
                 if (homeButtonListener != null) {
                     homeButtonListener.run();
                 }
             });
-        }        if (fileButton != null) {
+        }
+
+        if (fileButton != null) {
+            System.out.println("Setting up file button listener");
             fileButton.setOnAction(event -> {
+                System.out.println("File button clicked!"); // Add this debug line
                 if (fileButtonListener != null) {
+                    System.out.println("File button listener is not null, calling it");
                     fileButtonListener.run();
+                } else {
+                    System.out.println("File button listener is NULL!"); // This will help identify the issue
                 }
             });
         }
@@ -158,21 +171,28 @@ import java.util.function.Consumer;public class ChatJFXController {
                 messagesArea.getChildren().clear();
             }
         });
-    }    public void setFileButtonListener(Runnable fileButtonListener) {
+    }
+    public void setFileButtonListener(Runnable fileButtonListener) {
+        System.out.println("Setting file button listener: " + (fileButtonListener != null ? "NOT NULL" : "NULL"));
         this.fileButtonListener = fileButtonListener;
-    }    public void setFileOpenListener(Consumer<String> fileOpenListener) {
+    }
+    public void setFileOpenListener(Consumer<String> fileOpenListener) {
         this.fileOpenListener = fileOpenListener;
-    }    public void setSendButtonListener(Runnable sendButtonListener) {
+    }
+    public void setSendButtonListener(Runnable sendButtonListener) {
         this.sendButtonListener = sendButtonListener;
-    }    public void setHomeButtonListener(Runnable homeButtonListener) {
+    }
+    public void setHomeButtonListener(Runnable homeButtonListener) {
         this.homeButtonListener = homeButtonListener;
-    }    public Button getFileButton() {
+    }
+    public Button getFileButton() {
         return fileButton;
     }    public void setLabel(String label) {
         this.label.setText(label);
     }    public TextField getMessageField() {
         return messageField;
-    }    public VBox getMessagesArea() {
+    }
+    public VBox getMessagesArea() {
         return messagesArea;
     }    public Button getSendButton() {
         return sendButton;

@@ -99,6 +99,8 @@ public class ServerXMLHandler {
         doc.getDocumentElement().normalize();
         String type = doc.getElementsByTagName("type").item(0).getTextContent();
         String reply = "";
+
+        // FIX: Use the correct delimiter consistently
         String[] content = doc.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
 
         switch (type){
@@ -218,66 +220,201 @@ public class ServerXMLHandler {
             case "SEND_FILE":
                 String fileSender = content[0];
                 String fileReceiver = content[1];
-                String fileData = content[2];
 
-                String[] fileComponents = fileData.split("!\\[]!", 4);
-                if (fileComponents.length >= 4 && fileComponents[0].equals("FILE_TRANSFER")) {
-                    String fileName = fileComponents[1];
-                    String fileExtension = fileComponents[2];
-                    String fileContent = fileComponents[3];
-                    String fileMessage = "[FILE: " + fileName + "]";
-                    updateXMLs(fileSender, fileSender, fileReceiver, fileMessage);
-                    updateXMLs(fileReceiver, fileSender, fileReceiver, fileMessage);
-                    storeFileData(fileReceiver, fileSender, fileName, fileExtension, fileContent);
+                System.out.println("Processing SEND_FILE request:");
+                System.out.println("Sender: " + fileSender);
+                System.out.println("Receiver: " + fileReceiver);
+                System.out.println("Content array length: " + content.length);
+
+                try {
+                    if (content.length >= 6 && content[2].equals("FILE_TRANSFER")) {
+                        String fileName = content[3];
+                        String fileExtension = content[4];
+                        String fileContent = content[5];
+
+                        if (fileName.isEmpty() || fileContent.isEmpty()) {
+                            System.err.println("Invalid file data: missing filename or content");
+                            reply = "SEND_FILE_FAILED";
+                            break;
+                        }
+
+                        String fileMessage = "[FILE: " + fileName + "]";
+
+                        System.out.println("Processing file: " + fileName + " (" + fileExtension + ")");
+                        System.out.println("Content length: " + fileContent.length() + " characters");
+
+                        // Store file data for BOTH sender and receiver
+                        boolean senderFileStored = storeFileData(fileSender, fileSender, fileName, fileExtension, fileContent);
+                        boolean receiverFileStored = storeFileData(fileReceiver, fileSender, fileName, fileExtension, fileContent);
+
+                        if (senderFileStored && receiverFileStored) {
+                            // Add file message to both sender and receiver chat history
+                            System.out.println("Adding file message to sender: " + fileSender);
+                            updateXMLs(fileSender, fileSender, fileReceiver, fileMessage);
+
+                            System.out.println("Adding file message to receiver: " + fileReceiver);
+                            updateXMLs(fileReceiver, fileSender, fileReceiver, fileMessage);
+
+                            System.out.println("File transfer processed successfully: " + fileName);
+                            reply = "SEND_FILE_SUCCESS";
+                        } else {
+                            System.err.println("Failed to store file data for sender or receiver");
+                            System.err.println("Sender file stored: " + senderFileStored);
+                            System.err.println("Receiver file stored: " + receiverFileStored);
+                            reply = "SEND_FILE_FAILED";
+                        }
+                    } else {
+                        System.err.println("Invalid file data format. Expected FILE_TRANSFER at index 2, got: " +
+                                (content.length > 2 ? content[2] : "insufficient content"));
+                        reply = "SEND_FILE_FAILED";
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error processing file transfer: " + e.getMessage());
+                    e.printStackTrace();
+                    reply = "SEND_FILE_FAILED";
                 }
-                reply = "SEND_FILE";
                 break;
-
             case "SEND_GROUP_FILE":
                 String groupFileSender = content[0];
                 String targetGroupForFile = content[1];
-                String groupFileData = content[2];
 
-                String[] groupFileComponents = groupFileData.split("!\\[]!", 4);
-                if (groupFileComponents.length >= 4 && groupFileComponents[0].equals("FILE_TRANSFER")) {
-                    String groupFileName = groupFileComponents[1];
-                    String groupFileExtension = groupFileComponents[2];
-                    String groupFileContent = groupFileComponents[3];
-                    String fileMessage = "[FILE: " + groupFileName + "]";
-                    handleGroupMessageForAllMembers(groupFileSender, targetGroupForFile, fileMessage);
-                    List<String> groupMembers = getGroupMembers(targetGroupForFile);
-                    for (String member : groupMembers) {
-                        storeFileData(member, groupFileSender, groupFileName, groupFileExtension, groupFileContent);
+                System.out.println("Processing SEND_GROUP_FILE request:");
+                System.out.println("Sender: " + groupFileSender);
+                System.out.println("Target Group: " + targetGroupForFile);
+
+                try {
+                    if (content.length >= 6 && content[2].equals("FILE_TRANSFER")) {
+                        String groupFileName = content[3];
+                        String groupFileExtension = content[4];
+                        String groupFileContent = content[5];
+
+                        if (groupFileName.isEmpty() || groupFileContent.isEmpty()) {
+                            System.err.println("Invalid group file data: missing filename or content");
+                            reply = "SEND_GROUP_FILE_FAILED";
+                            break;
+                        }
+
+                        String fileMessage = "[FILE: " + groupFileName + "]";
+
+                        List<String> groupMembers = getGroupMembers(targetGroupForFile);
+                        if (!groupMembers.contains(groupFileSender)) {
+                            System.err.println("Access denied: " + groupFileSender + " is not a member of group " + targetGroupForFile);
+                            reply = "GROUP_ACCESS_DENIED";
+                            break;
+                        }
+
+                        // Process file for all group members (including sender)
+                        boolean allFilesStored = true;
+                        for (String member : groupMembers) {
+                            boolean memberFileStored = storeFileData(member, groupFileSender, groupFileName, groupFileExtension, groupFileContent);
+                            if (!memberFileStored) {
+                                System.err.println("Failed to store file for member: " + member);
+                                allFilesStored = false;
+                            }
+                        }
+
+                        if (allFilesStored) {
+                            handleGroupMessageForAllMembers(groupFileSender, targetGroupForFile, fileMessage);
+                            System.out.println("Group file transfer processed successfully: " + groupFileName);
+                            reply = "SEND_GROUP_FILE_SUCCESS";
+                        } else {
+                            System.err.println("Failed to store file for some group members");
+                            reply = "SEND_GROUP_FILE_FAILED";
+                        }
+                    } else {
+                        System.err.println("Invalid group file data format. Expected FILE_TRANSFER at index 2, got: " +
+                                (content.length > 2 ? content[2] : "insufficient content"));
+                        reply = "SEND_GROUP_FILE_FAILED";
                     }
+                } catch (Exception e) {
+                    System.err.println("Error processing group file transfer: " + e.getMessage());
+                    e.printStackTrace();
+                    reply = "SEND_GROUP_FILE_FAILED";
                 }
-                reply = "SEND_GROUP_FILE";
                 break;
+
         }
         return reply;
     }
 
-    private void storeFileData(String username, String sender, String fileName, String fileExtension, String base64Content) {
+    private boolean storeFileData(String username, String sender, String fileName, String fileExtension, String base64Content) {
         try {
-            File userDir = new File("src/main/resources/XMLFiles/userFiles/" + username);
-            if (!userDir.exists()) {
-                userDir.mkdirs();
-            }
-            String timestamp = String.valueOf(System.currentTimeMillis());
-            String uniqueFileName = timestamp + "_" + fileName;
-            File fileDataFile = new File(userDir, uniqueFileName);
-            try (PrintWriter writer = new PrintWriter(fileDataFile)) {
-                writer.println("SENDER:" + sender);
-                writer.println("ORIGINAL_NAME:" + fileName);
-                writer.println("EXTENSION:" + fileExtension);
-                writer.println("TIMESTAMP:" + timestamp);
-                writer.println("CONTENT:" + base64Content);
+
+            // Validate inputs
+            if (username == null || username.trim().isEmpty()) {
+                System.err.println("Invalid username for file storage");
+                return false;
             }
 
-            System.out.println("Stored file data for user " + username + ": " + uniqueFileName);
+            if (fileName == null || fileName.trim().isEmpty()) {
+                System.err.println("Invalid filename for file storage");
+                return false;
+            }
+
+            if (base64Content == null || base64Content.trim().isEmpty()) {
+                System.err.println("Invalid file content for file storage");
+                return false;
+            }
+
+            // Validate base64 content
+            try {
+                byte[] testDecode = java.util.Base64.getDecoder().decode(base64Content);
+                if (testDecode.length == 0) {
+                    System.err.println("Empty file content after decoding");
+                    return false;
+                }
+            } catch (IllegalArgumentException e) {
+                System.err.println("Invalid base64 content: " + e.getMessage());
+                return false;
+            }
+
+            // Create user directory
+            File userDir = new File("src/main/resources/XMLFiles/userFiles/" + username.trim());
+            if (!userDir.exists()) {
+                boolean created = userDir.mkdirs();
+                if (!created) {
+                    System.err.println("Failed to create directory: " + userDir.getAbsolutePath());
+                    // Try alternative path
+                    userDir = new File("XMLFiles/userFiles/" + username.trim());
+                    created = userDir.mkdirs();
+                    if (!created) {
+                        System.err.println("Failed to create alternative directory: " + userDir.getAbsolutePath());
+                        return false;
+                    }
+                }
+            }
+
+            // Generate unique filename with original name preserved
+            String timestamp = String.valueOf(System.currentTimeMillis());
+            String uniqueFileName = timestamp + "_" + fileName.trim();
+            File fileDataFile = new File(userDir, uniqueFileName);
+
+            // Write file metadata and content with proper format
+            try (PrintWriter writer = new PrintWriter(fileDataFile, "UTF-8")) {
+                writer.println("SENDER:" + sender);
+                writer.println("ORIGINAL_NAME:" + fileName.trim());
+                writer.println("EXTENSION:" + (fileExtension != null ? fileExtension : ""));
+                writer.println("TIMESTAMP:" + timestamp);
+                writer.println("SIZE:" + base64Content.length());
+                writer.println("CONTENT:" + base64Content);
+                writer.flush();
+            }
+
+            // Verify file was created successfully
+            if (fileDataFile.exists() && fileDataFile.length() > 0) {
+                System.out.println("Successfully stored file data for user " + username + ": " + uniqueFileName);
+                System.out.println("File path: " + fileDataFile.getAbsolutePath());
+                System.out.println("File size: " + fileDataFile.length() + " bytes");
+                return true;
+            } else {
+                System.err.println("File was not created properly: " + fileDataFile.getAbsolutePath());
+                return false;
+            }
 
         } catch (Exception e) {
-            System.err.println("Error storing file data: " + e.getMessage());
+            System.err.println("Error storing file data for user " + username + ": " + e.getMessage());
             e.printStackTrace();
+            return false;
         }
     }
     public synchronized boolean joinGroupWithHistory(String groupName, String username) {
