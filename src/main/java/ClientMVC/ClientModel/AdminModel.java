@@ -20,6 +20,12 @@ public class AdminModel {
         this.username = username;
         this.password = password;
         this.isGroup = false;
+
+    }
+    public AdminModel(String owner, String groupName, boolean isGroup) {
+        this.owner = owner;
+        this.groupName = groupName;
+        this.isGroup = true;
     }
 
     // --- Getters ---

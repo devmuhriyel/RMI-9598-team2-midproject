@@ -2,7 +2,6 @@ package Server;
 
 import org.w3c.dom.*;
 import org.xml.sax.SAXException;
-
 import javax.xml.parsers.*;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
@@ -13,22 +12,12 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
-
 public class ServerXMLHandler {
     private static final String FILE_PATH = "src/main/resources/XMLFiles/Users.xml";
-
-    /*
-     * This method creates a new XML file for a user account if it does not already exist.
-     * It builds a basic XML structure with a <user> root element and saves it.
-     * In short: ensures each user has their own account XML file created once.
-     */
-    private void createUserAccountXML(String username) throws Exception {
-        File accountFile = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
-        if (accountFile.exists()) {
-            return;
     private static final String ADMIN_FILE_PATH = "src/main/resources/XMLFiles/AdminCredentials.xml";
-    private static List<String> communityMessages = new ArrayList<>();
-    private static List<String> activeUsers = new ArrayList<>();
+    private static final List<String> communityMessages = new ArrayList<>();
+    private static final List<String> activeUsers = new ArrayList<>();
+
     public void registerUser(String username, String password) throws Exception {
         File file = new File(FILE_PATH);
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -90,35 +79,7 @@ public class ServerXMLHandler {
     }
     public static boolean validateAdmin(String username, String password) {
         try {
-            // First try to validate from Users.xml (for users with admin role)
-            File file = new File(ADMIN_FILE_PATH);
-            if (file.exists()) {
-                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-                DocumentBuilder builder = factory.newDocumentBuilder();
-                Document doc = builder.parse(file);
-
-                NodeList users = doc.getElementsByTagName("user");
-                for (int i = 0; i < users.getLength(); i++) {
-                    Element user = (Element) users.item(i);
-                    String uname = user.getElementsByTagName("username").item(0).getTextContent();
-                    String pass = user.getElementsByTagName("password").item(0).getTextContent();
-
-                    // Check if user has admin role
-                    NodeList roleNodes = user.getElementsByTagName("role");
-                    boolean hasAdminRole = false;
-                    if (roleNodes.getLength() > 0) {
-                        String role = roleNodes.item(0).getTextContent();
-                        hasAdminRole = "admin".equals(role);
-                    }
-
-                    if (uname.equals(username) && pass.equals(password) && hasAdminRole) {
-                        System.out.println("Admin validated from Users.xml: " + username);
-                        return true;
-                    }
-                }
-            }
-
-            // Fallback to separate admin credentials file
+            // Check AdminCredentials.xml
             File adminFile = new File(ADMIN_FILE_PATH);
             if (!adminFile.exists()) {
                 createDefaultAdminFile();
@@ -140,7 +101,6 @@ public class ServerXMLHandler {
                 }
             }
 
-            System.out.println("Admin validation failed for: " + username);
             return false;
 
         } catch (Exception e) {
@@ -150,9 +110,9 @@ public class ServerXMLHandler {
         }
     }
 
+
     private static void createDefaultAdminFile() {
         try {
-            // Create directory if it doesn't exist
             File adminFile = new File(ADMIN_FILE_PATH);
             adminFile.getParentFile().mkdirs();
 
@@ -182,21 +142,12 @@ public class ServerXMLHandler {
             transformer.transform(new DOMSource(doc), new StreamResult(adminFile));
 
             System.out.println("Created default admin credentials file: " + ADMIN_FILE_PATH);
-            System.out.println("Default admin credentials: admin/admin123");
         } catch (Exception e) {
             System.err.println("Error creating default admin file: " + e.getMessage());
             e.printStackTrace();
         }
     }
-    /*
-     * This method reads and processes an incoming XML message.
-     * It first extracts the <type> and <content> to decide what action to perform.
-     * Depending on the type, it handles login, registration, group creation/joining, listing groups,
-     * sending private messages, sending group/community messages, retrieving chat history,
-     * and file transfers (both private and group).
-     * It returns a reply string that indicates the result (e.g., LOGIN_SUCCESS, REGISTER_FAILED, SEND_FILE_SUCCESS).
-     * In short: it is the main message handler that interprets requests and gives the right response.
-     */
+
     public String readMessage(String xmlString) throws Exception {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
@@ -208,7 +159,6 @@ public class ServerXMLHandler {
         String[] content = doc.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
 
         switch (type) {
-            // **CHANGED: Added admin login case**
             case "ADMIN_LOGIN":
                 String adminUsername = content[0];
                 String adminPassword = content[1];
@@ -218,29 +168,24 @@ public class ServerXMLHandler {
                     reply = "ADMIN_LOGIN_FAILED";
                 }
                 break;
-
-            // **CHANGED: Added admin operation cases**
             case "GET_ALL_USERS":
-                reply = "ALL_USERS";
+                reply = getAllUsersData();
                 break;
-
             case "GET_ALL_GROUPS":
-                reply = "ALL_GROUPS";
+                reply = getAllGroupsData();
                 break;
-
             case "DELETE_USER":
                 String userToDelete = content[0];
-                if (deleteUserFromXML(FILE_PATH, userToDelete)) {
+                if (deleteUserFromXML(userToDelete)) {
                     reply = "USER_DELETED";
                 } else {
                     reply = "USER_DELETE_FAILED";
                 }
                 break;
-
             case "DELETE_GROUP":
                 String groupToDelete = content[0];
                 String groupOwner = content[1];
-                if (deleteGroupFromXML(FILE_PATH, groupToDelete, groupOwner)) {
+                if (deleteGroupFromXML(groupToDelete, groupOwner)) {
                     reply = "GROUP_DELETED";
                 } else {
                     reply = "GROUP_DELETE_FAILED";
@@ -256,22 +201,21 @@ public class ServerXMLHandler {
                     reply = "PASSWORD_CHANGE_FAILED";
                 }
                 break;
-
             case "GET_USER_STATS":
                 String statsUser = content[0];
-                reply = "USER_STATS";
+                String userStats = getUserStats(statsUser);
+                reply = "USER_STATS![]!" + userStats;
                 break;
-
             case "SEARCH_USERS":
                 String userKeyword = content[0];
-                reply = "SEARCH_USERS_RESULT";
+                String searchResults = searchUsersData(userKeyword);
+                reply = "SEARCH_USERS_RESULT![]!" + searchResults;
                 break;
-
             case "SEARCH_GROUPS":
                 String groupKeyword = content[0];
-                reply = "SEARCH_GROUPS_RESULT";
+                String groupSearchResults = searchGroupsData(groupKeyword);
+                reply = "SEARCH_GROUPS_RESULT![]!" + groupSearchResults;
                 break;
-
             case "CREATE_USER":
                 String newUsername = content[0];
                 String newUserPassword = content[1];
@@ -282,7 +226,6 @@ public class ServerXMLHandler {
                     reply = "USER_CREATE_FAILED";
                 }
                 break;
-
             case "CREATE_GROUP_ADMIN":
                 String newGroupName = content[0];
                 String groupCreator = content[1];
@@ -292,15 +235,14 @@ public class ServerXMLHandler {
                     reply = "GROUP_CREATE_FAILED";
                 }
                 break;
-
             case "GET_ACTIVE_USERS":
-                reply = "ACTIVE_USERS";
+                String activeUsersStr = String.join(",", getActiveUsers());
+                reply = "ACTIVE_USERS![]!" + activeUsersStr;
                 break;
-
             case "GET_COMMUNITY_MESSAGES":
-                reply = "COMMUNITY_MESSAGES";
+                String messagesStr = String.join("![]!", getCommunityMessages());
+                reply = "COMMUNITY_MESSAGES![]!" + messagesStr;
                 break;
-
             case "LOGIN":
                 String username = content[0];
                 String password = content[1];
@@ -319,7 +261,6 @@ public class ServerXMLHandler {
                         if (uname.equals(username) && pass.equals(password)) {
                             reply = "LOGIN_SUCCESS";
                             found = true;
-                            // **CHANGED: Add user to active users list**
                             addActiveUser(username);
                             break;
                         }
@@ -329,25 +270,21 @@ public class ServerXMLHandler {
                     reply = "LOGIN_FAILED";
                 }
                 break;
-
             case "REGISTER": {
                 username = (content.length >= 2)
                         ? content[0].trim()
                         : (doc.getElementsByTagName("username").getLength() > 0
                         ? doc.getElementsByTagName("username").item(0).getTextContent().trim()
                         : null);
-
                 password = (content.length >= 2)
                         ? content[1].trim()
                         : (doc.getElementsByTagName("password").getLength() > 0
                         ? doc.getElementsByTagName("password").item(0).getTextContent().trim()
                         : null);
-
                 if (username == null || username.isEmpty() || password == null || password.isEmpty()) {
                     reply = "REGISTER_FAILED";
                     break;
                 }
-
                 synchronized (this) {
                     if (userExists(username)) {
                         reply = "USER_EXISTS";
@@ -368,7 +305,6 @@ public class ServerXMLHandler {
                 }
                 break;
             }
-
             case "CREATE_GROUP":
                 reply = "CREATE_GROUP";
                 break;
@@ -382,29 +318,23 @@ public class ServerXMLHandler {
                 String sender = content[0];
                 String receiver = content[1];
                 String message = content[2];
-
                 updateXMLs(sender, sender, receiver, message);
                 updateXMLs(receiver, sender, receiver, message);
                 reply = "SEND_MESSAGE";
                 break;
-
             case "SEND_GROUP_MESSAGE":
                 String groupSender = content[0];
                 String targetGroup = content[1];
                 String groupMessage = content[2];
-
                 handleGroupMessageForAllMembers(groupSender, targetGroup, groupMessage);
                 reply = "SEND_GROUP_MESSAGE";
                 break;
-
             case "SEND_COMMUNITY_MESSAGE":
-                // **CHANGED: Handle community messages for admin monitoring**
                 String communitySender = content[0];
                 String communityMsg = content[1];
                 addCommunityMessage(communitySender, communityMsg);
                 reply = "SEND_COMMUNITY_MESSAGE";
                 break;
-
             case "GET_CHAT_HISTORY":
                 String requestingUser = content[0];
                 try {
@@ -428,19 +358,16 @@ public class ServerXMLHandler {
                 System.out.println("Sender: " + fileSender);
                 System.out.println("Receiver: " + fileReceiver);
                 System.out.println("Content array length: " + content.length);
-
                 try {
                     if (content.length >= 6 && content[2].equals("FILE_TRANSFER")) {
                         String fileName = content[3];
                         String fileExtension = content[4];
                         String fileContent = content[5];
-
                         if (fileName.isEmpty() || fileContent.isEmpty()) {
                             System.err.println("Invalid file data: missing filename or content");
                             reply = "SEND_FILE_FAILED";
                             break;
                         }
-
                         String fileMessage = "[FILE: " + fileName + "]";
 
                         System.out.println("Processing file: " + fileName + " (" + fileExtension + ")");
@@ -536,15 +463,7 @@ public class ServerXMLHandler {
         }
         return reply;
     }
-    /*
-     * This method stores a file (in Base64 format) for a specific user.
-     * It validates the username, file name, and file content before proceeding.
-     * Then it decodes the Base64 to ensure the content is valid and creates a user-specific folder if needed.
-     * A unique file name is generated using a timestamp, and the file’s metadata (sender, original name, extension, size, etc.)
-     * along with the Base64 content is written into a text file.
-     * Finally, it checks if the file was saved successfully and returns true or false.
-     * In short: it safely saves file data and metadata for each user.
-     */
+
     private boolean storeFileData(String username, String sender, String fileName, String fileExtension, String base64Content) {
         try {
             if (username == null || username.trim().isEmpty()) {
@@ -562,7 +481,6 @@ public class ServerXMLHandler {
                 return false;
             }
 
-            // Validate base64 content
             try {
                 byte[] testDecode = java.util.Base64.getDecoder().decode(base64Content);
                 if (testDecode.length == 0) {
@@ -574,13 +492,11 @@ public class ServerXMLHandler {
                 return false;
             }
 
-            // Create user directory
             File userDir = new File("src/main/resources/XMLFiles/userFiles/" + username.trim());
             if (!userDir.exists()) {
                 boolean created = userDir.mkdirs();
                 if (!created) {
                     System.err.println("Failed to create directory: " + userDir.getAbsolutePath());
-                    // Try alternative path
                     userDir = new File("XMLFiles/userFiles/" + username.trim());
                     created = userDir.mkdirs();
                     if (!created) {
@@ -590,12 +506,10 @@ public class ServerXMLHandler {
                 }
             }
 
-            // Generate unique filename with original name preserved
             String timestamp = String.valueOf(System.currentTimeMillis());
             String uniqueFileName = timestamp + "_" + fileName.trim();
             File fileDataFile = new File(userDir, uniqueFileName);
 
-            // Write file metadata and content with proper format
             try (PrintWriter writer = new PrintWriter(fileDataFile, "UTF-8")) {
                 writer.println("SENDER:" + sender);
                 writer.println("ORIGINAL_NAME:" + fileName.trim());
@@ -606,7 +520,6 @@ public class ServerXMLHandler {
                 writer.flush();
             }
 
-            // Verify file was created successfully
             if (fileDataFile.exists() && fileDataFile.length() > 0) {
                 System.out.println("Successfully stored file data for user " + username + ": " + uniqueFileName);
                 System.out.println("File path: " + fileDataFile.getAbsolutePath());
@@ -776,7 +689,6 @@ public class ServerXMLHandler {
             int friendCount = doc.getElementsByTagName("friend").getLength();
             int groupCount = doc.getElementsByTagName("group").getLength();
 
-            // Count total messages sent
             int messagesSent = 0;
             NodeList chatHistories = doc.getElementsByTagName("chathistory");
             for (int i = 0; i < chatHistories.getLength(); i++) {
@@ -797,7 +709,168 @@ public class ServerXMLHandler {
             return "Error retrieving stats";
         }
     }
+    public static boolean deleteUserFromXML(String username) {
+        try {
+            File xmlFile = new File(FILE_PATH);
+            if (!xmlFile.exists()) return false;
 
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(xmlFile);
+            doc.getDocumentElement().normalize();
+
+            NodeList userList = doc.getElementsByTagName("user");
+            for (int i = 0; i < userList.getLength(); i++) {
+                Element userElement = (Element) userList.item(i);
+                String uname = userElement.getElementsByTagName("username").item(0).getTextContent();
+                if (uname.equals(username)) {
+                    userElement.getParentNode().removeChild(userElement);
+
+                    TransformerFactory tf = TransformerFactory.newInstance();
+                    Transformer transformer = tf.newTransformer();
+                    transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                    transformer.transform(new DOMSource(doc), new StreamResult(xmlFile));
+
+                    // Also delete user's account file
+                    File userAccountFile = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
+                    if (userAccountFile.exists()) {
+                        userAccountFile.delete();
+                    }
+
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    public static boolean deleteGroupFromXML(String groupName, String owner) {
+        try {
+            File xmlFile = new File(FILE_PATH);
+            Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(xmlFile);
+            doc.getDocumentElement().normalize();
+
+            NodeList groups = doc.getElementsByTagName("groups");
+            if (groups.getLength() > 0) {
+                Element groupsElement = (Element) groups.item(0);
+                NodeList groupList = groupsElement.getElementsByTagName("group");
+
+                for (int i = 0; i < groupList.getLength(); i++) {
+                    Element group = (Element) groupList.item(i);
+                    String currentGroupName = group.getAttribute("name");
+                    String currentOwner = group.getAttribute("creator");
+
+                    if (currentGroupName.equals(groupName) && currentOwner.equals(owner)) {
+                        group.getParentNode().removeChild(group);
+
+                        TransformerFactory tf = TransformerFactory.newInstance();
+                        Transformer transformer = tf.newTransformer();
+                        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                        transformer.transform(new DOMSource(doc), new StreamResult(xmlFile));
+
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    public static void addActiveUser(String username) {
+        synchronized (activeUsers) {
+            if (!activeUsers.contains(username)) {
+                activeUsers.add(username);
+            }
+        }
+    }
+
+    public static void removeActiveUser(String username) {
+        synchronized (activeUsers) {
+            activeUsers.remove(username);
+        }
+    }
+
+    public static List<String> getActiveUsers() {
+        synchronized (activeUsers) {
+            return new ArrayList<>(activeUsers);
+        }
+    }
+    public static void addCommunityMessage(String sender, String message) {
+        synchronized (communityMessages) {
+            String formattedMessage = sender + ": " + message + " [" +
+                    java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "]";
+            communityMessages.add(formattedMessage);
+            if (communityMessages.size() > 100) {
+                communityMessages.remove(0);
+            }
+        }
+    }
+    public static List<String> getCommunityMessages() {
+        synchronized (communityMessages) {
+            return new ArrayList<>(communityMessages);
+        }
+    }
+    private void createUserAccountXML(String username) throws Exception {
+        File accountFile = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
+        if (accountFile.exists()) {
+            return;
+        }
+
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document doc = builder.newDocument();
+        Element root = doc.createElement("user");
+        doc.appendChild(root);
+        saveDocument(doc, accountFile);
+        System.out.println("Created account XML file for user: " + username);
+    }
+
+    private Document loadDocument() throws Exception {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        return builder.parse(new File(FILE_PATH));
+    }
+
+    private void saveDocument(Document doc, File file) throws TransformerException {
+        TransformerFactory tf = TransformerFactory.newInstance();
+        Transformer transformer = tf.newTransformer();
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+        transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+        transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+        transformer.transform(new DOMSource(doc), new StreamResult(file));
+    }
+
+    public synchronized boolean createGroup(String groupName, String creator) {
+        try {
+            Document doc = loadDocument();
+            Element root = doc.getDocumentElement();
+
+            Element groups = (Element) root.getElementsByTagName("groups").item(0);
+            if (groups == null) {
+                groups = doc.createElement("groups");
+                root.appendChild(groups);
+            }
+
+            Element group = doc.createElement("group");
+            group.setAttribute("name", groupName);
+            group.setAttribute("creator", creator);
+            groups.appendChild(group);
+
+            TransformerFactory tf = TransformerFactory.newInstance();
+            Transformer transformer = tf.newTransformer();
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.transform(new DOMSource(doc), new StreamResult(new File(FILE_PATH)));
+
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 
     private void copyGroupChatHistoryToNewMember(String groupName, String newMemberUsername) {
         try {
@@ -825,13 +898,7 @@ public class ServerXMLHandler {
             e.printStackTrace();
         }
     }
-    /*
-     * This method reads the group chat history of a specific member from their account XML file.
-     * It checks if the account file exists, then parses the XML to find the target group.
-     * If the group is found, it retrieves all chat messages inside it, combining each sender with their message.
-     * Any errors during the process are caught and logged.
-     * In short: it gets a member’s saved group chat messages from their XML file.
-     */
+
     private List<String> getGroupChatHistoryFromMember(String memberUsername, String groupName) {
         List<String> messages = new ArrayList<>();
         try {
@@ -870,14 +937,7 @@ public class ServerXMLHandler {
         }
         return messages;
     }
-    /*
-     * This method creates a group entry with chat history inside a user’s account XML file.
-     * It first checks if the user’s XML exists, and if not, creates a new one with a <user> root.
-     * Then it adds a <group> with the group’s name, members, and chat history.
-     * Each chat message is split into sender and message, then stored as <chat> elements.
-     * Finally, the group is saved to the XML file.
-     * In short: it builds and saves a group with members and past messages for the user.
-     */
+
     private void createGroupWithHistoryForUser(String username, String groupName, List<String> history, List<String> otherMembers) {
         try {
             File file = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
@@ -936,13 +996,6 @@ public class ServerXMLHandler {
             e.printStackTrace();
         }
     }
-    /*
-     * This method checks all groups in the main XML and makes sure that each user
-     * (both creator and members) has the group properly listed in their account file.
-     * It loops through every group, gets its creator and members, then calls a helper
-     * to ensure their account XML reflects the group.
-     * In short: it fixes and syncs group memberships so no user is missing the group.
-     */
     public void fixExistingGroupMemberships() {
         try {
             System.out.println("Starting to fix existing group memberships...");
@@ -973,13 +1026,6 @@ public class ServerXMLHandler {
             e.printStackTrace();
         }
     }
-    /*
-     * This method makes sure a specific user has a record of a given group in their account XML.
-     * It first checks if the group already exists for the user — if yes, nothing is added.
-     * If the group is missing, it creates a new group entry with its name, members,
-     * and available chat history (copied from another member’s account).
-     * Finally, it saves the updated file so the user’s account stays consistent with group memberships.
-     */
 
     private void ensureUserHasGroupInAccount(String username, String groupName) {
         try {
@@ -1069,12 +1115,7 @@ public class ServerXMLHandler {
             e.printStackTrace();
         }
     }
-    /*
-     * This method collects all members of a given group.
-     * It looks into the main XML to find the group, then adds the creator and each member to a list.
-     * If no members are found there, it checks user account XML files as a backup.
-     * In the end, it returns the full list of members so the group can be managed properly.
-     */
+
     public List<String> getGroupMembers(String groupName) {
         List<String> members = new ArrayList<>();
         try {
@@ -1114,12 +1155,7 @@ public class ServerXMLHandler {
         }
         return members;
     }
-    /*
-     * This method searches through all user account XML files to find users who belong to a specific group.
-     * It adds any user with the group in their account to a list.
-     * This acts as a fallback to ensure no group members are missed.
-     * Finally, it returns the complete list of group members.
-     */
+
     private List<String> findGroupMembersFromAccountXMLs(String groupName) {
         List<String> members = new ArrayList<>();
 
@@ -1141,11 +1177,7 @@ public class ServerXMLHandler {
 
         return members;
     }
-    /*
-     * This method checks if a specific user has a particular group in their account XML file.
-     * It reads the user's XML, searches for the group, and returns true if found, false otherwise.
-     * Any errors during parsing are caught and reported.
-     */
+
     private boolean hasGroupInAccountXML(String username, String groupName) {
         try {
             File accountFile = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
@@ -1250,12 +1282,6 @@ public class ServerXMLHandler {
 
         System.out.println("Updated group XML for user: " + owner + " in group: " + groupName);
     }
-    /*
-     * This method updates a user's account XML by adding a new message to a specific group's chat history.
-     * It ensures the user's XML exists, finds or creates the target group, and appends the sender's message.
-     * Group members are included when creating a new group entry, and the XML is saved afterward.
-     * Any necessary parsing or IO exceptions are propagated to the caller.
-     */
     public void updateXMLs(String owner, String sender, String receiver, String msg) throws IOException, SAXException, ParserConfigurationException, TransformerException {
         File file = new File("src/main/resources/XMLFiles/" + owner + "Account.xml");
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -1390,11 +1416,7 @@ public class ServerXMLHandler {
         }
         return requests;
     }
-    /*
-     * This method processes accepting a friend request between two users.
-     * It searches the XML for a matching request and removes it, then adds a new friendship entry under the friends section.
-     * The XML document is saved afterward, and true is returned if successful; otherwise, false.
-     */
+
     public synchronized boolean acceptFriendRequest(String user, String friend) {
         try {
             Document doc = loadDocument();
@@ -1424,12 +1446,7 @@ public class ServerXMLHandler {
         }
         return false;
     }
-    /*
-     * This method handles declining a friend request.
-     * It searches the XML document for a request from the specified friend to the user,
-     * removes it if found, and saves the updated document.
-     * Returns true if a request was successfully declined, false otherwise.
-     */
+
     public synchronized boolean declineFriendRequest(String user, String friend) {
         try {
             Document doc = loadDocument();
@@ -1448,70 +1465,11 @@ public class ServerXMLHandler {
         }
         return false;
     }
-    /*
-     * These methods handle loading and saving XML documents.
-     * `loadDocument` reads the XML from the predefined file path and returns a Document object.
-     * `saveDocument` writes the Document back to the file, either to the default path or a specified file,
-     * formatting the XML properly and ensuring empty text nodes are removed.
-     */
-    private Document loadDocument() throws Exception {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        return builder.parse(new File(FILE_PATH));
-    }
-
     private void saveDocument(Document doc) throws TransformerException {
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
         Transformer transformer = transformerFactory.newTransformer();
         transformer.transform(new DOMSource(doc), new StreamResult(new File(FILE_PATH)));
     }
-
-    private void saveDocument(Document doc, File file) throws TransformerException {
-        removeEmptyTextNodes(doc);
-        TransformerFactory tf = TransformerFactory.newInstance();
-        Transformer transformer = tf.newTransformer();
-        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
-        transformer.setOutputProperty(OutputKeys.METHOD, "xml");
-        transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
-
-        transformer.transform(new DOMSource(doc), new StreamResult(file));
-    }
-    /*
-     * This method creates a new group in the XML document.
-     * It ensures the <groups> element exists, adds a new <group> with the specified name and creator,
-     * and then saves the document. Returns true if successful, false otherwise.
-     */
-    public synchronized boolean createGroup(String groupName, String creator) {
-        try {
-            Document doc = loadDocument();
-            Element root = doc.getDocumentElement();
-
-            Element groups = (Element) root.getElementsByTagName("groups").item(0);
-            if (groups == null) {
-                groups = doc.createElement("groups");
-                root.appendChild(groups);
-            }
-
-            Element group = doc.createElement("group");
-            group.setAttribute("name", groupName);
-            group.setAttribute("creator", creator);
-            groups.appendChild(group);
-
-            saveDocument(doc);
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-    /*
-     * This method allows a user to join an existing group in the XML document.
-     * It first checks if the group exists and whether the user is already a member.
-     * If not, it adds the user as a new <member>, updates the user's account,
-     * saves the document, and returns true. Returns false if the group doesn't exist or on error.
-     */
     public synchronized boolean joinGroup(String groupName, String username) {
         try {
             Document doc = loadDocument();
@@ -1561,12 +1519,7 @@ public class ServerXMLHandler {
             return false;
         }
     }
-    /*
-     * These methods handle updating a user's account XML when they join a group
-     * and retrieving a list of all existing groups.
-     * updateUserAccountWithGroup ensures the group and its chat history are added to the user's account,
-     * avoiding duplicates, while listGroups simply reads and returns all group names from the XML.
-     */
+
     private void updateUserAccountWithGroup(String username, String groupName) {
         try {
             File file = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
@@ -1661,12 +1614,7 @@ public class ServerXMLHandler {
         }
         return groups;
     }
-    /*
-     * This method retrieves all groups that a user belongs to,
-     * including groups they created and groups where they are listed as a member.
-     * It reads the XML, checks each group's creator and member list,
-     * and collects matching group names into a list to return.
-     */
+
     public synchronized List<String> getUserGroups(String username) {
         List<String> userGroups = new ArrayList<>();
         try {
@@ -1695,11 +1643,7 @@ public class ServerXMLHandler {
         }
         return userGroups;
     }
-    /*
-     * This method checks if a user is part of a specific group,
-     * either as the creator or as a listed member.
-     * It reads the XML data and returns true if the user is found, otherwise false.
-     */
+
     public synchronized boolean isUserInGroup(String username, String groupName) {
         try {
             Document doc = loadDocument();
@@ -1727,14 +1671,7 @@ public class ServerXMLHandler {
         }
         return false;
     }
-    /*
-     * This method checks whether a given username already exists in the system.
-     * It reads the XML file containing user accounts and iterates through each user element.
-     * Compares the provided username with stored usernames in a case-insensitive manner.
-     * Returns true if a matching username is found, otherwise returns false.
-     * Includes exception handling to catch and print any errors during XML parsing or file access.
-     * Ensures input is trimmed to avoid issues with leading/trailing spaces.
-     */
+
     private boolean userExists(String username) {
         try {
             File file = new File(FILE_PATH);
@@ -1762,16 +1699,7 @@ public class ServerXMLHandler {
         }
         return false;
     }
-    /*
-     * This method adds a new user with a specified username and password to the XML document.
-     * It first checks if the XML file exists; if not, it creates a new document with a root element.
-     * Verifies that the username does not already exist to prevent duplicates.
-     * Creates a new <user> element containing <username> and <password> child elements with trimmed text.
-     * Appends the new user to the root element and saves the document back to the file.
-     * Uses a transformer with indentation settings for readable XML formatting.
-     * Returns true if the user was successfully added, otherwise false.
-     * Includes exception handling to catch and print errors during parsing, transformation, or file access.
-     */
+
     private boolean addUserToDocument(String username, String password) {
         try {
             File file = new File(FILE_PATH);
@@ -1819,108 +1747,6 @@ public class ServerXMLHandler {
         }
         return false;
     }
-
-    /*
-     * This method deletes a user from the specified XML file based on the username.
-     * It first checks if the file exists; if not, it returns false immediately.
-     * Loads the XML document and normalizes it for consistent structure handling.
-     * Iterates through all <user> elements to find a match with the given username.
-     * If a match is found, removes the corresponding <user> element from the document.
-     * Saves the updated XML back to the same file with proper indentation for readability.
-     * Returns true if a user was successfully deleted, otherwise false.
-     * Includes exception handling to catch and print any parsing, transformation, or I/O errors.
-     */
-
-    public static boolean deleteUserFromXML(String filePath, String username) {
-        try {
-            File xmlFile = new File(filePath);
-            if (!xmlFile.exists()) return false;
-
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document doc = builder.parse(xmlFile);
-            doc.getDocumentElement().normalize();
-
-            NodeList userList = doc.getElementsByTagName("user");
-            for (int i = 0; i < userList.getLength(); i++) {
-                Element userElement = (Element) userList.item(i);
-                String uname = userElement.getElementsByTagName("username").item(0).getTextContent();
-                if (uname.equals(username)) {
-                    userElement.getParentNode().removeChild(userElement);
-
-                    // Save back to file
-                    TransformerFactory tf = TransformerFactory.newInstance();
-                    Transformer transformer = tf.newTransformer();
-                    transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-                    transformer.transform(new DOMSource(doc), new StreamResult(xmlFile));
-                    return true;
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-    /*
-     * This method deletes a group from the specified XML file based on the group name and owner.
-     * It first loads and normalizes the XML document to ensure consistent parsing.
-     * Iterates through all <group> elements to find one that matches both the given group name and owner.
-     * If a matching group is found, it is removed from the document.
-     * The updated XML is then saved back to the same file with proper transformation.
-     * Returns true if the group was successfully deleted, otherwise returns false.
-     * Includes exception handling to catch and print any parsing, transformation, or I/O errors.
-     */
-    public static void addActiveUser(String username) {
-        synchronized (activeUsers) {
-            if (!activeUsers.contains(username)) {
-                activeUsers.add(username);
-            }
-        }
-    }
-    public static void removeActiveUser(String username) {
-        synchronized (activeUsers) {
-            activeUsers.remove(username);
-        }
-    }
-    public static List<String> getActiveUsers() {
-        synchronized (activeUsers) {
-            return new ArrayList<>(activeUsers);
-        }
-    }
-    public static void addCommunityMessage(String sender, String message) {
-        synchronized (communityMessages) {
-            String formattedMessage = sender + ": " + message + " [" +
-                    java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "]";
-            communityMessages.add(formattedMessage);
-            // Keep only last 100 messages
-            if (communityMessages.size() > 100) {
-                communityMessages.remove(0);
-            }
-        }
-    }
-    public static List<String> getCommunityMessages() {
-        synchronized (communityMessages) {
-            return new ArrayList<>(communityMessages);
-        }
-    }
-
-    private void createUserAccountXML(String username) throws Exception {
-        File accountFile = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
-        if (accountFile.exists()) {
-            return;
-        }
-
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document doc = builder.newDocument();
-        Element root = doc.createElement("user");
-        doc.appendChild(root);
-        saveDocument(doc, accountFile);
-        System.out.println("Created account XML file for user: " + username);
-    }
-
-
-
     public static boolean deleteGroupFromXML(String filePath, String groupName, String owner) {
         try {
             File xmlFile = new File(filePath);
