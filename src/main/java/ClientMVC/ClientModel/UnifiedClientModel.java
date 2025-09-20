@@ -370,7 +370,6 @@ public class UnifiedClientModel implements Runnable {
                 return false;
             }
 
-            // Read and encode file
             byte[] fileContent = Files.readAllBytes(file.toPath());
             String encodedContent = Base64.getEncoder().encodeToString(fileContent);
             String fileName = file.getName();
