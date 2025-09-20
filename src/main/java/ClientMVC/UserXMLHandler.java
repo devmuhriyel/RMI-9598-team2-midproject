@@ -85,6 +85,8 @@ public class UserXMLHandler {
                 break;
             case "SEND_MESSAGE":
                 break;
+            case "RECEIVE_REQUEST":
+                break;
         }
         return reply;
     }

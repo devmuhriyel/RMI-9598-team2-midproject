@@ -4,7 +4,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
 public class AccountModel {
-
     //This for the Friend Function
     private ObservableList<String> friendRequests;
 

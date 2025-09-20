@@ -14,14 +14,16 @@ public class AccountView extends Application {
     @Override
     public void start(Stage stage) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/ClientAccountView.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/AccountView/ClientAccountView.fxml"));
             Parent root = loader.load();
             accountJFXController = loader.getController();
+            accountJFXController.showProfile(); // opens default
 
             Scene scene = new Scene(root);
-            stage.initStyle(StageStyle.UNDECORATED);
-            stage.initStyle(StageStyle.TRANSPARENT);
+            stage.initStyle(javafx.stage.StageStyle.UNDECORATED); // Removes title bar
+            stage.initStyle(javafx.stage.StageStyle.TRANSPARENT);
             scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+            stage.initStyle(StageStyle.TRANSPARENT);
             stage.setResizable(false);
             stage.setScene(scene);
             stage.show();

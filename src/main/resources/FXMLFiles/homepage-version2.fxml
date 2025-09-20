@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane fx:id="mainFrame" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="613.0" prefWidth="1019.0" style="-fx-background-color: #202020;" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <AnchorPane fx:id="leftContainerFrame" prefHeight="523.0" prefWidth="641.0">
+         <children>
+            <AnchorPane fx:id="messageContainerFrame" layoutX="19.0" layoutY="49.0" prefHeight="474.0" prefWidth="604.0">
+               <children>
+                  <Label fx:id="userLabel" alignment="CENTER" contentDisplay="CENTER" prefHeight="18.0" prefWidth="604.0" text="Name" textFill="WHITE">
+                     <font>
+                        <Font name="Gill Sans MT" size="15.0" />
+                     </font>
+                  </Label>
+                  <ScrollPane fx:id="scrollPane" hbarPolicy="NEVER" layoutY="42.0" pannable="true" prefHeight="432.0" prefWidth="604.0" vbarPolicy="ALWAYS">
+                     <content>
+                        <VBox fx:id="messagesArea" prefHeight="431.0" prefWidth="603.0" />
+                     </content>
+                  </ScrollPane>
+               </children>
+            </AnchorPane>
+         </children>
+      </AnchorPane>
+      <AnchorPane fx:id="textingFrame" layoutX="20.0" layoutY="536.0" prefHeight="55.0" prefWidth="604.0">
+         <children>
+            <Button fx:id="sendButton" layoutX="516.0" layoutY="15.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="74.0" styleClass="buttons-style" text="Send" />
+            <TextField fx:id="textTextField" layoutX="97.0" layoutY="15.0" prefHeight="25.0" prefWidth="409.0" styleClass="textfield-class" />
+            <Button fx:id="filesButton" layoutX="14.0" layoutY="15.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="74.0" styleClass="buttons-style" text="File" />
+         </children>
+      </AnchorPane>
+      <AnchorPane fx:id="titleBar" prefHeight="15.0" prefWidth="1019.0" />
+      <Button fx:id="closeButton" cacheShape="false" focusTraversable="false" layoutX="980.0" layoutY="8.0" minWidth="25.0" prefHeight="30.0" prefWidth="25.0" styleClass="window-control" stylesheets="@../style.css" text="x">
+         <font>
+            <Font size="9.0" />
+         </font>
+      </Button>
+      <Button fx:id="minimizeButton" contentDisplay="CENTER" layoutX="955.0" layoutY="8.0" minWidth="15.0" prefHeight="30.0" prefWidth="25.0" styleClass="window-control" stylesheets="@../style.css" text="-">
+         <font>
+            <Font name="Arial Black" size="12.0" />
+         </font>
+      </Button>
+      <AnchorPane fx:id="categoryFrame" layoutX="640.0" layoutY="38.0" prefHeight="500.0" prefWidth="360.0">
+         <children>
+            <HBox fx:id="categoryHbox" prefHeight="55.0" prefWidth="365.0" AnchorPane.rightAnchor="0.0">
+               <children>
+                  <Button fx:id="communityButton" mnemonicParsing="false" prefWidth="150.0" styleClass="buttons-style" text="Community" />
+                  <Button fx:id="friendsButton" alignment="CENTER" contentDisplay="CENTER" mnemonicParsing="false" prefWidth="150.0" styleClass="buttons-style" text="Friends" />
+                  <Button fx:id="groupsButton" mnemonicParsing="false" prefWidth="150.0" styleClass="buttons-style" text="Groups" />
+               </children>
+               <padding>
+                  <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+               </padding>
+            </HBox>
+            <AnchorPane fx:id="listContainerFrame" layoutY="55.0" prefHeight="498.0" prefWidth="365.0" />
+         </children>
+      </AnchorPane>
+   </children>
+</AnchorPane>
