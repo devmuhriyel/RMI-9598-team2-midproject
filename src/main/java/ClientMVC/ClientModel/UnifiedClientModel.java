@@ -6,7 +6,6 @@ import javafx.application.Platform;
 import java.io.*;
 import java.net.Socket;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.List;
 import java.util.function.Consumer;
@@ -21,7 +20,6 @@ public class UnifiedClientModel implements Runnable {
     private Consumer<String> messageListener;
     private Consumer<String> chatHistoryListener;
     private Consumer<String> forceLogoutListener;
-    private Consumer<String> newMessageListener;
     private Consumer<String> communityMessageListener;
     private Consumer<String> fileReceivedListener;
 
@@ -50,6 +48,14 @@ public class UnifiedClientModel implements Runnable {
         }
     }
 
+    /*
+     * handleXMLResponse:
+     * 1. Get the reply from the XML, or fallback to status if reply is null.
+     * 2. Check the reply type using switch.
+     * 3. Call the correct handler based on reply (chat, group, file, login, etc.).
+     * 4. Handle unknown replies with a default case.
+     * 5. Catch errors and print them if something goes wrong.
+     */
     private void handleXMLResponse(String xmlResponse) {
         try {
             String reply = xmlHandler.getReply(xmlResponse);
@@ -122,7 +128,15 @@ public class UnifiedClientModel implements Runnable {
             e.printStackTrace();
         }
     }
-
+    /*
+     * handleCommunityMessageResponse:
+     * 1. Get the response body from the XML.
+     * 2. Check if the body is not empty.
+     * 3. Split the body into sender and message parts.
+     * 4. If valid, format the message as "sender: message".
+     * 5. Pass it to the communityMessageListener on the UI thread.
+     * 6. Catch and print any errors if something goes wrong.
+     */
     private void handleCommunityMessageResponse(String xmlResponse) {
         try {
             String body = xmlHandler.getResponseBody(xmlResponse);
@@ -142,7 +156,17 @@ public class UnifiedClientModel implements Runnable {
             e.printStackTrace();
         }
     }
-
+    /*
+     * handleChatHistoryResponse:
+     * 1. Get the response body from the XML.
+     * 2. Check if the body is not empty.
+     * 3. If the body is valid Base64 → save the updated account XML.
+     * 4. If chatHistoryListener exists:
+     *    - If it's a new message → extract the latest message and send it.
+     *    - If no latest message found → send "MESSAGE_RECEIVED".
+     *    - If not a new message → always send "MESSAGE_RECEIVED".
+     * 5. Catch and print errors if something goes wrong.
+     */
     private void handleChatHistoryResponse(String xmlResponse, boolean isNewMessage) {
         try {
             String body = xmlHandler.getResponseBody(xmlResponse);
@@ -170,6 +194,17 @@ public class UnifiedClientModel implements Runnable {
         }
     }
 
+    /*
+     * handleNewMessageResponse:
+     * 1. Print debug info about the response and body length.
+     * 2. Get the response body from the XML.
+     * 3. Check if the body is not empty.
+     * 4. If body is valid Base64 → save it to account XML.
+     * 5. Extract the latest message; if it’s a file message, handle it separately.
+     * 6. If chatHistoryListener exists → notify with "MESSAGE_RECEIVED".
+     * 7. If listener is missing or body is invalid → log an error.
+     * 8. Catch and print errors if something goes wrong.
+     */
     private void handleNewMessageResponse(String xmlResponse) {
         try {
             System.out.println("handleNewMessageResponse called");
@@ -206,6 +241,13 @@ public class UnifiedClientModel implements Runnable {
             e.printStackTrace();
         }
     }
+    /*
+     * handleFileTransferSuccess:
+     * 1. Get the response body from the XML.
+     * 2. Print a success message with the body.
+     * 3. If fileStatusListener exists → notify with "SUCCESS: body".
+     * 4. Catch and print any errors if something goes wrong.
+     */
     private void handleFileTransferSuccess(String xmlResponse) {
         try {
             String body = xmlHandler.getResponseBody(xmlResponse);
@@ -218,6 +260,14 @@ public class UnifiedClientModel implements Runnable {
             System.err.println("Error handling file transfer success: " + e.getMessage());
         }
     }
+    /*
+     * handleFileTransferFailure:
+     * 1. Get the response body from the XML.
+     * 2. Print a failure message with the body.
+     * 3. Use body as error message if available, otherwise use "Unknown error occurred".
+     * 4. If fileStatusListener exists → notify with "FAILURE: errorMessage".
+     * 5. Catch and print errors, and notify listener about processing error if needed.
+     */
     private void handleFileTransferFailure(String xmlResponse) {
         try {
             String body = xmlHandler.getResponseBody(xmlResponse);
@@ -235,6 +285,7 @@ public class UnifiedClientModel implements Runnable {
             }
         }
     }
+
     private void handleGroupFileTransferSuccess(String xmlResponse) {
         try {
             String body = xmlHandler.getResponseBody(xmlResponse);
@@ -247,6 +298,13 @@ public class UnifiedClientModel implements Runnable {
             System.err.println("Error handling group file transfer success: " + e.getMessage());
         }
     }
+    /*
+     * handleGroupFileTransferSuccess:
+     * 1. Get the response body from the XML.
+     * 2. Print a success message with the body.
+     * 3. If fileStatusListener exists → notify with "SUCCESS: body".
+     * 4. Catch and print any errors.
+     */
     private void handleGroupFileTransferFailure(String xmlResponse) {
         try {
             String body = xmlHandler.getResponseBody(xmlResponse);
@@ -265,7 +323,17 @@ public class UnifiedClientModel implements Runnable {
         this.fileStatusListener = fileStatusListener;
     }
 
-
+    /*
+     * handleGroupFileTransferFailure:
+     * 1. Get the response body from the XML.
+     * 2. Print a failure message with the body.
+     * 3. If fileStatusListener exists → notify with "FAILURE: body".
+     * 4. Catch and print any errors.
+     *
+     * fileStatusListener:
+     * - A listener (callback) to receive file transfer status messages.
+     * - Can be set using setFileStatusListener().
+     */
     private void handleNewGroupMessageResponse(String xmlResponse) {
         try {
             String body = xmlHandler.getResponseBody(xmlResponse);
@@ -303,7 +371,15 @@ public class UnifiedClientModel implements Runnable {
             }
         }
     }
-
+    /*
+     * extractLatestMessageFromBase64:
+     * 1. Decode the Base64 string into XML content.
+     * 2. Parse the XML and find all <chat> nodes.
+     * 3. Get the last <chat> element (latest message).
+     * 4. Extract sender and message text.
+     * 5. Return "sender: message" format.
+     * 6. If an error occurs → print it and return null.
+     */
     private String extractLatestMessageFromBase64(String base64Content) {
         try {
             byte[] decodedXML = Base64.getDecoder().decode(base64Content);
@@ -339,7 +415,15 @@ public class UnifiedClientModel implements Runnable {
             return false;
         }
     }
-
+    /*
+     * sendFile:
+     * 1. Check if the file exists, is valid, and not empty.
+     * 2. Validate file size (must be <= 10MB).
+     * 3. Read file content and encode it into Base64.
+     * 4. Build an XML request with file details (name, extension, content).
+     * 5. Send the XML message to the server.
+     * 6. Notify listener of success or failure.
+     */
     public synchronized boolean sendFile(String filePath, String receiver) {
         try {
             File file = new File(filePath);
@@ -406,7 +490,15 @@ public class UnifiedClientModel implements Runnable {
             return false;
         }
     }
-
+    /*
+     * sendGroupFile:
+     * 1. Check if the user has access to the group.
+     * 2. Validate the file (must exist, be valid, and <= 10MB).
+     * 3. Read and encode file content into Base64.
+     * 4. Build an XML request with group details, file info, and encoded content.
+     * 5. Send the XML message to the server.
+     * 6. Return true if sent successfully, otherwise false.
+     */
     public synchronized boolean sendGroupFile(String filePath, String groupName) {
         try {
             if (!canAccessGroup(groupName)) {
@@ -445,7 +537,14 @@ public class UnifiedClientModel implements Runnable {
             return false;
         }
     }
-
+    /*
+     * saveReceivedFile:
+     * 1. Locate the user's storage directory.
+     * 2. Search for the file matching the given fileName.
+     * 3. If found → read metadata and extract Base64 content.
+     * 4. Decode and save the file to the downloads folder.
+     * 5. Return true if saved successfully, otherwise false.
+     */
     public boolean saveReceivedFile(String fileName) {
         try {
             // First, check if file exists in server storage for this user
@@ -722,10 +821,6 @@ public class UnifiedClientModel implements Runnable {
         this.forceLogoutListener = forceLogoutListener;
     }
 
-    public void setNewMessageListener(Consumer<String> newMessageListener) {
-        this.newMessageListener = newMessageListener;
-    }
-
     public void setCommunityMessageListener(Consumer<String> communityMessageListener) {
         this.communityMessageListener = communityMessageListener;
     }
@@ -745,22 +840,8 @@ public class UnifiedClientModel implements Runnable {
         return xmlHandler.getAllUsers();
     }
 
-
-    public Socket getSocket() {
-        return socket;
-    }
-
     public String getUsername() {
         return username;
     }
 
-    public void disconnect() {
-        try {
-            if (socket != null && !socket.isClosed()) {
-                socket.close();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 }

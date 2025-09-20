@@ -15,6 +15,7 @@ public class AccountModel {
         return friendRequests;
     }
 
+
     public void setFriendRequests(java.util.List<String> requests) {
         friendRequests.setAll(requests);
     }

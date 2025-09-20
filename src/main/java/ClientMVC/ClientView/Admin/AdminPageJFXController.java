@@ -4,7 +4,6 @@ import ClientMVC.ClientModel.AdminModel;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.VBox;
 
 public class AdminPageJFXController {
 
@@ -54,21 +53,40 @@ public class AdminPageJFXController {
     }
 
     // --- Getters for Controller ---
-    public TableView<AdminModel> getTableView() { return tableView; }
-    public TableView<AdminModel> getGroupsTableView() { return groupsTableView; }
-
-    public TextField getSearchField() { return searchField; }
-    public Button getSearchButton() { return searchButton; }
-
-    public TextField getGroupSearchField() { return groupSearchField; }
-    public Button getGroupSearchButton() { return groupSearchButton; }
-
-    public Button getGroupsButton() { return groupsButton; }
-    public Button getBackToUsersButton() { return backToUsersButton; }
-    public Button getDeleteButton() { return deleteButton; }
-    public Button getGroupDeleteButton() { return groupDeleteButton; }
-
-    public Button getEditButton() { return editButton; }
-
-    public Button getGroupsEditButton() { return groupEditButton; }
+    public TableView<AdminModel> getTableView() {
+        return tableView;
+    }
+    public TableView<AdminModel> getGroupsTableView() {
+        return groupsTableView;
+    }
+    public TextField getSearchField() {
+        return searchField;
+    }
+    public Button getSearchButton() {
+        return searchButton;
+    }
+    public TextField getGroupSearchField() {
+        return groupSearchField;
+    }
+    public Button getGroupSearchButton() {
+        return groupSearchButton;
+    }
+    public Button getGroupsButton() {
+        return groupsButton;
+    }
+    public Button getBackToUsersButton() {
+        return backToUsersButton;
+    }
+    public Button getDeleteButton() {
+        return deleteButton;
+    }
+    public Button getGroupDeleteButton() {
+        return groupDeleteButton;
+    }
+    public Button getEditButton() {
+        return editButton;
+    }
+    public Button getGroupsEditButton() {
+        return groupEditButton;
+    }
 }

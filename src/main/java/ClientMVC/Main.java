@@ -5,7 +5,6 @@ import ClientMVC.ClientModel.ConnectionModel;
 import ClientMVC.ClientView.Connection.ConnectionView;
 import javafx.application.Platform;
 import javafx.stage.Stage;
-
 import java.io.IOException;
 
 public class Main{

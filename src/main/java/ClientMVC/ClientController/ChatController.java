@@ -131,6 +131,7 @@ public class ChatController {
 
                     boolean success = false;
 
+
                     if (receiver.equals("Community Chat")) {
                         return;
                     } else if (receiver.startsWith("Group: ")) {

@@ -20,6 +20,17 @@ import java.util.Base64;
 import java.util.List;
 
 public class UserXMLHandler {
+
+    /*
+     * readMessage:
+     * 1. Parse the incoming XML string and extract <type> and <content>.
+     * 2. Depending on the type:
+     *    - LOGIN: Check username/password in Users.xml → return LOGIN_SUCCESS or LOGIN_FAILED.
+     *    - REGISTER: Add a new user (username + password) to Users.xml → return REGISTER_SUCCESS.
+     *    - SEND_MESSAGE: (reserved for sending message handling).
+     *    - RECEIVE_REQUEST: (reserved for request handling).
+     * 3. Return the reply string based on the operation result.
+     */
     public String readMessage(String xmlString) throws Exception {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
@@ -28,7 +39,7 @@ public class UserXMLHandler {
         String type = doc.getElementsByTagName("type").item(0).getTextContent();
         String reply = "";
         String[] content = doc.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
-        ;
+
         switch (type) {
             case "LOGIN":
                 String username = content[0];
@@ -52,9 +63,11 @@ public class UserXMLHandler {
                         }
                     }
                 }
+
                 if (!found) {
                     reply = "LOGIN_FAILED";
                 }
+
                 break;
             case "REGISTER":
                 File file = new File("src/main/resources/XMLFiles/Users.xml");
@@ -68,6 +81,7 @@ public class UserXMLHandler {
                     Element root = registerDoc.createElement("users");
                     registerDoc.appendChild(root);
                 }
+
                 Element root = registerDoc.getDocumentElement();
                 Element user = registerDoc.createElement("user");
                 Element uname = registerDoc.createElement("username");
@@ -81,16 +95,27 @@ public class UserXMLHandler {
                 Transformer transformer = tf.newTransformer();
                 transformer.setOutputProperty(OutputKeys.INDENT, "yes");
                 transformer.transform(new DOMSource(registerDoc), new StreamResult(file));
+
                 reply = "REGISTER_SUCCESS";
                 break;
+
             case "SEND_MESSAGE":
                 break;
+
             case "RECEIVE_REQUEST":
                 break;
         }
         return reply;
     }
 
+    /*
+     * getReply:
+     * 1. Clean and validate the XML string (remove BOM, check format, ensure balanced XML).
+     * 2. Use DocumentBuilder with an error handler to parse the XML safely.
+     * 3. Look for <reply> tag and return its text content if found.
+     * 4. If not found, check for "status" attribute in the root element and return it.
+     * 5. If neither exists or an error occurs, return null (and log errors for debugging).
+     */
     public String getReply(String xmlString) {
         try {
             xmlString = xmlString.trim();
@@ -164,7 +189,15 @@ public class UserXMLHandler {
         return openTags == closeTags;
     }
 
-
+    /*
+     * getResponseBody:
+     * 1. Clean and validate the XML string (remove BOM, check format).
+     * 2. Parse the XML using DocumentBuilder and normalize it.
+     * 3. Search for the <body> tag:
+     *      - If found, return its text content.
+     *      - If not found, return null with a log message.
+     * 4. Handle parsing errors by printing debug info and returning null.
+     */
     public String getResponseBody(String xmlString) throws Exception {
         xmlString = xmlString.trim();
         if (xmlString.startsWith("\uFEFF")) {
@@ -198,7 +231,14 @@ public class UserXMLHandler {
             return null;
         }
     }
-
+    /*
+     * saveUpdatedAccountXML:
+     * 1. Decode the given Base64 content into an XML string.
+     * 2. Validate the XML structure (must start with '<' and end with '>').
+     * 3. Save the decoded XML into a file named <username>Account.xml under resources/XMLFiles.
+     * 4. Verify the file was created successfully and log its size.
+     * 5. Handle errors gracefully with clear messages.
+     */
     public void saveUpdatedAccountXML(String username, String base64Content) {
         try {
             System.out.println("Attempting to save XML for user: " + username);
@@ -231,6 +271,16 @@ public class UserXMLHandler {
         }
     }
 
+    /*
+     * parseServerResponse:
+     * 1. Clean the XML string by trimming and removing BOM if present.
+     * 2. Validate if the string looks like proper XML (starts/ends with tags).
+     * 3. Parse the XML into a DOM Document.
+     * 4. Extract the root element and check if it has a "status" attribute.
+     * 5. Retrieve the <body> tag content if it exists.
+     * 6. Return a ServerResponse object with status and body.
+     * 7. If parsing fails, log the error and return null.
+     */
     public ServerResponse parseServerResponse(String xmlString) throws Exception {
         xmlString = xmlString.trim();
         if (xmlString.startsWith("\uFEFF")) {
@@ -262,7 +312,19 @@ public class UserXMLHandler {
             return null;
         }
     }
-
+    /*
+     * getGroupChatHistoryWithSenders:
+     * 1. Open the user's account XML file.
+     * 2. Parse the XML document and normalize it.
+     * 3. Find all <group> elements inside the file.
+     * 4. Check each group to see if its name matches the given groupName.
+     * 5. If a match is found:
+     *      - Loop through all <chat> elements inside the group.
+     *      - Extract <sender> and <msg> values for each chat.
+     *      - Create ChatMessage objects and add them to the list.
+     * 6. Return the full list of chat messages with senders.
+     * 7. If an error occurs, print the stack trace and return what was collected.
+     */
     public List<ChatMessage> getGroupChatHistoryWithSenders(String username, String groupName) {
         List<ChatMessage> messages = new ArrayList<>();
         try {
@@ -293,7 +355,20 @@ public class UserXMLHandler {
         }
         return messages;
     }
-
+    /*
+     * getChatHistoryWithSenders:
+     * 1. Open the user's account XML file.
+     * 2. Parse and normalize the XML document.
+     * 3. Find all <friend> elements inside the file.
+     * 4. Loop through each friend and check if the <username> matches the given friendName.
+     * 5. If a match is found:
+     *      - Loop through all <chat> elements under that friend.
+     *      - Extract <sender> and <msg> values for each chat.
+     *      - Create ChatMessage objects and add them to the list.
+     * 6. Stop searching once the correct friend is found.
+     * 7. Return the list of chat messages with senders.
+     * 8. If an error occurs, print the stack trace and return what was collected so far.
+     */
     public List<ChatMessage> getChatHistoryWithSenders(String username, String friendName) {
         List<ChatMessage> messages = new ArrayList<>();
         try {
@@ -325,6 +400,25 @@ public class UserXMLHandler {
         return messages;
     }
 
+    /*
+     * ChatMessage and ServerResponse helper classes:
+     *
+     * ChatMessage:
+     * - Stores a chat message with two parts:
+     *   1. sender → who sent the message
+     *   2. message → the actual text of the message
+     * - Provides getter methods to access sender and message.
+     *
+     * ServerResponse:
+     * - Stores the server's reply after processing a request.
+     *   1. status → tells what happened (e.g., LOGIN_SUCCESS, LOGIN_FAILED, FORCE_LOGOUT, etc.)
+     *   2. body → contains the extra data from the server (like content or details).
+     * - Provides getter methods to access status and body.
+     * - Has helper methods:
+     *      isLoginSuccess() → true if status = LOGIN_SUCCESS
+     *      isLoginFailed()  → true if status = LOGIN_FAILED
+     *      isForceLogout()  → true if status = FORCE_LOGOUT
+     */
     public static class ChatMessage {
         private final String sender;
         private final String message;
@@ -394,7 +488,19 @@ public class UserXMLHandler {
         }
         return friends;
     }
-
+    /*
+     * getUserGroups(username):
+     * -------------------------
+     * - Purpose: Finds all groups a user belongs to by reading their XML account file.
+     * Steps:
+     * 1. Check if the user's XML file exists. If not, return an empty list.
+     * 2. Load and parse the XML file.
+     * 3. Look for all <group> elements in the file.
+     * 4. For each <group>, extract the <groupname> text and add it to the list.
+     * 5. Print the groups found (for debugging).
+     * 6. If an error occurs, print the error and return an empty list.
+     * Returns: A list of group names (List<String>) for the given user.
+     */
     public List<String> getUserGroups(String username) {
         List<String> groups = new ArrayList<>();
         try {
@@ -424,6 +530,18 @@ public class UserXMLHandler {
         }
         return groups;
     }
+    /*
+     * getAllUsers():
+     * ---------------
+     * - Purpose: Reads all usernames from Users.xml and returns them in a list.
+     * Steps:
+     * 1. Open and parse the Users.xml file.
+     * 2. Look for every <user> element.
+     * 3. For each <user>, get the <username> value.
+     * 4. Add each username to the list.
+     * 5. If an error happens, print the stack trace.
+     * Returns: A list of all usernames in the system.
+     */
     public List<String> getAllUsers() {
         List<String> users = new ArrayList<>();
         try {
@@ -443,49 +561,5 @@ public class UserXMLHandler {
             e.printStackTrace();
         }
         return users;
-    }
-
-    public List<String> getChatHistory(String username, String friendName) {
-        List<String> messages = new ArrayList<>();
-        try {
-            File file = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document doc = builder.parse(file);
-            doc.getDocumentElement().normalize();
-
-            NodeList friendNodes = doc.getElementsByTagName("friend");
-            for (int i = 0; i < friendNodes.getLength(); i++) {
-                Element friendElement = (Element) friendNodes.item(i);
-                String fName = friendElement.getElementsByTagName("username").item(0).getTextContent();
-
-                if (fName.equals(friendName)) {
-                    NodeList chatNodes = friendElement.getElementsByTagName("chat");
-                    for (int j = 0; j < chatNodes.getLength(); j++) {
-                        Element chatElement = (Element) chatNodes.item(j);
-                        String sender = chatElement.getElementsByTagName("sender").item(0).getTextContent();
-                        String msg = chatElement.getElementsByTagName("msg").item(0).getTextContent();
-                        messages.add(sender + ": " + msg);
-                    }
-                    break;
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return messages;
-    }
-
-    public String getBody(String xmlString) throws Exception {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document doc = builder.parse(new ByteArrayInputStream(xmlString.getBytes("UTF-8")));
-        doc.getDocumentElement().normalize();
-
-        NodeList bodyNodes = doc.getElementsByTagName("body");
-        if (bodyNodes.getLength() > 0) {
-            return bodyNodes.item(0).getTextContent();
-        }
-        return null;
     }
 }

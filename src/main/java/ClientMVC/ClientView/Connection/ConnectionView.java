@@ -32,14 +32,6 @@ public class ConnectionView extends Application {
         }
     }
 
-    //MVC METHODS
-    public void connect(){
-        Platform.runLater(() -> {
-            Stage stage =  (Stage) jfxController.getConnectButton().getScene().getWindow();
-            stage.close();
-        });
-    }
-
     //SETTERS AND GETTERS
     public ConnectionJFXController getFXController() {
         return jfxController;
