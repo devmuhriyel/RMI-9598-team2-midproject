@@ -108,7 +108,7 @@ public class HomeJFXController {
         Platform.runLater(() -> {
             friendsList.getChildren().clear();
             if (friends == null || friends.isEmpty()) {
-                friendsList.getChildren().add(new Label("No friends match your search"));
+                friendsList.getChildren().add(new Label("No users match your search"));
                 return;
             }
             for (String friend : friends) {

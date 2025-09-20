@@ -424,6 +424,26 @@ public class UserXMLHandler {
         }
         return groups;
     }
+    public List<String> getAllUsers() {
+        List<String> users = new ArrayList<>();
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(new File("src/main/resources/XMLFiles/Users.xml")); // adjust path if needed
+            NodeList nodeList = doc.getElementsByTagName("user");
+
+            for (int i = 0; i < nodeList.getLength(); i++) {
+                Element userElement = (Element) nodeList.item(i);
+                String username = userElement.getElementsByTagName("username")
+                        .item(0)
+                        .getTextContent();
+                users.add(username);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return users;
+    }
 
     public List<String> getChatHistory(String username, String friendName) {
         List<String> messages = new ArrayList<>();
