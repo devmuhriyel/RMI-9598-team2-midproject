@@ -146,7 +146,7 @@ public class AdminController {
 
     private void switchToUsers() {
         view.getGroupsTableView().getScene().getWindow().hide();
-        loadFXML("/FXMLFiles/Admin.fxml", "Users Page");
+        loadFXML("/FXMLFiles/Admin.fxml", "Admins Page");
     }
 
     private void loadFXML(String path, String title) {
