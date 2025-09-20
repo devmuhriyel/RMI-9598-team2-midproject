@@ -4,12 +4,10 @@ import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
-import javafx.scene.control.Tooltip;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
@@ -56,14 +54,10 @@ public class HomeJFXController {
         }
     }
 
-    // Getters for MVC access
-    public Button getUserProfileButton() {
-        return userProfileButton;
-    }
-
     public void setFriendClickListener(Consumer<String> friendClickListener) {
         this.friendClickListener = friendClickListener;
     }
+
     public void setGroupClickListener(Consumer<String> groupClickListener) {
         this.groupClickListener = groupClickListener;
     }
@@ -95,9 +89,11 @@ public class HomeJFXController {
     public List<String> getOriginalFriends() {
         return originalFriends;
     }
+
     public List<String> getOriginalGroups() {
         return originalGroups;
     }
+
     public void setSearchListener(Consumer<String> listener) {
         this.searchListener = listener;
     }
@@ -111,6 +107,7 @@ public class HomeJFXController {
                 friendsList.getChildren().add(new Label("No users match your search"));
                 return;
             }
+
             for (String user : users) {
                 boolean isFriend = originalFriends.contains(user);
                 Button userBtn = new Button(user);
@@ -120,10 +117,12 @@ public class HomeJFXController {
                     // Normal style for friends
                     userBtn.setStyle(""); // Default or your preferred style
                     userBtn.setOnAction(event -> {
+
                         if (friendClickListener != null) {
                             friendClickListener.accept(user);
                         }
                     });
+
                     friendsList.getChildren().add(userBtn);
                 } else {
                     // Gray style for non-friends
@@ -132,7 +131,7 @@ public class HomeJFXController {
                     // Add "+" button to add as friend
                     Button addBtn = new Button("+");
                     addBtn.setStyle("-fx-background-color: #b3e5fc; -fx-text-fill: #333;");
-                    
+
                     addBtn.setOnAction(event -> {
                         // TODO: Implement add friend logic here
                         System.out.println("Add friend: " + user);
@@ -181,6 +180,7 @@ public class HomeJFXController {
             createGroupBtn.setStyle("-fx-background-color: #dedcff; -fx-text-fill: black; -fx-padding: 10;");
             createGroupBtn.setOnAction(event -> {
                 System.out.println("Create new group clicked");
+
                 // TODO: Implement group creation functionality
             });
             messagesArea1.getChildren().add(createGroupBtn);

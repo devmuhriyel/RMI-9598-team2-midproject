@@ -8,6 +8,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
+
 public class ClientThread implements Runnable {
     private Socket socket;
     private BufferedReader readMSG;
@@ -31,7 +32,27 @@ public class ClientThread implements Runnable {
             e.printStackTrace();
         }
     }
-
+    /*
+     * run():
+     * ------
+     * Purpose:
+     *   - Continuously listens for incoming XML messages from a connected client.
+     *
+     * How it works:
+     *   1. Reads each XML message from the client.
+     *   2. Uses xmlHandler to determine the type of request (login, register, chat, file, group, etc.).
+     *   3. Handles different cases such as:
+     *        - LOGIN / REGISTER (success or failed)
+     *        - Sending and receiving messages
+     *        - Friend requests (add, accept, decline, list)
+     *        - Group management (create, join, list, send messages/files)
+     *        - File transfers (private and group)
+     *   4. Sends back XML responses to the client with status and message.
+     *   5. Updates account XML files when needed (chat history, group history, file transfers).
+     *   6. Ensures only one active session per user (forces logout of duplicate logins).
+     *   7. Handles errors safely and logs them.
+     *   8. Cleans up resources and logs out the client when the connection ends.
+     */
     @Override
     public void run() {
         try {
@@ -175,8 +196,7 @@ public class ClientThread implements Runnable {
                         ClientThread existingClient = null;
                         synchronized (clients) {
                             for (ClientThread clientThread : clients) {
-                                if (clientThread.name != null && clientThread.name.equals(newUsername)
-                                        && !clientThread.isAdmin && clientThread != this) {
+                                if (clientThread.name != null && clientThread.name.equals(newUsername) && clientThread != this) {
                                     existingClient = clientThread;
                                     break;
                                 }
@@ -372,19 +392,21 @@ public class ClientThread implements Runnable {
                                 "<body>" + communitySender + "![]!" + communityMessage + "</body></Response>";
                         broadcastCommunityMessage(communityBroadcast);
                         break;
-
                     case "SEND_FILE":
                         String fileSender = getSender(xmlMsg);
                         String fileReceiver = getReceiver(xmlMsg);
                         System.out.println("Processing file transfer from " + fileSender + " to " + fileReceiver);
 
+                        // Send success/failure response to sender
                         String fileResponse = reply.equals("SEND_FILE_SUCCESS") ?
                                 "<Response><reply>FILE_SENT</reply><body>File sent successfully</body></Response>" :
                                 "<Response><reply>FILE_SEND_FAILED</reply><body>Failed to send file</body></Response>";
 
                         sendMessage(fileResponse);
 
+                        // Only update XMLs if transfer was successful
                         if (reply.equals("SEND_FILE_SUCCESS")) {
+                            // Update both sender and receiver XMLs with new message
                             for (ClientThread client : clients) {
                                 if (client.socket.isConnected() &&
                                         (client.name.equals(fileSender) || client.name.equals(fileReceiver))) {
@@ -407,13 +429,13 @@ public class ClientThread implements Runnable {
                             }
                         }
                         break;
-
                     case "SEND_GROUP_FILE":
                         String groupFileSender = getSender(xmlMsg);
                         String targetGroupForFile = getGroupName(xmlMsg);
 
                         System.out.println("Processing group file transfer from " + groupFileSender + " to group " + targetGroupForFile);
 
+                        // Send response to sender
                         String groupFileResponse;
                         switch (reply) {
                             case "SEND_GROUP_FILE_SUCCESS":
@@ -429,6 +451,7 @@ public class ClientThread implements Runnable {
 
                         sendMessage(groupFileResponse);
 
+                        // Only update XMLs if transfer was successful
                         if (reply.equals("SEND_GROUP_FILE_SUCCESS")) {
                             if (!xmlHandler.isUserInGroup(groupFileSender, targetGroupForFile)) {
                                 System.out.println("Access denied: " + groupFileSender + " is not a member of group " + targetGroupForFile);
@@ -464,7 +487,6 @@ public class ClientThread implements Runnable {
                             }
                         }
                         break;
-
                     case "FILE_SENT":
                         sendMessage("<Response><reply>FILE_SENT</reply><body>File sent successfully</body></Response>");
                         break;
@@ -522,6 +544,23 @@ public class ClientThread implements Runnable {
         }
     }
 
+    /*
+     * Helper Methods Overview:
+     * ------------------------
+     * - sendMessage(msg): Sends a message to the client safely.
+     * - getSender(xml): Extracts the sender’s username from an XML message.
+     * - getReceiver(xml): Extracts the receiver’s username from an XML message.
+     * - getGroupName(xml): Extracts the group name from a group message.
+     * - getGroupMessage(xml): Extracts the actual message content from a group message.
+     * - getCommunityMessage(xml): Extracts the community message content.
+     * - extractUsername(xml): Extracts only the username part from the XML message.
+     * - extractContent(xml): Returns all parts of the <content> element as an array.
+     * - logOut(): Removes the client from the connected list and closes the socket.
+     *
+     * In short:
+     * These methods parse XML strings, extract useful info (like sender, receiver,
+     * group name, or message), and handle client communication and logout.
+     */
     private void sendMessage(String msg) {
         try {
             writeMSG.write(msg.trim());

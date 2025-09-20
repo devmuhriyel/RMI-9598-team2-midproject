@@ -1,4 +1,6 @@
-package ClientMVC.ClientView.Chat;import javafx.application.Platform;
+package ClientMVC.ClientView.Chat;
+
+import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
@@ -16,7 +18,10 @@ import javafx.geometry.Insets;
 import javafx.scene.layout.Priority;
 import javafx.stage.FileChooser;
 import java.io.File;
-import java.util.function.Consumer;public class ChatJFXController {
+import java.util.function.Consumer;
+
+
+public class ChatJFXController {
     @FXML
     private TextField messageField;
     @FXML
@@ -24,16 +29,22 @@ import java.util.function.Consumer;public class ChatJFXController {
     @FXML
     private Button fileButton;
     @FXML
-    private VBox messagesArea;    @FXML
+    private VBox messagesArea;
+    @FXML
     private Button home;
     @FXML
-    private Label label;    @FXML
-    private ScrollPane scrollPane;    @FXML
-    private Rectangle rectangle;    @FXML
-    private AnchorPane anchorPane;    private Runnable fileButtonListener;
+    private Label label;
+    @FXML
+    private ScrollPane scrollPane;
+    @FXML
+    private Rectangle rectangle;
+    @FXML
+    private AnchorPane anchorPane;
+    private Runnable fileButtonListener;
     private Consumer<String> fileOpenListener;
     private Runnable sendButtonListener;
-    private Runnable homeButtonListener;    @FXML
+    private Runnable homeButtonListener;
+    @FXML
     public void initialize() {
         System.out.println("ChatJFXController initialize() called");
         System.out.println("File button is: " + (fileButton != null ? "NOT NULL" : "NULL"));
@@ -72,7 +83,8 @@ import java.util.function.Consumer;public class ChatJFXController {
                 Platform.runLater(() -> {
                     scrollPane.setVvalue(1.0);
                 });
-            });            messagesArea.getChildren().addListener(new ListChangeListener<javafx.scene.Node>() {
+            });
+            messagesArea.getChildren().addListener(new ListChangeListener<javafx.scene.Node>() {
                 @Override
                 public void onChanged(ListChangeListener.Change<? extends Node> change) {
                     while (change.next()) {
@@ -114,23 +126,27 @@ import java.util.function.Consumer;public class ChatJFXController {
                     if (fileOpenListener != null) {
                         fileOpenListener.accept(fileName);
                     }
-                });                fileContainer.getChildren().addAll(fileIcon, fileNameLabel, openFileButton);
-                fileContainer.setStyle(
-                        isSender ?
+                });
+                fileContainer.getChildren().addAll(fileIcon, fileNameLabel, openFileButton);
+                fileContainer.setStyle(isSender ?
                                 "-fx-background-color: #007AFF; -fx-text-fill: white; -fx-background-radius: 18;" :
                                 "-fx-background-color: #E5E5EA; -fx-text-fill: black; -fx-background-radius: 18;"
-                );                messageWithSender.getChildren().addAll(senderLabel, fileContainer);            } else {
+                );
+                messageWithSender.getChildren().addAll(senderLabel, fileContainer);
+            } else {
                 Label messageLabel = new Label(message);
                 messageLabel.setWrapText(true);
                 messageLabel.setMaxWidth(maxBubbleWidth);
                 messageLabel.setPrefWidth(Region.USE_COMPUTED_SIZE);
                 messageLabel.setMinHeight(Region.USE_PREF_SIZE);
-                messageLabel.setPadding(new Insets(10, 15, 10, 15));                messageLabel.setStyle(
-                        isSender ?
-                                "-fx-background-color: #007AFF; -fx-text-fill: white; -fx-background-radius: 18; -fx-font-size: 14px;" :
-                                "-fx-background-color: #E5E5EA; -fx-text-fill: black; -fx-background-radius: 18; -fx-font-size: 14px;"
-                );                messageWithSender.getChildren().addAll(senderLabel, messageLabel);
-            }            messageWithSender.setAlignment(isSender ? Pos.TOP_RIGHT : Pos.TOP_LEFT);            if (isSender) {
+                messageLabel.setPadding(new Insets(10, 15, 10, 15));
+                messageLabel.setStyle(isSender ?
+                        "-fx-background-color: #007AFF; -fx-text-fill: white; -fx-background-radius: 18; -fx-font-size: 14px;" :
+                        "-fx-background-color: #E5E5EA; -fx-text-fill: black; -fx-background-radius: 18; -fx-font-size: 14px;"
+                );
+                messageWithSender.getChildren().addAll(senderLabel, messageLabel);
+            }   messageWithSender.setAlignment(isSender ? Pos.TOP_RIGHT : Pos.TOP_LEFT);
+            if (isSender) {
                 Region spacer = new Region();
                 HBox.setHgrow(spacer, Priority.ALWAYS);
                 messageContainer.getChildren().addAll(spacer, messageWithSender);
@@ -144,16 +160,22 @@ import java.util.function.Consumer;public class ChatJFXController {
                 forceScrollToBottom();
             }
         });
-    }    public File showFileChooser() {
+    }
+
+    public File showFileChooser() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Select File to Send");
         fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("All Files", "*.*"),
-                new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.bmp"),
-                new FileChooser.ExtensionFilter("Documents", "*.pdf", "*.doc", "*.docx", "*.txt", "*.rtf"),
-                new FileChooser.ExtensionFilter("Archives", "*.zip", "*.rar", "*.7z")
-        );        return fileChooser.showOpenDialog(messageField.getScene().getWindow());
-    }    private void forceScrollToBottom() {
+
+       new FileChooser.ExtensionFilter("All Files", "*.*"),
+       new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.bmp"),
+       new FileChooser.ExtensionFilter("Documents", "*.pdf", "*.doc", "*.docx", "*.txt", "*.rtf"),
+       new FileChooser.ExtensionFilter("Archives", "*.zip", "*.rar", "*.7z")
+       );
+        return fileChooser.showOpenDialog(messageField.getScene().getWindow());
+    }
+
+    private void forceScrollToBottom() {
         Platform.runLater(() -> {
             if (scrollPane != null) {
                 scrollPane.setVvalue(1.0);
@@ -162,43 +184,51 @@ import java.util.function.Consumer;public class ChatJFXController {
                 });
             }
         });
-    }    public void addChatMessage(String senderName, String message, String currentUser) {
+    }
+
+    public void addChatMessage(String senderName, String message, String currentUser) {
         boolean isSender = senderName.equals(currentUser);
         addMessageWithSender(senderName, message, isSender);
-    }    public void clearMessages() {
+    }
+
+    public void clearMessages() {
         Platform.runLater(() -> {
             if (messagesArea != null) {
                 messagesArea.getChildren().clear();
             }
         });
     }
+
     public void setFileButtonListener(Runnable fileButtonListener) {
         System.out.println("Setting file button listener: " + (fileButtonListener != null ? "NOT NULL" : "NULL"));
         this.fileButtonListener = fileButtonListener;
     }
+
     public void setFileOpenListener(Consumer<String> fileOpenListener) {
         this.fileOpenListener = fileOpenListener;
     }
+
     public void setSendButtonListener(Runnable sendButtonListener) {
         this.sendButtonListener = sendButtonListener;
     }
+
     public void setHomeButtonListener(Runnable homeButtonListener) {
         this.homeButtonListener = homeButtonListener;
     }
-    public Button getFileButton() {
-        return fileButton;
-    }    public void setLabel(String label) {
+
+    public void setLabel(String label) {
         this.label.setText(label);
-    }    public TextField getMessageField() {
+    }
+
+    public TextField getMessageField() {
         return messageField;
     }
-    public VBox getMessagesArea() {
-        return messagesArea;
-    }    public Button getSendButton() {
-        return sendButton;
-    }    public Button getHomeButton() {
+
+    public Button getHomeButton() {
         return home;
-    }    public Label getReceiver() {
+    }
+
+    public Label getReceiver() {
         return label;
     }
 }

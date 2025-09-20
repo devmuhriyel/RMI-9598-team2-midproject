@@ -27,13 +27,15 @@ public class AccountJFXController {
     private AnchorPane changePasswordFrame, changeUsernameFrame;
 
     @FXML
-    private Button editUsernameButton, editPasswordButton,
-            saveUsernameButton, cancelUsernameButton,
-            savePasswordButton, cancelPasswordButton;
+    private Button
+     editUsernameButton, editPasswordButton,
+     saveUsernameButton, cancelUsernameButton,
+     savePasswordButton, cancelPasswordButton;
 
     @FXML
-    private TextField newUsernameTextField, oldPasswordTextField,
-            newPasswordTextField, confirmPasswordTextField;
+    private TextField
+    newUsernameTextField, oldPasswordTextField,
+    newPasswordTextField, confirmPasswordTextField;
 
     @FXML
     private Label usernameStatusLabel, passwordStatusLabel;
@@ -232,7 +234,6 @@ public class AccountJFXController {
     public Button getCancelPasswordButton() {
         return cancelPasswordButton;
     }
-
     // GETTERS FOR INPUTS
     public String getNewUsername() {
         return newUsernameTextField.getText();

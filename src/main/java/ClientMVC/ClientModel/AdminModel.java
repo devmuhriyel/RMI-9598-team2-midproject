@@ -11,18 +11,17 @@ public class AdminModel {
     private String password;
     private String owner;
     private String groupName;
-    private boolean isGroup; // flag to distinguish between User and Group
+    // flag to distinguish between User and Group
+    private boolean isGroup;
 
-    public AdminModel() {}
 
     // --- User Constructor ---
     public AdminModel(String username, String password) {
         this.username = username;
         this.password = password;
         this.isGroup = false;
-    }
 
-    // --- Group Constructor ---
+    }
     public AdminModel(String owner, String groupName, boolean isGroup) {
         this.owner = owner;
         this.groupName = groupName;
@@ -30,19 +29,43 @@ public class AdminModel {
     }
 
     // --- Getters ---
-    public String getUsername() { return username; }
-    public String getPassword() { return password; }
-    public String getOwner() { return owner; }
-    public String getGroupName() { return groupName; }
-    public boolean isGroup() { return isGroup; }
+    public String getUsername() {
+        return username;
+    }
+    public String getPassword() {
+        return password;
+    }
+    public String getOwner() {
+        return owner;
+    }
+    public String getGroupName() {
+        return groupName;
+    }
+    public boolean isGroup() {
+        return isGroup;
+    }
 
     // --- Setters (if needed) ---
-    public void setUsername(String username) { this.username = username; }
-    public void setPassword(String password) { this.password = password; }
-    public void setOwner(String owner) { this.owner = owner; }
-    public void setGroupName(String groupName) { this.groupName = groupName; }
+    public void setUsername(String username) {
+        this.username = username;
+    }
+    public void setPassword(String password) {
+        this.password = password;
+    }
+    public void setOwner(String owner) {
+        this.owner = owner; }
+    public void setGroupName(String groupName) {
+        this.groupName = groupName; }
 
-    // --- Search Users ---
+    /*
+     * searchUsers method: and searchGroups method:
+     * 1. If the keyword is null or empty → return all users.
+     * 2. Otherwise, convert the list into a stream for processing.
+     * 3. Check if the username contains the keyword (case-insensitive).
+     * 4. Or check if the password contains the keyword (case-insensitive).
+     * 5. Collect all matching users and return them as an ObservableList.
+     * 6. Collect all matching groups and return them as an ObservableList.
+     */
     public static ObservableList<AdminModel> searchUsers(List<AdminModel> allUsers, String keyword) {
         if (keyword == null || keyword.isEmpty()) {
             return FXCollections.observableArrayList(allUsers);

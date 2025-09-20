@@ -33,7 +33,21 @@ public class ChatServer {
             e.printStackTrace();
         }
     }
-
+    /*
+     * stop() and isValidIPAddress():
+     * ------------------------------
+     * stop():
+     * - Purpose: Safely stops the server by closing the server socket if it’s running.
+     * - Steps:
+     *   1. Set 'running' to false.
+     *   2. Close the server socket if it exists and isn’t already closed.
+     *   3. Print "Server stopped." or show error if closing fails.
+     *
+     * isValidIPAddress(ip):
+     * - Purpose: Checks if a given string is a valid IPv4 address.
+     * - Logic: Uses a regular expression to match 4 numbers (0–255) separated by dots.
+     * - Returns: true if valid, false otherwise.
+     */
     public void stop() {
         running = false;
         try {
@@ -55,7 +69,19 @@ public class ChatServer {
 
         return Pattern.matches(ipPattern, ip);
     }
-
+    /*
+     * getValidIPAddress(scanner):
+     * ---------------------------
+     * Purpose:
+     *   - Continuously prompts the user to enter a valid IPv4 address.
+     *   - Ensures the input is correctly formatted and can be resolved as an IP.
+     * How it works:
+     *   1. Ask the user for an IP address.
+     *   2. Trim the input and check with isValidIPAddress().
+     *   3. If valid, also test using InetAddress.getByName() for extra validation.
+     *   4. If everything is fine → return the IP address.
+     *   5. Otherwise → show error and ask again until a correct IP is provided.
+     */
     private static String getValidIPAddress(Scanner scanner) {
         String ipAddress;
         while (true) {
@@ -76,8 +102,18 @@ public class ChatServer {
             }
         }
     }
-
-    //TYPE EXIT IF CLOSEEEE OR PWEDE NAMAN YUNG STOP BUTTON (Wala maangas lang kaya i added it :>)
+    /*
+     * main():
+     * -------
+     * Purpose:
+     *   - Entry point of the server program.
+     * How it works:
+     *   1. Ask the user for a valid IP address.
+     *   2. Bind the server socket to that IP and port 1234.
+     *   3. Start the ChatServer in a separate thread so it runs in the background.
+     *   4. Provide a command loop where typing "exit" stops the server.
+     *   5. Ensure resources like the scanner are closed properly.
+     */
     public static void main(String[] args) throws IOException {
         Scanner scanner = new Scanner(System.in);
 

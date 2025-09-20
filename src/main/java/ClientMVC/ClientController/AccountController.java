@@ -3,8 +3,6 @@ package ClientMVC.ClientController;
 import ClientMVC.ClientModel.AccountModel;
 import ClientMVC.ClientView.Account.AccountView;
 import ClientMVC.ClientView.Account.AccountJFXController;
-import ClientMVC.ClientModel.AccountModel;
-
 import java.io.BufferedWriter;
 import java.io.IOException;
 
@@ -21,8 +19,6 @@ public class AccountController {
         this.view = view;
         this.accountJFXController = accountJFXController;
     }
-
-
 
 
     public void listRequests(String user) throws IOException {

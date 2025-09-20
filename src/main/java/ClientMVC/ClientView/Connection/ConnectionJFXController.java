@@ -17,8 +17,6 @@ import javafx.util.Duration;
 public class ConnectionJFXController {
 
     @FXML
-    private Text applicationName;
-    @FXML
     private Button connectButton;
     @FXML
     private Label statusLabel;
@@ -54,6 +52,7 @@ public class ConnectionJFXController {
             xOffset = event.getSceneX();
             yOffset = event.getSceneY();
         });
+
         titleBar.setOnMouseDragged(event -> {
             Stage stage = (Stage) titleBar.getScene().getWindow();
             stage.setX(event.getScreenX() - xOffset);
@@ -117,12 +116,6 @@ public class ConnectionJFXController {
         btn.setOnMouseExited(e -> exit.playFromStart());
     }
 
-    // Status display methods - these handle UI feedback based on model results
-    public void showConectedLabel() {
-        statusLabel.setText("Connected Successfully...");
-        statusLabel.setTextFill(Color.rgb(0, 245, 83));
-        statusLabel.setStyle("-fx-font-size: 12px;");
-    }
 
     public void showInvalidInputLabel() {
         statusLabel.setText("Invalid IP/PORT...");
@@ -140,27 +133,6 @@ public class ConnectionJFXController {
 
     public void showInvalidPortLabel() {
         statusLabel.setText("Port must be a valid number...");
-        statusLabel.setTextFill(Color.rgb(217, 27, 36));
-        statusLabel.setStyle("-fx-font-size: 12px;");
-        addShakeAnimation();
-    }
-
-    public void showConnectionFailedLabel() {
-        statusLabel.setText("Connection failed...");
-        statusLabel.setTextFill(Color.rgb(217, 27, 36));
-        statusLabel.setStyle("-fx-font-size: 12px;");
-        addShakeAnimation();
-    }
-
-    public void showInvalidPortRangeLabel() {
-        statusLabel.setText("Port must be between 1-65535...");
-        statusLabel.setTextFill(Color.rgb(217, 27, 36));
-        statusLabel.setStyle("-fx-font-size: 12px;");
-        addShakeAnimation();
-    }
-
-    public void showInvalidIpFormatLabel() {
-        statusLabel.setText("Invalid IP address format...");
         statusLabel.setTextFill(Color.rgb(217, 27, 36));
         statusLabel.setStyle("-fx-font-size: 12px;");
         addShakeAnimation();
@@ -203,19 +175,8 @@ public class ConnectionJFXController {
         return Integer.parseInt(portTextField.getText().trim());
     }
 
-    public Label getStatusLabel() {
-        return statusLabel;
-    }
-
     public Button getConnectButton() {
         return connectButton;
     }
 
-    public TextField getIpAddressTextField() {
-        return ipAddressTextField;
-    }
-
-    public TextField getPortTextField() {
-        return portTextField;
-    }
 }
