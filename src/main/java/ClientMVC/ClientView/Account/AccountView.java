@@ -1,7 +1,6 @@
 package ClientMVC.ClientView.Account;
 
 import javafx.application.Application;
-import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 
 import javafx.scene.Parent;
@@ -15,10 +14,10 @@ public class AccountView extends Application {
     @Override
     public void start(Stage stage) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/ClientAccountView.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/AccountView/ClientAccountView.fxml"));
             Parent root = loader.load();
             accountJFXController = loader.getController();
-            accountJFXController.showProfile(); // default
+            accountJFXController.showProfile(); // opens default
 
             Scene scene = new Scene(root);
             stage.initStyle(javafx.stage.StageStyle.UNDECORATED); // Removes title bar

@@ -4,7 +4,6 @@ import ClientMVC.ClientModel.AccountModel;
 import ClientMVC.ClientView.Account.AccountView;
 import ClientMVC.ClientView.Account.AccountJFXController;
 import ClientMVC.ClientModel.AccountModel;
-import javafx.event.ActionEvent;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -21,31 +20,10 @@ public class AccountController {
         this.serverWriter = serverWriter;
         this.view = view;
         this.accountJFXController = accountJFXController;
-        accountJFXController.showProfile();
-        initialize();
     }
 
-    public void initialize () {
-        // Initialize Runanble
-        accountJFXController.setProfileButtonListener(() -> showProfile());
-        accountJFXController.setRequestsAccountListener(()-> showRequests());
-        accountJFXController.setSettingsAccountListener(() -> showSettings());
 
-    }
 
-    // Action Events when Button were clicked
-    // Displays the Profile
-    public void showProfile() {
-        accountJFXController.showProfile();
-    }
-    // Displays the Friend Requests
-    public void showRequests() {
-        accountJFXController.showRequests();
-    }
-    // Displays the Settings
-    public void showSettings() {
-        accountJFXController.showSettings();
-    }
 
     public void listRequests(String user) throws IOException {
         String msg = "<Request type=\"LIST_REQUESTS\"><content>" + user + "</content></Request>";
