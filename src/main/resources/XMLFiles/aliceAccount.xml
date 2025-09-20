@@ -423,6 +423,10 @@
                 <sender>bob</sender>
                 <msg>[FILE: Screenshot 2024-10-12 232508.png]</msg>
             </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>[FILE: RobloxScreenShot20240806_230456934.png]</msg>
+            </chat>
         </chathistory>
     </friend>
     <friend>
