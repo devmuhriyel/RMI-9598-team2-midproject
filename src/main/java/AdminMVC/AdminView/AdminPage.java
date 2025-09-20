@@ -1,5 +1,6 @@
-package ClientMVC.ClientView.Admin;
+package AdminMVC.AdminView;
 
+import AdminMVC.AdminControllers.AdminController;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -17,7 +18,7 @@ public class AdminPage extends Application {
         jfxController = loader.getController();
 
         // Initialize Controller
-        new ClientMVC.ClientController.AdminController(jfxController);
+        new AdminController(jfxController);
 
         stage.setTitle("Admin Page");
         stage.setScene(new Scene(root, 800, 600));

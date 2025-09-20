@@ -55,7 +55,6 @@ public class AdminModel {
         );
     }
 
-    // --- Search Groups ---
     public static ObservableList<AdminModel> searchGroups(List<AdminModel> allGroups, String keyword) {
         if (keyword == null || keyword.isEmpty()) {
             return FXCollections.observableArrayList(allGroups);

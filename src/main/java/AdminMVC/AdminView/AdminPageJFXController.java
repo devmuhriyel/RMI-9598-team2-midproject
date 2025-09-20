@@ -1,10 +1,9 @@
-package ClientMVC.ClientView.Admin;
+package AdminMVC.AdminView;
 
 import ClientMVC.ClientModel.AdminModel;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.VBox;
 
 public class AdminPageJFXController {
 
@@ -34,9 +33,17 @@ public class AdminPageJFXController {
     @FXML private Button groupsButton;        // Switch to Groups
     @FXML private Button backToUsersButton;   // Switch to Users
 
+    // Edit buttons
     @FXML private Button editButton;
-
     @FXML private Button groupEditButton;
+
+    // **CHANGED: Added new admin operation buttons**
+    @FXML private Button createUserButton;
+    @FXML private Button createGroupButton;
+    @FXML private Button viewStatsButton;
+    @FXML private Button viewActiveUsersButton;
+    @FXML private Button viewCommunityMessagesButton;
+    @FXML private Button refreshButton;
 
     @FXML
     private void initialize() {
@@ -69,6 +76,13 @@ public class AdminPageJFXController {
     public Button getGroupDeleteButton() { return groupDeleteButton; }
 
     public Button getEditButton() { return editButton; }
-
     public Button getGroupsEditButton() { return groupEditButton; }
+
+    // **CHANGED: Added getters for new admin operation buttons**
+    public Button getCreateUserButton() { return createUserButton; }
+    public Button getCreateGroupButton() { return createGroupButton; }
+    public Button getViewStatsButton() { return viewStatsButton; }
+    public Button getViewActiveUsersButton() { return viewActiveUsersButton; }
+    public Button getViewCommunityMessagesButton() { return viewCommunityMessagesButton; }
+    public Button getRefreshButton() { return refreshButton; }
 }
