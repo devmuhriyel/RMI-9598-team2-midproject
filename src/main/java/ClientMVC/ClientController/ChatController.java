@@ -108,12 +108,8 @@ public class ChatController {
         model.setFileStatusListener(status -> {
             Platform.runLater(() -> {
                 if (status.startsWith("SUCCESS:")) {
-                    String message = status.substring(8).trim();
-                    showStatusMessage("File operation successful: " + message);
                 } else if (status.startsWith("FAILURE:")) {
-                    String message = status.substring(8).trim();
                 } else {
-                    showStatusMessage("File status: " + status);
                 }
             });
         });
@@ -133,21 +129,15 @@ public class ChatController {
                     String receiver = chatJFXController.getReceiver().getText();
                     System.out.println("Receiver: " + receiver);
 
-                    // Show loading indicator
-                    showStatusMessage("Sending file: " + selectedFile.getName() + "...");
-
                     boolean success = false;
 
                     if (receiver.equals("Community Chat")) {
                         return;
                     } else if (receiver.startsWith("Group: ")) {
                         String groupName = receiver.substring(7);
-                        System.out.println("Sending file to group: " + groupName);
-
                         if (!model.canAccessGroup(groupName)) {
                             return;
                         }
-
                         success = model.sendGroupFile(selectedFile.getAbsolutePath(), groupName);
                     } else {
                         System.out.println("Sending file to user: " + receiver);
@@ -159,7 +149,6 @@ public class ChatController {
                     if (success) {
                         String fileMessage = "[FILE: " + selectedFile.getName() + "]";
                         chatJFXController.addChatMessage(model.getUsername(), fileMessage, model.getUsername());
-                        showStatusMessage("File sent successfully: " + selectedFile.getName());
                         System.out.println("File sent successfully: " + selectedFile.getName());
                     } else {
                         System.out.println("Failed to send file");
@@ -174,12 +163,6 @@ public class ChatController {
         });
     }
 
-
-    private void showStatusMessage(String message) {
-        Platform.runLater(() -> {
-            chatJFXController.addChatMessage("System", message, model.getUsername());
-        });
-    }
 
     private void handleFileOpen(String fileName) {
         Platform.runLater(() -> {
