@@ -22,13 +22,13 @@ public class LoginController {
 
         // Set up message listener for login responses
         model.setMessageListener(this::handleLoginResponse);
+
         initialize();
     }
 
     private void initialize() {
         loginJFXController.setLoginButtonListener(() -> {
             loginJFXController.getLoginButton().setDisable(true);
-
             String username = loginJFXController.getUsername();
             String password = loginJFXController.getPassword();
             model.login(username, password);
@@ -38,11 +38,9 @@ public class LoginController {
             Platform.runLater(() -> {
                 try {
                     LoginView.getPrimaryStage().close();
-
                     SignupView signupView = new SignupView();
                     Stage signupStage = new Stage();
                     signupView.start(signupStage);
-
                     // Pass the unified model to signup controller
                     new SignupController(model, signupView, signupView.getFXController());
                 } catch (Exception ex) {
@@ -62,10 +60,8 @@ public class LoginController {
                         HomeView homeView = new HomeView();
                         Stage stage1 = new Stage();
                         homeView.start(stage1);
-
                         // Pass the same unified model to home controller
                         new HomeController(model, homeView, homeView.getFXController());
-
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
