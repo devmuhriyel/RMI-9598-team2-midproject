@@ -87,12 +87,12 @@ public class AdminController {
 
     private void switchToGroups() {
         view.getTableView().getScene().getWindow().hide();
-        loadFXML("/FXMLFiles/AdminGroups.fxml", "Groups Page");
+        loadFXML("/FXMLFiles/AdminView/AdminGroups.fxml", "Groups Page");
     }
 
     private void switchToUsers() {
         view.getGroupsTableView().getScene().getWindow().hide();
-        loadFXML("/FXMLFiles/Admin.fxml", "Users Page");
+        loadFXML("/FXMLFiles/AdminView/Admin.fxml", "Users Page");
     }
 
 
@@ -203,7 +203,7 @@ public class AdminController {
         }
 
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/UserEdit.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/AdminView/UserEdit.fxml"));
             Parent root = loader.load();
 
             // Find fields from UserEdit.fxml
@@ -236,7 +236,7 @@ public class AdminController {
         }
 
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/GroupsEdit.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/AdminView/GroupsEdit.fxml"));
             Parent root = loader.load();
 
             // Find fields in EditGroups.fxml

@@ -24,6 +24,9 @@ public class UnifiedClientModel implements Runnable {
     private Consumer<String> newMessageListener;
     private Consumer<String> communityMessageListener;
     private Consumer<String> fileReceivedListener;
+    private Consumer<String> accountUpdateListener;
+
+
 
     public UnifiedClientModel(Socket socket, String username) throws IOException {
         this.socket = socket;
@@ -112,6 +115,18 @@ public class UnifiedClientModel implements Runnable {
                         Platform.runLater(() -> messageListener.accept(xmlResponse));
                     }
                     break;
+
+                case "USERNAME_CHANGED":
+                case "USERNAME_CHANGE_FAILED":
+                case "USERNAME_EXISTS":
+                case "PASSWORD_CHANGED":
+                case "PASSWORD_CHANGE_FAILED":
+                case "INVALID_OLD_PASSWORD":
+                    if (accountUpdateListener != null) {
+                        Platform.runLater(() -> accountUpdateListener.accept(xmlResponse));
+                    }
+                    break;
+
 
                 default:
                     System.out.println("Unhandled response type: " + reply);
@@ -706,6 +721,37 @@ public class UnifiedClientModel implements Runnable {
             e.printStackTrace();
         }
     }
+
+    public synchronized void changeUsername(String newUsername) {
+        try {
+            String xmlMessage = "<Request><type>CHANGE_USERNAME</type><content>" +
+                    username + "![]!" + newUsername + "</content></Request>";
+            System.out.println("Sending username change request: " + xmlMessage);
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+        } catch (IOException e) {
+            System.err.println("Error sending username change request: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    // Method to change password
+    public synchronized void changePassword(String oldPassword, String newPassword) {
+        try {
+            String xmlMessage = "<Request><type>CHANGE_PASSWORD</type><content>" +
+                    username + "![]!" + oldPassword + "![]!" + newPassword + "</content></Request>";
+            System.out.println("Sending password change request: " + xmlMessage);
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+        } catch (IOException e) {
+            System.err.println("Error sending password change request: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+
     public void setUsername(String username) {
         this.username = username;
     }
@@ -733,6 +779,11 @@ public class UnifiedClientModel implements Runnable {
     public void setFileReceivedListener(Consumer<String> fileReceivedListener) {
         this.fileReceivedListener = fileReceivedListener;
     }
+
+    public void setAccountUpdateListener(Consumer<String> accountUpdateListener) {
+        this.accountUpdateListener = accountUpdateListener;
+    }
+
 
     public List<String> getFriends() {
         return xmlHandler.getFriends(username);

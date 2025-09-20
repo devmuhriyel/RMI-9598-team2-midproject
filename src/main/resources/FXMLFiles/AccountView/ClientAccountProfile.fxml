@@ -68,7 +68,7 @@
                                 </HBox>
                                 <AnchorPane fx:id="usernameButtonContainer" prefHeight="49.0" prefWidth="390.0">
                                     <children>
-                                        <Button fx:id="saveUsernameButton" alignment="CENTER" contentDisplay="CENTER" layoutX="315.0" layoutY="12.0" mnemonicParsing="false" onAction="#hideChangeUsername" prefHeight="25.0" prefWidth="45.0" styleClass="theme-buttons" text="Save" />
+                                        <Button fx:id="saveUsernameButton" alignment="CENTER" contentDisplay="CENTER" layoutX="315.0" layoutY="12.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="45.0" styleClass="theme-buttons" text="Save" />
                                         <Button fx:id="cancelUsernameButton" alignment="CENTER" contentDisplay="CENTER" layoutX="240.0" layoutY="12.0" mnemonicParsing="false" onAction="#hideChangeUsername" prefHeight="25.0" prefWidth="70.0" styleClass="theme-buttons" text="Cancel" />
                                         <Label fx:id="usernameStatusLabel" alignment="CENTER" layoutX="90.0" layoutY="13.0" prefHeight="24.0" prefWidth="160.0" text=" " textAlignment="JUSTIFY" textFill="WHITE">
                                             <font>
@@ -141,7 +141,7 @@
                                 </HBox>
                                 <AnchorPane fx:id="passwordButtonContainer" prefHeight="49.0" prefWidth="390.0">
                                     <children>
-                                        <Button fx:id="savePasswordButton" alignment="CENTER" contentDisplay="CENTER" layoutX="315.0" layoutY="12.0" mnemonicParsing="false" onAction="#hideChangePassword" prefHeight="25.0" prefWidth="45.0" styleClass="theme-buttons" text="Save" />
+                                        <Button fx:id="savePasswordButton" alignment="CENTER" contentDisplay="CENTER" layoutX="315.0" layoutY="12.0" mnemonicParsing="false" onAction="#savePassword" prefHeight="25.0" prefWidth="45.0" styleClass="theme-buttons" text="Save" />
                                         <Button fx:id="cancelPasswordButton" alignment="CENTER" contentDisplay="CENTER" layoutX="240.0" layoutY="12.0" mnemonicParsing="false" onAction="#hideChangePassword" prefHeight="25.0" prefWidth="70.0" styleClass="theme-buttons" text="Cancel" />
                                         <Label fx:id="passwordStatusLabel" alignment="CENTER" layoutX="90.0" layoutY="13.0" prefHeight="24.0" prefWidth="160.0" text=" " textAlignment="JUSTIFY" textFill="WHITE">
                                             <font>

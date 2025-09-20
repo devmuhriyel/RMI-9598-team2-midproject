@@ -9,7 +9,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane fx:id="rightFrame" prefHeight="364.0" prefWidth="390.0" style="-fx-background-color: #202020;" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ClientMVC.ClientView.Account.AccountJFXController">
+<AnchorPane fx:id="rightFrame" prefHeight="364.0" prefWidth="390.0" style="-fx-background-color: #202020;" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1">
    <children>
       <Label fx:id="profileLabel" alignment="CENTER" contentDisplay="TOP" prefHeight="38.0" prefWidth="390.0" text="FRIENDS" textFill="WHITE">
          <font>
@@ -23,25 +23,8 @@
          <children>
             <ScrollPane fx:id="requestScrollPane" fitToWidth="true" layoutY="29.0" prefHeight="312.0" prefWidth="382.0" style="-fx-background: transparent; -fx-background-color: transparent;" vbarPolicy="ALWAYS">
                <content>
-                  <VBox fx:id="requestList" alignment="TOP_CENTER" prefHeight="312.0" prefWidth="366.0" spacing="15.0" style="-fx-padding: 15;">
-                     <children>
-                        <AnchorPane fx:id="friendRequestFrame" nodeOrientation="LEFT_TO_RIGHT" prefHeight="65.0" prefWidth="372.0">
-                           <children>
-                              <Button id="confirmRequestButton" fx:id="acceptRequestButton" layoutX="200.0" layoutY="20.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" styleClass="theme-color" stylesheets="@../../style.css" text="Confirm">
-                                 <effect>
-                                    <Bloom threshold="0.6" />
-                                 </effect>
-                              </Button>
-                              <Button id="rejectRequestButton" fx:id="rejectRequestButton" layoutX="270.0" layoutY="20.0" style="-fx-background-color: #525252; -fx-text-fill: white;" styleClass="theme-color" stylesheets="@../../style.css" text="Decline" />
-                              <Label fx:id="userLabel" layoutX="14.0" layoutY="24.0" prefHeight="17.0" prefWidth="182.0" text="..." textAlignment="RIGHT">
-                                 <font>
-                                    <Font name="Gill Sans MT" size="12.0" />
-                                 </font>
-                              </Label>
-                           </children>
-                        </AnchorPane>
-                     </children>
-                  </VBox>
+                   <VBox fx:id="requestList" alignment="TOP_CENTER" prefHeight="312.0" prefWidth="366.0" spacing="15.0" style="-fx-padding: 15;">
+                   </VBox>
                </content>
             </ScrollPane>
          </children>

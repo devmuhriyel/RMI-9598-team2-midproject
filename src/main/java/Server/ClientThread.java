@@ -350,6 +350,37 @@ public class ClientThread implements Runnable {
                     case "GROUP_FILE_SEND_FAILED":
                         sendMessage("<Response><reply>GROUP_FILE_SEND_FAILED</reply><body>Failed to send file to group</body></Response>");
                         break;
+
+                    case "USERNAME_CHANGED":
+                        String[] usernameChangeContent = extractContent(xmlMsg);
+                        newUsername = usernameChangeContent[1];
+
+                        // Update the client's username
+                        this.name = newUsername;
+
+                        sendMessage("<Response status=\"USERNAME_CHANGED\"><body>Username successfully changed to " + newUsername + "</body></Response>");
+                        break;
+
+                    case "USERNAME_CHANGE_FAILED":
+                        sendMessage("<Response status=\"USERNAME_CHANGE_FAILED\"><body>Failed to change username. Please try again.</body></Response>");
+                        break;
+
+                    case "USERNAME_EXISTS":
+                        sendMessage("<Response status=\"USERNAME_EXISTS\"><body>Username already exists. Please choose a different username.</body></Response>");
+                        break;
+
+                    case "PASSWORD_CHANGED":
+                        sendMessage("<Response status=\"PASSWORD_CHANGED\"><body>Password successfully changed.</body></Response>");
+                        break;
+
+                    case "PASSWORD_CHANGE_FAILED":
+                        sendMessage("<Response status=\"PASSWORD_CHANGE_FAILED\"><body>Failed to change password. Please try again.</body></Response>");
+                        break;
+
+                    case "INVALID_OLD_PASSWORD":
+                        sendMessage("<Response status=\"INVALID_OLD_PASSWORD\"><body>Current password is incorrect.</body></Response>");
+                        break;
+
                 }
             }
         } catch (Exception e) {

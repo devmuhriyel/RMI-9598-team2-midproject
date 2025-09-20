@@ -32,6 +32,7 @@ public class ConnectionJFXController {
     private AnchorPane titleBar;
 
     private Runnable connectButtonListener;
+
     private double xOffset = 0;
     private double yOffset = 0;
 
@@ -185,10 +186,6 @@ public class ConnectionJFXController {
     }
 
     //SETTERS AND GETTERS - Now returns raw strings for model to validate
-    public void setConnectButtonListener(Runnable listener) {
-        this.connectButtonListener = listener;
-    }
-
     public String getIpAddress() {
         return ipAddressTextField.getText(); // Return raw text, let model handle trimming
     }
@@ -203,19 +200,11 @@ public class ConnectionJFXController {
         return Integer.parseInt(portTextField.getText().trim());
     }
 
-    public Label getStatusLabel() {
-        return statusLabel;
+    public void setConnectButtonListener(Runnable listener) {
+        this.connectButtonListener = listener;
     }
 
     public Button getConnectButton() {
         return connectButton;
-    }
-
-    public TextField getIpAddressTextField() {
-        return ipAddressTextField;
-    }
-
-    public TextField getPortTextField() {
-        return portTextField;
     }
 }
