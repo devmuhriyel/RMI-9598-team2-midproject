@@ -36,6 +36,7 @@ public class AdminController {
         }
     }
 
+    // **CHANGED: Added constructor that accepts an existing admin model**
     public AdminController(AdminPageJFXController view, UnifiedAdminModel adminModel) {
         this.view = view;
         this.adminModel = adminModel;
@@ -226,6 +227,11 @@ public class AdminController {
     }
 
     private void switchToUsers() {
+        view.getGroupsTableView().getScene().getWindow().hide();
+        loadFXML("/FXMLFiles/Admin.fxml", "Admins Page");
+    }
+
+    private void loadFXML(String path, String title) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/Admin.fxml"));
             Parent root = loader.load();
@@ -259,6 +265,7 @@ public class AdminController {
             selected = view.getTableView().getSelectionModel().getSelectedItem();
         }
 
+        AdminModel selected = view.getTableView().getSelectionModel().getSelectedItem();
         if (selected != null) {
             Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
             confirmation.setTitle("Confirm Deletion");
@@ -410,6 +417,7 @@ public class AdminController {
             selected = view.getTableView().getSelectionModel().getSelectedItem();
         }
 
+        AdminModel selected = view.getTableView().getSelectionModel().getSelectedItem();
         if (selected != null) {
             adminModel.getUserStats(selected.getUsername());
         } else {
