@@ -14,6 +14,8 @@ public class ClientThread implements Runnable {
     private BufferedReader readMSG;
     private BufferedWriter writeMSG;
     private String name;
+    // **CHANGED: Added admin flag**
+    private boolean isAdmin = false;
     private static final ArrayList<ClientThread> clients = new ArrayList<>();
     private ServerXMLHandler xmlHandler = new ServerXMLHandler();
 
@@ -30,7 +32,27 @@ public class ClientThread implements Runnable {
             e.printStackTrace();
         }
     }
-
+    /*
+     * run():
+     * ------
+     * Purpose:
+     *   - Continuously listens for incoming XML messages from a connected client.
+     *
+     * How it works:
+     *   1. Reads each XML message from the client.
+     *   2. Uses xmlHandler to determine the type of request (login, register, chat, file, group, etc.).
+     *   3. Handles different cases such as:
+     *        - LOGIN / REGISTER (success or failed)
+     *        - Sending and receiving messages
+     *        - Friend requests (add, accept, decline, list)
+     *        - Group management (create, join, list, send messages/files)
+     *        - File transfers (private and group)
+     *   4. Sends back XML responses to the client with status and message.
+     *   5. Updates account XML files when needed (chat history, group history, file transfers).
+     *   6. Ensures only one active session per user (forces logout of duplicate logins).
+     *   7. Handles errors safely and logs them.
+     *   8. Cleans up resources and logs out the client when the connection ends.
+     */
     @Override
     public void run() {
         try {
@@ -40,6 +62,135 @@ public class ClientThread implements Runnable {
                 String reply = xmlHandler.readMessage(xmlMsg);
 
                 switch (reply) {
+                    // **CHANGED: Added admin login cases**
+                    case "ADMIN_LOGIN_SUCCESS":
+                        String adminUsername = extractUsername(xmlMsg);
+                        System.out.println("[DEBUG] Admin login successful for: " + adminUsername);
+
+                        // Check for existing admin sessions
+                        ClientThread existingAdmin = null;
+                        synchronized (clients) {
+                            for (ClientThread clientThread : clients) {
+                                if (clientThread.name != null && clientThread.name.equals(adminUsername)
+                                        && clientThread.isAdmin && clientThread != this) {
+                                    existingAdmin = clientThread;
+                                    System.out.println("[DEBUG] Found existing admin session: " + clientThread.name);
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (existingAdmin != null) {
+                            System.out.println("[DEBUG] Forcing logout of existing admin: " + existingAdmin.name);
+                            existingAdmin.sendMessage("<Response><reply>FORCE_LOGOUT</reply><body>Admin logged in from another location</body></Response>");
+                            try {
+                                existingAdmin.logOut();
+                            } catch (IOException e) {
+                                System.err.println("[ERROR] Failed to logout existing admin: " + e.getMessage());
+                                e.printStackTrace();
+                            }
+                        }
+
+                        this.name = adminUsername;
+                        this.isAdmin = true;
+                        System.out.println("[DEBUG] Set admin flags - name: " + this.name + ", isAdmin: " + this.isAdmin);
+
+                        String welcomeMessage = "<Response><reply>ADMIN_LOGIN_SUCCESS</reply><body>Welcome Admin " + this.name + "!</body></Response>";
+                        System.out.println("[DEBUG] Sending welcome message: " + welcomeMessage);
+                        sendMessage(welcomeMessage);
+                        break;
+
+                    case "ADMIN_LOGIN_FAILED":
+                        System.out.println("[DEBUG] Admin login failed for credentials");
+                        sendMessage("<Response><reply>ADMIN_LOGIN_FAILED</reply><body>Invalid admin credentials</body></Response>");
+                        break;
+
+                    // **CHANGED: Added admin operation cases**
+                    case "ALL_USERS":
+                        String usersData = xmlHandler.getAllUsersData();
+                        sendMessage("<Response><reply>ALL_USERS</reply><body>" + usersData + "</body></Response>");
+                        break;
+
+                    case "ALL_GROUPS":
+                        String groupsData = xmlHandler.getAllGroupsData();
+                        sendMessage("<Response><reply>ALL_GROUPS</reply><body>" + groupsData + "</body></Response>");
+                        break;
+
+                    case "SEARCH_USERS_RESULT":
+                        String[] searchContent = extractContent(xmlMsg);
+                        String userSearchResults = xmlHandler.searchUsersData(searchContent[0]);
+                        sendMessage("<Response><reply>SEARCH_USERS_RESULT</reply><body>" + userSearchResults + "</body></Response>");
+                        break;
+
+                    case "SEARCH_GROUPS_RESULT":
+                        String[] groupSearchContent = extractContent(xmlMsg);
+                        String groupSearchResults = xmlHandler.searchGroupsData(groupSearchContent[0]);
+                        sendMessage("<Response><reply>SEARCH_GROUPS_RESULT</reply><body>" + groupSearchResults + "</body></Response>");
+                        break;
+
+                    case "USER_DELETED":
+                        String[] deleteUserContent = extractContent(xmlMsg);
+                        sendMessage("<Response><reply>USER_DELETED</reply><body>User " + deleteUserContent[0] + " deleted successfully</body></Response>");
+                        break;
+
+                    case "USER_DELETE_FAILED":
+                        sendMessage("<Response><reply>USER_DELETE_FAILED</reply><body>Failed to delete user</body></Response>");
+                        break;
+
+                    case "GROUP_DELETED":
+                        String[] deleteGroupContent = extractContent(xmlMsg);
+                        sendMessage("<Response><reply>GROUP_DELETED</reply><body>Group deleted successfully</body></Response>");
+                        break;
+
+                    case "GROUP_DELETE_FAILED":
+                        sendMessage("<Response><reply>GROUP_DELETE_FAILED</reply><body>Failed to delete group</body></Response>");
+                        break;
+
+                    case "PASSWORD_CHANGED":
+                        String[] passwordContent = extractContent(xmlMsg);
+                        sendMessage("<Response><reply>PASSWORD_CHANGED</reply><body>Password changed for " + passwordContent[0] + "</body></Response>");
+                        break;
+
+                    case "PASSWORD_CHANGE_FAILED":
+                        sendMessage("<Response><reply>PASSWORD_CHANGE_FAILED</reply><body>Failed to change password</body></Response>");
+                        break;
+
+                    case "USER_CREATED":
+                        String[] createUserContent = extractContent(xmlMsg);
+                        sendMessage("<Response><reply>USER_CREATED</reply><body>User " + createUserContent[0] + " created successfully</body></Response>");
+                        break;
+
+                    case "USER_CREATE_FAILED":
+                        sendMessage("<Response><reply>USER_CREATE_FAILED</reply><body>Failed to create user</body></Response>");
+                        break;
+
+                    case "GROUP_CREATED":
+                        String[] createGroupContent = extractContent(xmlMsg);
+                        sendMessage("<Response><reply>GROUP_CREATED</reply><body>Group " + createGroupContent[0] + " created successfully</body></Response>");
+                        break;
+
+                    case "GROUP_CREATE_FAILED":
+                        sendMessage("<Response><reply>GROUP_CREATE_FAILED</reply><body>Failed to create group</body></Response>");
+                        break;
+
+                    case "USER_STATS":
+                        String[] statsContent = extractContent(xmlMsg);
+                        String userStats = xmlHandler.getUserStats(statsContent[0]);
+                        sendMessage("<Response><reply>USER_STATS</reply><body>" + userStats + "</body></Response>");
+                        break;
+
+                    case "ACTIVE_USERS":
+                        List<String> activeUsers = ServerXMLHandler.getActiveUsers();
+                        String activeUsersStr = String.join(",", activeUsers);
+                        sendMessage("<Response><reply>ACTIVE_USERS</reply><body>" + activeUsersStr + "</body></Response>");
+                        break;
+
+                    case "COMMUNITY_MESSAGES":
+                        List<String> communityMessages = ServerXMLHandler.getCommunityMessages();
+                        String messagesStr = String.join("![]!", communityMessages);
+                        sendMessage("<Response><reply>COMMUNITY_MESSAGES</reply><body>" + messagesStr + "</body></Response>");
+                        break;
+
                     case "LOGIN_SUCCESS":
                         String newUsername = extractUsername(xmlMsg);
                         ClientThread existingClient = null;
@@ -61,19 +212,20 @@ public class ClientThread implements Runnable {
                         }
 
                         this.name = newUsername;
+                        this.isAdmin = false;
                         sendMessage("<Response><reply>LOGIN_SUCCESS</reply><body>Welcome " + this.name + "!</body></Response>");
                         break;
 
                     case "LOGIN_FAILED":
-                        sendMessage("<Response status=\"LOGIN_FAILED\"><body>Invalid username or password</body></Response>");
+                        sendMessage("<Response><reply>LOGIN_FAILED</reply><body>Invalid username or password</body></Response>");
                         break;
 
                     case "REGISTER_SUCCESS":
-                        sendMessage("<Response status=\"REGISTER_SUCCESS\"><body>Registration successful</body></Response>");
+                        sendMessage("<Response><reply>REGISTER_SUCCESS</reply><body>Registration successful</body></Response>");
                         break;
 
                     case "REGISTER_FAILED":
-                        sendMessage("<Response status=\"REGISTER_FAILED\"><body>Registration failed</body></Response>");
+                        sendMessage("<Response><reply>REGISTER_FAILED</reply><body>Registration failed</body></Response>");
                         break;
 
                     case "GET_CHAT_HISTORY":
@@ -97,49 +249,49 @@ public class ClientThread implements Runnable {
                     case "ADD_FRIEND_REQUEST":
                         String[] addContent = extractContent(xmlMsg);
                         if (xmlHandler.addFriendRequest(addContent[0], addContent[1])) {
-                            sendMessage("<Response status=\"FRIEND_REQUEST_SENT\"><body>Request sent to " + addContent[1] + "</body></Response>");
+                            sendMessage("<Response><reply>FRIEND_REQUEST_SENT</reply><body>Request sent to " + addContent[1] + "</body></Response>");
                         } else {
-                            sendMessage("<Response status=\"FRIEND_REQUEST_FAILED\"><body>Failed to send request</body></Response>");
+                            sendMessage("<Response><reply>FRIEND_REQUEST_FAILED</reply><body>Failed to send request</body></Response>");
                         }
                         break;
 
                     case "LIST_REQUESTS":
                         String[] listContent = extractContent(xmlMsg);
                         java.util.List<String> requests = xmlHandler.listFriendRequests(listContent[0]);
-                        sendMessage("<Response status=\"REQUEST_LIST\"><body>" + String.join(",", requests) + "</body></Response>");
+                        sendMessage("<Response><reply>REQUEST_LIST</reply><body>" + String.join(",", requests) + "</body></Response>");
                         break;
 
                     case "ACCEPT_REQUEST":
                         String[] acceptContent = extractContent(xmlMsg);
                         if (xmlHandler.acceptFriendRequest(acceptContent[0], acceptContent[1])) {
-                            sendMessage("<Response status=\"REQUEST_ACCEPTED\"><body>You are now friends with " + acceptContent[1] + "</body></Response>");
+                            sendMessage("<Response><reply>REQUEST_ACCEPTED</reply><body>You are now friends with " + acceptContent[1] + "</body></Response>");
                         } else {
-                            sendMessage("<Response status=\"REQUEST_ACCEPT_FAILED\"><body>Failed to accept request</body></Response>");
+                            sendMessage("<Response><reply>REQUEST_ACCEPT_FAILED</reply><body>Failed to accept request</body></Response>");
                         }
                         break;
 
                     case "DECLINE_REQUEST":
                         String[] declineContent = extractContent(xmlMsg);
                         if (xmlHandler.declineFriendRequest(declineContent[0], declineContent[1])) {
-                            sendMessage("<Response status=\"REQUEST_DECLINED\"><body>Request from " + declineContent[1] + " declined</body></Response>");
+                            sendMessage("<Response><reply>REQUEST_DECLINED</reply><body>Request from " + declineContent[1] + " declined</body></Response>");
                         } else {
-                            sendMessage("<Response status=\"REQUEST_DECLINE_FAILED\"><body>Failed to decline request</body></Response>");
+                            sendMessage("<Response><reply>REQUEST_DECLINE_FAILED</reply><body>Failed to decline request</body></Response>");
                         }
                         break;
 
                     case "CREATE_GROUP":
-                        String[] createGroupContent = extractContent(xmlMsg);
+                        createGroupContent = extractContent(xmlMsg);
                         if (xmlHandler.createGroup(createGroupContent[0], createGroupContent[1])) {
-                            sendMessage("<Response status=\"GROUP_CREATED\"><body>Group " + createGroupContent[0] + " created successfully</body></Response>");
+                            sendMessage("<Response><reply>GROUP_CREATED</reply><body>Group " + createGroupContent[0] + " created successfully</body></Response>");
                         } else {
-                            sendMessage("<Response status=\"GROUP_CREATE_FAILED\"><body>Failed to create group</body></Response>");
+                            sendMessage("<Response><reply>GROUP_CREATE_FAILED</reply><body>Failed to create group</body></Response>");
                         }
                         break;
 
                     case "JOIN_GROUP":
                         String[] joinGroupContent = extractContent(xmlMsg);
                         if (xmlHandler.joinGroupWithHistory(joinGroupContent[0], joinGroupContent[1])) {
-                            sendMessage("<Response status=\"GROUP_JOINED\"><body>Joined group " + joinGroupContent[0] + " with full chat history</body></Response>");
+                            sendMessage("<Response><reply>GROUP_JOINED</reply><body>Joined group " + joinGroupContent[0] + " with full chat history</body></Response>");
                             try {
                                 File userFile = new File("src/main/resources/XMLFiles/" + joinGroupContent[1] + "Account.xml");
                                 if (userFile.exists()) {
@@ -152,14 +304,14 @@ public class ClientThread implements Runnable {
                                 e.printStackTrace();
                             }
                         } else {
-                            sendMessage("<Response status=\"GROUP_JOIN_FAILED\"><body>Failed to join group</body></Response>");
+                            sendMessage("<Response><reply>GROUP_JOIN_FAILED</reply><body>Failed to join group</body></Response>");
                         }
                         break;
 
                     case "LIST_GROUPS":
                         String[] listGroupsContent = extractContent(xmlMsg);
                         java.util.List<String> groups = xmlHandler.getUserGroups(listGroupsContent[0]);
-                        sendMessage("<Response status=\"GROUPS_LIST\"><body>" + String.join(",", groups) + "</body></Response>");
+                        sendMessage("<Response><reply>GROUPS_LIST</reply><body>" + String.join(",", groups) + "</body></Response>");
                         break;
 
                     case "SEND_GROUP_MESSAGE":
@@ -169,7 +321,7 @@ public class ClientThread implements Runnable {
 
                         System.out.println("Processing group message from " + groupSender + " to group " + targetGroup);
                         if (!xmlHandler.isUserInGroup(groupSender, targetGroup)) {
-                            sendMessage("<Response status=\"GROUP_ACCESS_DENIED\"><body>You are not a member of group " + targetGroup + "</body></Response>");
+                            sendMessage("<Response><reply>GROUP_ACCESS_DENIED</reply><body>You are not a member of group " + targetGroup + "</body></Response>");
                             System.out.println("Access denied: " + groupSender + " is not a member of group " + targetGroup);
                             break;
                         }
@@ -177,7 +329,7 @@ public class ClientThread implements Runnable {
                         if (targetGroup.equals("Project Team") || targetGroup.equals("Study Group")) {
                             List<String> actualUserGroups = xmlHandler.getUserGroups(groupSender);
                             if (!actualUserGroups.contains(targetGroup)) {
-                                sendMessage("<Response status=\"GROUP_NOT_FOUND\"><body>Group " + targetGroup + " does not exist or you are not a member</body></Response>");
+                                sendMessage("<Response><reply>GROUP_NOT_FOUND</reply><body>Group " + targetGroup + " does not exist or you are not a member</body></Response>");
                                 System.out.println("Group access denied: " + targetGroup + " is not a real group for user " + groupSender);
                                 break;
                             }
@@ -408,7 +560,7 @@ public class ClientThread implements Runnable {
     private void broadcastCommunityMessage(String message) {
         synchronized (clients) {
             for (ClientThread c : clients) {
-                if (c.socket.isConnected() && c.name != null) {
+                if (c.socket.isConnected() && c.name != null && !c.isAdmin) {
                     try {
                         c.writeMSG.write(message);
                         c.writeMSG.newLine();
@@ -422,6 +574,24 @@ public class ClientThread implements Runnable {
             }
         }
     }
+
+    /*
+     * Helper Methods Overview:
+     * ------------------------
+     * - sendMessage(msg): Sends a message to the client safely.
+     * - getSender(xml): Extracts the sender’s username from an XML message.
+     * - getReceiver(xml): Extracts the receiver’s username from an XML message.
+     * - getGroupName(xml): Extracts the group name from a group message.
+     * - getGroupMessage(xml): Extracts the actual message content from a group message.
+     * - getCommunityMessage(xml): Extracts the community message content.
+     * - extractUsername(xml): Extracts only the username part from the XML message.
+     * - extractContent(xml): Returns all parts of the <content> element as an array.
+     * - logOut(): Removes the client from the connected list and closes the socket.
+     *
+     * In short:
+     * These methods parse XML strings, extract useful info (like sender, receiver,
+     * group name, or message), and handle client communication and logout.
+     */
     private void sendMessage(String msg) {
         try {
             writeMSG.write(msg.trim());
@@ -483,6 +653,10 @@ public class ClientThread implements Runnable {
     }
 
     public void logOut() throws IOException {
+        // **CHANGED: Remove user from active users when logging out**
+        if (name != null && !isAdmin) {
+            ServerXMLHandler.removeActiveUser(name);
+        }
         synchronized (clients) {
             clients.remove(this);
         }

@@ -86,46 +86,8 @@ public class SignupJFXController {
         alert.setContentText(message);
         alert.showAndWait();
     }
-
-    public void showErrorAlert(String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Signup Error");
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
-
-    public void showSuccessAlert(String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Signup Success");
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
-
     public Button getSignupButton() {
         return signupButton;
     }
 
-    // Clear all fields method
-    public void clearFields() {
-        usernameField.clear();
-        firstNameField.clear();
-        lastNameField.clear();
-        emailField.clear();
-        passwordField.clear();
-        termsCheckbox.setSelected(false);
-    }
-
-    // Enable/disable form
-    public void setFormEnabled(boolean enabled) {
-        usernameField.setDisable(!enabled);
-        firstNameField.setDisable(!enabled);
-        lastNameField.setDisable(!enabled);
-        emailField.setDisable(!enabled);
-        passwordField.setDisable(!enabled);
-        termsCheckbox.setDisable(!enabled);
-        signupButton.setDisable(!enabled);
-        signInLink.setDisable(!enabled);
-    }
 }

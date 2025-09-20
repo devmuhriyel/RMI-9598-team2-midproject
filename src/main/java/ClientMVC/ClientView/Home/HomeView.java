@@ -4,20 +4,11 @@ import ClientMVC.ClientView.Login.LoginJFXController;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
-
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.TextField;
-import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 public class HomeView extends Application {
-    private Button sendButton;
-    private TextField messageField;
-    private TextField searchField;
-    private TextField searchButton;
-    private VBox messagesArea;
     private HomeJFXController homeJFXController;
     private LoginJFXController loginJFXController;
     private static HomeView instance;
@@ -57,6 +48,7 @@ public class HomeView extends Application {
             }
         });
     }
+
     public void setUsername(String username) {
         if (homeJFXController != null) {
             homeJFXController.setUserLabel(username);

@@ -29,10 +29,28 @@ public class ConnectionModel {
             this.message = message;
         }
 
-        public ConnectionStatus getStatus() { return status; }
-        public String getMessage() { return message; }
-    }
+        public ConnectionStatus getStatus() {
+            return status;
+        }
 
+        public String getMessage() {
+            return message;
+        }
+    }
+    /*
+     * connect method:
+     * 1. Lock the connection to avoid race conditions between threads.
+     * 2. Reset the state and close any existing socket before starting a new connection attempt.
+     * 3. Validate that the IP address and port text fields are not empty.
+     * 4. Trim input values to remove accidental whitespace.
+     * 5. Validate that the port is a number; if not, return an INVALID_PORT_FORMAT error.
+     * 6. Check that the port number is within the valid range (1–65535).
+     * 7. Validate that the IP matches a valid IPv4 address pattern.
+     * 8. If validations pass, attempt to create a new socket connection with the given IP and port.
+     * 9. If successful → set connected state to true and return SUCCESS.
+     * 10. If connection fails → return CONNECTION_FAILED with the error message.
+     * 11. Finally, unlock the connection lock whether success or failure.
+     */
     public ConnectionResult connect(String ip, String portText) {
         connectionLock.lock();
         try {
@@ -105,8 +123,4 @@ public class ConnectionModel {
             connectionLock.unlock();
         }
     }
-
-    public boolean isConnected() { return connected; }
-    public String getIp() { return ip; }
-    public int getPort() { return port; }
 }

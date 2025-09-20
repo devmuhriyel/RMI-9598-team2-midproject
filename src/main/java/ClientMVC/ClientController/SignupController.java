@@ -3,7 +3,6 @@ package ClientMVC.ClientController;
 import ClientMVC.ClientModel.UnifiedClientModel;
 import ClientMVC.ClientView.Signup.SignupJFXController;
 import ClientMVC.ClientView.Signup.SignupView;
-import ClientMVC.ClientView.Login.LoginView;
 import ClientMVC.UserXMLHandler;
 import javafx.application.Platform;
 import javafx.stage.Stage;
@@ -121,7 +120,7 @@ public class SignupController {
                     fxController.showAlert("Registration successful! Please login with your new account.");
                     fxController.getSignupButton().setDisable(false);
 
-                    // Navigate back to login
+                    // Navigate back to Log in
                     try {
                         view.getStage().hide();
                         Stage loginStage = ClientMVC.ClientView.Login.LoginView.getPrimaryStage();

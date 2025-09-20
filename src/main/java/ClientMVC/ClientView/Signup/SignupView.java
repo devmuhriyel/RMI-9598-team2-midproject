@@ -27,7 +27,6 @@ public class SignupView extends Application {
         return primaryStage;
     }
 
-
     public SignupJFXController getFXController() {
         return fxController;
     }
