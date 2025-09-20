@@ -2,6 +2,7 @@ package Server;
 
 import org.w3c.dom.*;
 import org.xml.sax.SAXException;
+
 import javax.xml.parsers.*;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
@@ -25,15 +26,167 @@ public class ServerXMLHandler {
         File accountFile = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
         if (accountFile.exists()) {
             return;
+    private static final String ADMIN_FILE_PATH = "src/main/resources/XMLFiles/AdminCredentials.xml";
+    private static List<String> communityMessages = new ArrayList<>();
+    private static List<String> activeUsers = new ArrayList<>();
+    public void registerUser(String username, String password) throws Exception {
+        File file = new File(FILE_PATH);
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document doc;
+
+        if (file.exists()) {
+            doc = builder.parse(file);
+        } else {
+            doc = builder.newDocument();
+            Element root = doc.createElement("users");
+            doc.appendChild(root);
         }
+
+        Element root = doc.getDocumentElement();
+        Element user = doc.createElement("user");
+
+        Element uname = doc.createElement("username");
+        uname.appendChild(doc.createTextNode(username));
+        user.appendChild(uname);
+
+        Element pass = doc.createElement("password");
+        pass.appendChild(doc.createTextNode(password));
+        user.appendChild(pass);
+
+        root.appendChild(user);
+
+        TransformerFactory tf = TransformerFactory.newInstance();
+        Transformer transformer = tf.newTransformer();
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        transformer.transform(new DOMSource(doc), new StreamResult(file));
+        createUserAccountXML(username);
+    }
+
+    public static boolean validateUser(String username, String password) throws Exception {
+        File file = new File(FILE_PATH);
+
+        if (!file.exists()) return false;
 
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
-        Document doc = builder.newDocument();
-        Element root = doc.createElement("user");
-        doc.appendChild(root);
-        saveDocument(doc, accountFile);
-        System.out.println("Created account XML file for user: " + username);
+        Document doc = builder.parse(file);
+
+        NodeList users = doc.getElementsByTagName("user");
+        for (int i = 0; i < users.getLength(); i++) {
+            Node user = users.item(i);
+            if (user.getNodeType() == Node.ELEMENT_NODE) {
+                Element e = (Element) user;
+
+                String uname = e.getElementsByTagName("username").item(0).getTextContent();
+                String pass = e.getElementsByTagName("password").item(0).getTextContent();
+
+                if (uname.equals(username) && pass.equals(password)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    public static boolean validateAdmin(String username, String password) {
+        try {
+            // First try to validate from Users.xml (for users with admin role)
+            File file = new File(ADMIN_FILE_PATH);
+            if (file.exists()) {
+                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                DocumentBuilder builder = factory.newDocumentBuilder();
+                Document doc = builder.parse(file);
+
+                NodeList users = doc.getElementsByTagName("user");
+                for (int i = 0; i < users.getLength(); i++) {
+                    Element user = (Element) users.item(i);
+                    String uname = user.getElementsByTagName("username").item(0).getTextContent();
+                    String pass = user.getElementsByTagName("password").item(0).getTextContent();
+
+                    // Check if user has admin role
+                    NodeList roleNodes = user.getElementsByTagName("role");
+                    boolean hasAdminRole = false;
+                    if (roleNodes.getLength() > 0) {
+                        String role = roleNodes.item(0).getTextContent();
+                        hasAdminRole = "admin".equals(role);
+                    }
+
+                    if (uname.equals(username) && pass.equals(password) && hasAdminRole) {
+                        System.out.println("Admin validated from Users.xml: " + username);
+                        return true;
+                    }
+                }
+            }
+
+            // Fallback to separate admin credentials file
+            File adminFile = new File(ADMIN_FILE_PATH);
+            if (!adminFile.exists()) {
+                createDefaultAdminFile();
+            }
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(adminFile);
+
+            NodeList admins = doc.getElementsByTagName("admin");
+            for (int i = 0; i < admins.getLength(); i++) {
+                Element admin = (Element) admins.item(i);
+                String adminUsername = admin.getElementsByTagName("username").item(0).getTextContent();
+                String adminPassword = admin.getElementsByTagName("password").item(0).getTextContent();
+
+                if (adminUsername.equals(username) && adminPassword.equals(password)) {
+                    System.out.println("Admin validated from AdminCredentials.xml: " + username);
+                    return true;
+                }
+            }
+
+            System.out.println("Admin validation failed for: " + username);
+            return false;
+
+        } catch (Exception e) {
+            System.err.println("Error validating admin credentials: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private static void createDefaultAdminFile() {
+        try {
+            // Create directory if it doesn't exist
+            File adminFile = new File(ADMIN_FILE_PATH);
+            adminFile.getParentFile().mkdirs();
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.newDocument();
+
+            Element root = doc.createElement("admins");
+            doc.appendChild(root);
+
+            Element admin = doc.createElement("admin");
+
+            Element username = doc.createElement("username");
+            username.appendChild(doc.createTextNode("admin"));
+            admin.appendChild(username);
+
+            Element password = doc.createElement("password");
+            password.appendChild(doc.createTextNode("admin123"));
+            admin.appendChild(password);
+
+            root.appendChild(admin);
+
+            TransformerFactory tf = TransformerFactory.newInstance();
+            Transformer transformer = tf.newTransformer();
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+            transformer.transform(new DOMSource(doc), new StreamResult(adminFile));
+
+            System.out.println("Created default admin credentials file: " + ADMIN_FILE_PATH);
+            System.out.println("Default admin credentials: admin/admin123");
+        } catch (Exception e) {
+            System.err.println("Error creating default admin file: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
     /*
      * This method reads and processes an incoming XML message.
@@ -52,10 +205,102 @@ public class ServerXMLHandler {
         String type = doc.getElementsByTagName("type").item(0).getTextContent();
         String reply = "";
 
-        // FIX: Use the correct delimiter consistently
         String[] content = doc.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
 
-        switch (type){
+        switch (type) {
+            // **CHANGED: Added admin login case**
+            case "ADMIN_LOGIN":
+                String adminUsername = content[0];
+                String adminPassword = content[1];
+                if (validateAdmin(adminUsername, adminPassword)) {
+                    reply = "ADMIN_LOGIN_SUCCESS";
+                } else {
+                    reply = "ADMIN_LOGIN_FAILED";
+                }
+                break;
+
+            // **CHANGED: Added admin operation cases**
+            case "GET_ALL_USERS":
+                reply = "ALL_USERS";
+                break;
+
+            case "GET_ALL_GROUPS":
+                reply = "ALL_GROUPS";
+                break;
+
+            case "DELETE_USER":
+                String userToDelete = content[0];
+                if (deleteUserFromXML(FILE_PATH, userToDelete)) {
+                    reply = "USER_DELETED";
+                } else {
+                    reply = "USER_DELETE_FAILED";
+                }
+                break;
+
+            case "DELETE_GROUP":
+                String groupToDelete = content[0];
+                String groupOwner = content[1];
+                if (deleteGroupFromXML(FILE_PATH, groupToDelete, groupOwner)) {
+                    reply = "GROUP_DELETED";
+                } else {
+                    reply = "GROUP_DELETE_FAILED";
+                }
+                break;
+
+            case "CHANGE_USER_PASSWORD":
+                String targetUser = content[0];
+                String newPassword = content[1];
+                if (changeUserPassword(targetUser, newPassword)) {
+                    reply = "PASSWORD_CHANGED";
+                } else {
+                    reply = "PASSWORD_CHANGE_FAILED";
+                }
+                break;
+
+            case "GET_USER_STATS":
+                String statsUser = content[0];
+                reply = "USER_STATS";
+                break;
+
+            case "SEARCH_USERS":
+                String userKeyword = content[0];
+                reply = "SEARCH_USERS_RESULT";
+                break;
+
+            case "SEARCH_GROUPS":
+                String groupKeyword = content[0];
+                reply = "SEARCH_GROUPS_RESULT";
+                break;
+
+            case "CREATE_USER":
+                String newUsername = content[0];
+                String newUserPassword = content[1];
+                try {
+                    registerUser(newUsername, newUserPassword);
+                    reply = "USER_CREATED";
+                } catch (Exception e) {
+                    reply = "USER_CREATE_FAILED";
+                }
+                break;
+
+            case "CREATE_GROUP_ADMIN":
+                String newGroupName = content[0];
+                String groupCreator = content[1];
+                if (createGroup(newGroupName, groupCreator)) {
+                    reply = "GROUP_CREATED";
+                } else {
+                    reply = "GROUP_CREATE_FAILED";
+                }
+                break;
+
+            case "GET_ACTIVE_USERS":
+                reply = "ACTIVE_USERS";
+                break;
+
+            case "GET_COMMUNITY_MESSAGES":
+                reply = "COMMUNITY_MESSAGES";
+                break;
+
             case "LOGIN":
                 String username = content[0];
                 String password = content[1];
@@ -74,6 +319,8 @@ public class ServerXMLHandler {
                         if (uname.equals(username) && pass.equals(password)) {
                             reply = "LOGIN_SUCCESS";
                             found = true;
+                            // **CHANGED: Add user to active users list**
+                            addActiveUser(username);
                             break;
                         }
                     }
@@ -151,6 +398,10 @@ public class ServerXMLHandler {
                 break;
 
             case "SEND_COMMUNITY_MESSAGE":
+                // **CHANGED: Handle community messages for admin monitoring**
+                String communitySender = content[0];
+                String communityMsg = content[1];
+                addCommunityMessage(communitySender, communityMsg);
                 reply = "SEND_COMMUNITY_MESSAGE";
                 break;
 
@@ -195,12 +446,10 @@ public class ServerXMLHandler {
                         System.out.println("Processing file: " + fileName + " (" + fileExtension + ")");
                         System.out.println("Content length: " + fileContent.length() + " characters");
 
-                        // Store file data for BOTH sender and receiver
                         boolean senderFileStored = storeFileData(fileSender, fileSender, fileName, fileExtension, fileContent);
                         boolean receiverFileStored = storeFileData(fileReceiver, fileSender, fileName, fileExtension, fileContent);
 
                         if (senderFileStored && receiverFileStored) {
-                            // Add file message to both sender and receiver chat history
                             System.out.println("Adding file message to sender: " + fileSender);
                             updateXMLs(fileSender, fileSender, fileReceiver, fileMessage);
 
@@ -255,7 +504,6 @@ public class ServerXMLHandler {
                             break;
                         }
 
-                        // Process file for all group members (including sender)
                         boolean allFilesStored = true;
                         for (String member : groupMembers) {
                             boolean memberFileStored = storeFileData(member, groupFileSender, groupFileName, groupFileExtension, groupFileContent);
@@ -299,8 +547,6 @@ public class ServerXMLHandler {
      */
     private boolean storeFileData(String username, String sender, String fileName, String fileExtension, String base64Content) {
         try {
-
-            // Validate inputs
             if (username == null || username.trim().isEmpty()) {
                 System.err.println("Invalid username for file storage");
                 return false;
@@ -391,6 +637,167 @@ public class ServerXMLHandler {
             return false;
         }
     }
+    public String getAllUsersData() {
+        try {
+            File file = new File(FILE_PATH);
+            if (!file.exists()) return "";
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+
+            NodeList users = doc.getElementsByTagName("user");
+            StringBuilder result = new StringBuilder();
+
+            for (int i = 0; i < users.getLength(); i++) {
+                Element user = (Element) users.item(i);
+                String username = user.getElementsByTagName("username").item(0).getTextContent();
+                String password = user.getElementsByTagName("password").item(0).getTextContent();
+
+                if (i > 0) result.append(",");
+                result.append(username).append("![]!").append(password);
+            }
+
+            return result.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+    public String getAllGroupsData() {
+        try {
+            Document doc = loadDocument();
+            NodeList groups = doc.getElementsByTagName("group");
+            StringBuilder result = new StringBuilder();
+
+            for (int i = 0; i < groups.getLength(); i++) {
+                Element group = (Element) groups.item(i);
+                String groupName = group.getAttribute("name");
+                String creator = group.getAttribute("creator");
+
+                if (i > 0) result.append(",");
+                result.append(groupName).append("![]!").append(creator);
+            }
+
+            return result.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+    public String searchUsersData(String keyword) {
+        try {
+            String allUsers = getAllUsersData();
+            if (allUsers.isEmpty()) return "";
+
+            String[] users = allUsers.split(",");
+            StringBuilder result = new StringBuilder();
+            boolean first = true;
+
+            for (String user : users) {
+                String[] parts = user.split("!\\[]!");
+                if (parts.length >= 2 && parts[0].toLowerCase().contains(keyword.toLowerCase())) {
+                    if (!first) result.append(",");
+                    result.append(user);
+                    first = false;
+                }
+            }
+
+            return result.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+    public String searchGroupsData(String keyword) {
+        try {
+            String allGroups = getAllGroupsData();
+            if (allGroups.isEmpty()) return "";
+
+            String[] groups = allGroups.split(",");
+            StringBuilder result = new StringBuilder();
+            boolean first = true;
+
+            for (String group : groups) {
+                String[] parts = group.split("!\\[]!");
+                if (parts.length >= 2 && parts[0].toLowerCase().contains(keyword.toLowerCase())) {
+                    if (!first) result.append(",");
+                    result.append(group);
+                    first = false;
+                }
+            }
+
+            return result.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+    public boolean changeUserPassword(String username, String newPassword) {
+        try {
+            File file = new File(FILE_PATH);
+            if (!file.exists()) return false;
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+
+            NodeList users = doc.getElementsByTagName("user");
+            for (int i = 0; i < users.getLength(); i++) {
+                Element user = (Element) users.item(i);
+                String uname = user.getElementsByTagName("username").item(0).getTextContent();
+
+                if (uname.equals(username)) {
+                    user.getElementsByTagName("password").item(0).setTextContent(newPassword);
+
+                    TransformerFactory tf = TransformerFactory.newInstance();
+                    Transformer transformer = tf.newTransformer();
+                    transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                    transformer.transform(new DOMSource(doc), new StreamResult(file));
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    public String getUserStats(String username) {
+        try {
+            File accountFile = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
+            if (!accountFile.exists()) {
+                return "User account not found";
+            }
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(accountFile);
+
+            int friendCount = doc.getElementsByTagName("friend").getLength();
+            int groupCount = doc.getElementsByTagName("group").getLength();
+
+            // Count total messages sent
+            int messagesSent = 0;
+            NodeList chatHistories = doc.getElementsByTagName("chathistory");
+            for (int i = 0; i < chatHistories.getLength(); i++) {
+                Element chatHistory = (Element) chatHistories.item(i);
+                NodeList chats = chatHistory.getElementsByTagName("chat");
+                for (int j = 0; j < chats.getLength(); j++) {
+                    Element chat = (Element) chats.item(j);
+                    String sender = chat.getElementsByTagName("sender").item(0).getTextContent();
+                    if (sender.equals(username)) {
+                        messagesSent++;
+                    }
+                }
+            }
+
+            return "Friends: " + friendCount + ", Groups: " + groupCount + ", Messages Sent: " + messagesSent;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Error retrieving stats";
+        }
+    }
+
 
     private void copyGroupChatHistoryToNewMember(String groupName, String newMemberUsername) {
         try {
@@ -573,6 +980,7 @@ public class ServerXMLHandler {
      * and available chat history (copied from another member’s account).
      * Finally, it saves the updated file so the user’s account stays consistent with group memberships.
      */
+
     private void ensureUserHasGroupInAccount(String username, String groupName) {
         try {
             File file = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
@@ -924,6 +1332,23 @@ public class ServerXMLHandler {
         }
     }
 
+    public String getSender(String xmlString) throws ParserConfigurationException, IOException, SAXException {
+        DocumentBuilderFactory stringFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder stringBuilder = stringFactory.newDocumentBuilder();
+        Document stringDoc = stringBuilder.parse(new ByteArrayInputStream(xmlString.getBytes("UTF-8")));
+        stringDoc.getDocumentElement().normalize();
+        String[] contentTag = stringDoc.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
+        return contentTag[0];
+    }
+
+    public String getReceiver(String xmlString) throws ParserConfigurationException, IOException, SAXException {
+        DocumentBuilderFactory stringFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder stringBuilder = stringFactory.newDocumentBuilder();
+        Document stringDoc = stringBuilder.parse(new ByteArrayInputStream(xmlString.getBytes("UTF-8")));
+        stringDoc.getDocumentElement().normalize();
+        String[] contentTag = stringDoc.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
+        return contentTag[1];
+    }
     public synchronized boolean addFriendRequest(String fromUser, String toUser) {
         try {
             Document doc = loadDocument();
@@ -1445,6 +1870,57 @@ public class ServerXMLHandler {
      * Returns true if the group was successfully deleted, otherwise returns false.
      * Includes exception handling to catch and print any parsing, transformation, or I/O errors.
      */
+    public static void addActiveUser(String username) {
+        synchronized (activeUsers) {
+            if (!activeUsers.contains(username)) {
+                activeUsers.add(username);
+            }
+        }
+    }
+    public static void removeActiveUser(String username) {
+        synchronized (activeUsers) {
+            activeUsers.remove(username);
+        }
+    }
+    public static List<String> getActiveUsers() {
+        synchronized (activeUsers) {
+            return new ArrayList<>(activeUsers);
+        }
+    }
+    public static void addCommunityMessage(String sender, String message) {
+        synchronized (communityMessages) {
+            String formattedMessage = sender + ": " + message + " [" +
+                    java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "]";
+            communityMessages.add(formattedMessage);
+            // Keep only last 100 messages
+            if (communityMessages.size() > 100) {
+                communityMessages.remove(0);
+            }
+        }
+    }
+    public static List<String> getCommunityMessages() {
+        synchronized (communityMessages) {
+            return new ArrayList<>(communityMessages);
+        }
+    }
+
+    private void createUserAccountXML(String username) throws Exception {
+        File accountFile = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
+        if (accountFile.exists()) {
+            return;
+        }
+
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document doc = builder.newDocument();
+        Element root = doc.createElement("user");
+        doc.appendChild(root);
+        saveDocument(doc, accountFile);
+        System.out.println("Created account XML file for user: " + username);
+    }
+
+
+
     public static boolean deleteGroupFromXML(String filePath, String groupName, String owner) {
         try {
             File xmlFile = new File(filePath);

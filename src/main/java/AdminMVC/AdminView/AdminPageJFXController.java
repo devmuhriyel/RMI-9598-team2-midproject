@@ -1,4 +1,4 @@
-package ClientMVC.ClientView.Admin;
+package AdminMVC.AdminView;
 
 import ClientMVC.ClientModel.AdminModel;
 import javafx.fxml.FXML;
@@ -33,9 +33,17 @@ public class AdminPageJFXController {
     @FXML private Button groupsButton;        // Switch to Groups
     @FXML private Button backToUsersButton;   // Switch to Users
 
+    // Edit buttons
     @FXML private Button editButton;
-
     @FXML private Button groupEditButton;
+
+    // **CHANGED: Added new admin operation buttons**
+    @FXML private Button createUserButton;
+    @FXML private Button createGroupButton;
+    @FXML private Button viewStatsButton;
+    @FXML private Button viewActiveUsersButton;
+    @FXML private Button viewCommunityMessagesButton;
+    @FXML private Button refreshButton;
 
     @FXML
     private void initialize() {
@@ -53,40 +61,28 @@ public class AdminPageJFXController {
     }
 
     // --- Getters for Controller ---
-    public TableView<AdminModel> getTableView() {
-        return tableView;
-    }
-    public TableView<AdminModel> getGroupsTableView() {
-        return groupsTableView;
-    }
-    public TextField getSearchField() {
-        return searchField;
-    }
-    public Button getSearchButton() {
-        return searchButton;
-    }
-    public TextField getGroupSearchField() {
-        return groupSearchField;
-    }
-    public Button getGroupSearchButton() {
-        return groupSearchButton;
-    }
-    public Button getGroupsButton() {
-        return groupsButton;
-    }
-    public Button getBackToUsersButton() {
-        return backToUsersButton;
-    }
-    public Button getDeleteButton() {
-        return deleteButton;
-    }
-    public Button getGroupDeleteButton() {
-        return groupDeleteButton;
-    }
-    public Button getEditButton() {
-        return editButton;
-    }
-    public Button getGroupsEditButton() {
-        return groupEditButton;
-    }
+    public TableView<AdminModel> getTableView() { return tableView; }
+    public TableView<AdminModel> getGroupsTableView() { return groupsTableView; }
+
+    public TextField getSearchField() { return searchField; }
+    public Button getSearchButton() { return searchButton; }
+
+    public TextField getGroupSearchField() { return groupSearchField; }
+    public Button getGroupSearchButton() { return groupSearchButton; }
+
+    public Button getGroupsButton() { return groupsButton; }
+    public Button getBackToUsersButton() { return backToUsersButton; }
+    public Button getDeleteButton() { return deleteButton; }
+    public Button getGroupDeleteButton() { return groupDeleteButton; }
+
+    public Button getEditButton() { return editButton; }
+    public Button getGroupsEditButton() { return groupEditButton; }
+
+    // **CHANGED: Added getters for new admin operation buttons**
+    public Button getCreateUserButton() { return createUserButton; }
+    public Button getCreateGroupButton() { return createGroupButton; }
+    public Button getViewStatsButton() { return viewStatsButton; }
+    public Button getViewActiveUsersButton() { return viewActiveUsersButton; }
+    public Button getViewCommunityMessagesButton() { return viewCommunityMessagesButton; }
+    public Button getRefreshButton() { return refreshButton; }
 }
