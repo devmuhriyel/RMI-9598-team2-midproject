@@ -562,4 +562,76 @@ public class UserXMLHandler {
         }
         return users;
     }
+
+    public static boolean addFriendRequest(String fromUser, String toUser) {
+        try {
+            File file = new File("src/main/resources/XMLFiles/Requests.xml");
+            if (!file.exists()) {
+                System.out.println("Requests.xml file not found. Creating a new one...");
+                // If the file doesn’t exist, create a basic structure
+                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                DocumentBuilder builder = factory.newDocumentBuilder();
+                Document doc = builder.newDocument();
+
+                Element root = doc.createElement("requests");
+                doc.appendChild(root);
+
+                // Save the new empty file
+                saveDocument(doc, file.getPath());
+            }
+
+            // Load the existing document
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+            doc.getDocumentElement().normalize();
+
+            Element root = doc.getDocumentElement();
+
+            // Create <request> entry
+            Element requestElement = doc.createElement("request");
+
+            Element fromElement = doc.createElement("from");
+            fromElement.setTextContent(fromUser);
+            requestElement.appendChild(fromElement);
+
+            Element toElement = doc.createElement("to");
+            toElement.setTextContent(toUser);
+            requestElement.appendChild(toElement);
+
+            Element statusElement = doc.createElement("status");
+            statusElement.setTextContent("pending");
+            requestElement.appendChild(statusElement);
+
+            root.appendChild(requestElement);
+
+            saveDocument(doc, file.getPath());
+            System.out.println("Friend request from " + fromUser + " to " + toUser + " added.");
+            return true;
+
+        } catch (Exception e) {
+            System.err.println("Error adding friend request from " + fromUser + " to " + toUser + ": " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    private static void saveDocument(Document doc, String filePath) {
+        try {
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+
+            DOMSource source = new DOMSource(doc);
+            StreamResult result = new StreamResult(new File(filePath));
+            transformer.transform(source, result);
+
+            System.out.println("XML saved successfully to " + filePath);
+        } catch (Exception e) {
+            System.err.println("Error saving XML to " + filePath + ": " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+
 }

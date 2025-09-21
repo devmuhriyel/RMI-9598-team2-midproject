@@ -850,6 +850,12 @@ public class UnifiedClientModel implements Runnable {
         }
     }
 
+    public void addFriend(String friendUsername) {
+        System.out.println("UnifiedClientModel: Adding friend " + friendUsername);
+        UserXMLHandler.addFriendRequest(this.username, friendUsername);
+    }
+
+
 
     public void setUsername(String username) {
         this.username = username;

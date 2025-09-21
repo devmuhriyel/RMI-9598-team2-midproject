@@ -32,7 +32,7 @@ public class HomeJFXController {
     private Runnable userProfileButtonListener;
     private Runnable accountButtonListener;
     private Consumer<String> friendClickListener;
-
+    private Consumer<String> addFriendListener;
     @FXML
     private TextField searchField;
     private List<String> originalFriends = Collections.emptyList();
@@ -62,6 +62,9 @@ public class HomeJFXController {
                 }
             });
         }
+    }
+    public void setAddFriendListener(Consumer<String> listener) {
+        this.addFriendListener = listener;
     }
 
     public void setFriendClickListener(Consumer<String> friendClickListener) {
@@ -141,12 +144,12 @@ public class HomeJFXController {
                     // Add "+" button to add as friend
                     Button addBtn = new Button("+");
                     addBtn.setStyle("-fx-background-color: #b3e5fc; -fx-text-fill: #333;");
-
-                    addBtn.setOnAction(event -> {
-                        // TODO: Implement add friend logic here
-                        System.out.println("Add friend: " + user);
-                        // You might want to call a method like: addFriend(user);
-                    });
+                        addBtn.setOnAction(event -> {
+                            if (addFriendListener != null) {
+                                System.out.println("Add friend: " + user);
+                                addFriendListener.accept(user); // send username to controller
+                            }
+                        });
 
                     // Layout: horizontal box for userBtn and addBtn
                     javafx.scene.layout.HBox hbox = new javafx.scene.layout.HBox(5, userBtn, addBtn);

@@ -74,6 +74,7 @@ public class HomeController {
             }
         });
 
+
         // Handle group clicks
         ui.setGroupClickListener(groupName -> {
             try {
@@ -89,6 +90,10 @@ public class HomeController {
             }
         });
 
+        ui.setAddFriendListener(username -> {
+            addFriend(username);
+        });
+
         // Set up force logout handler
         model.setForceLogoutListener(message -> {
             Platform.runLater(() -> {
@@ -97,6 +102,12 @@ public class HomeController {
             });
         });
     }
+    private void addFriend(String username) {
+        System.out.println("HomeController: Adding friend " + username);
+            model.addFriend(username);
+        refreshUserData();
+    }
+
 
     public void refreshUserData() {
         Platform.runLater(() -> {
