@@ -643,6 +643,57 @@ public class UserXMLHandler {
         return requests;
     }
 
+    public static void removeFriendRequest(String from, String to) {
+        try {
+            File xmlFile = new File("src/main/resources/XMLFiles/Requests.xml");
+            if (!xmlFile.exists()) {
+                System.out.println("Requests.xml not found: " + xmlFile.getPath());
+                return;
+            }
+
+            // Parse XML
+            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+            Document doc = dBuilder.parse(xmlFile);
+            doc.getDocumentElement().normalize();
+
+            NodeList requests = doc.getElementsByTagName("request");
+            boolean removed = false;
+
+            for (int i = 0; i < requests.getLength(); i++) {
+                Node reqNode = requests.item(i);
+                if (reqNode.getNodeType() == Node.ELEMENT_NODE) {
+                    Element reqElement = (Element) reqNode;
+                    String f = reqElement.getElementsByTagName("from").item(0).getTextContent();
+                    String t = reqElement.getElementsByTagName("to").item(0).getTextContent();
+
+                    if (f.equals(from) && t.equals(to)) {
+                        reqNode.getParentNode().removeChild(reqNode);
+                        removed = true;
+                        break;
+                    }
+                }
+            }
+
+            if (removed) {
+                // Save back XML
+                TransformerFactory transformerFactory = TransformerFactory.newInstance();
+                Transformer transformer = transformerFactory.newTransformer();
+                transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                DOMSource source = new DOMSource(doc);
+                StreamResult result = new StreamResult(xmlFile);
+                transformer.transform(source, result);
+                System.out.println("Removed request: " + from + " → " + to);
+            } else {
+                System.out.println("No matching request found for " + from + " → " + to);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
     private static void saveDocument(Document doc, String filePath) {
         try {
             TransformerFactory transformerFactory = TransformerFactory.newInstance();

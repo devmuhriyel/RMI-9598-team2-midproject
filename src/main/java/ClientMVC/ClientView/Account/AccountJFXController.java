@@ -1,5 +1,6 @@
 package ClientMVC.ClientView.Account;
 
+import ClientMVC.UserXMLHandler;
 import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -604,7 +605,9 @@ public class AccountJFXController {
                 removeButton.setOnAction(e -> {
                     System.out.println("Removed sent request to " + friendName);
                     requestList.getChildren().remove(requestFrame);
-                    // TODO: delete from Request.xml here
+
+                    String sender = (currentUsernameLabel != null) ? currentUsernameLabel.getText() : "";
+                    UserXMLHandler.removeFriendRequest(sender, friendName);
                 });
 
                 requestFrame.getChildren().addAll(userLabel, removeButton);
