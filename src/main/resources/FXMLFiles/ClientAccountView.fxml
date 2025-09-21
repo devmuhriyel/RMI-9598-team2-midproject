@@ -22,7 +22,7 @@
                     <children>
                         <ImageView fitHeight="150.0" fitWidth="200.0" pickOnBounds="true" preserveRatio="true">
                             <image>
-                                <Image url="@../../Images/variety-logo/black_on_trans.png" />
+                                <Image url="@../Images/variety-logo/black_on_trans.png" />
                             </image>
                             <VBox.margin>
                                 <Insets bottom="15.0" top="-30.0" />
@@ -250,12 +250,12 @@
                 </AnchorPane>
 
                 <!-- Window Controls -->
-                <Button fx:id="closeButton" cacheShape="false" focusTraversable="false" layoutX="358.0" layoutY="6.0" minWidth="25.0" prefHeight="30.0" prefWidth="25.0" styleClass="window-control" stylesheets="@../../style.css" text="x">
+                <Button fx:id="closeButton" cacheShape="false" focusTraversable="false" layoutX="358.0" layoutY="6.0" minWidth="25.0" prefHeight="30.0" prefWidth="25.0" styleClass="window-control" stylesheets="@../style.css" text="x">
                     <font>
                         <Font size="9.0" />
                     </font>
                 </Button>
-                <Button fx:id="minimizeButton" contentDisplay="CENTER" layoutX="333.0" layoutY="6.0" minWidth="15.0" prefHeight="30.0" prefWidth="25.0" styleClass="window-control" stylesheets="@../../style.css" text="-">
+                <Button fx:id="minimizeButton" contentDisplay="CENTER" layoutX="333.0" layoutY="6.0" minWidth="15.0" prefHeight="30.0" prefWidth="25.0" styleClass="window-control" stylesheets="@../style.css" text="-">
                     <font>
                         <Font name="Arial Black" size="12.0" />
                     </font>
@@ -266,7 +266,7 @@
         <!-- Back Navigation -->
         <AnchorPane fx:id="backNavigation" layoutY="36.0" prefHeight="79.0" prefWidth="210.0">
             <children>
-                <Button fx:id="backButton" alignment="CENTER" layoutX="14.0" layoutY="11.0" mnemonicParsing="false" prefHeight="35.0" prefWidth="42.0" style="-fx-background-radius: 100; -fx-background-color: dedcff;" stylesheets="@../../style.css" text="🔙">
+                <Button fx:id="backButton" alignment="CENTER" layoutX="14.0" layoutY="11.0" mnemonicParsing="false" prefHeight="35.0" prefWidth="42.0" style="-fx-background-radius: 100; -fx-background-color: dedcff;" stylesheets="@../style.css" text="🔙">
                     <font>
                         <Font size="16.0" />
                     </font>

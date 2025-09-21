@@ -532,20 +532,6 @@ public class ServerXMLHandler {
                 }
                 break;
 
-            case "CHANGE_USERNAME":
-                String currentUsername = content[0];
-                String requestedNewUsername = content[1];
-                reply = changeUsername(currentUsername, requestedNewUsername);
-                break;
-
-            case "CHANGE_PASSWORD":
-                String userForPasswordChange = content[0];
-                String oldPasswordProvided = content[1];
-                String newPasswordRequested = content[2];
-                reply = changePassword(userForPasswordChange, oldPasswordProvided, newPasswordRequested);
-                break;
-
-
         }
         return reply;
     }
@@ -2257,6 +2243,28 @@ public class ServerXMLHandler {
             return false;
         }
     }
+    private static class GroupInfo {
+        private String owner;
+        private int memberCount;
+
+        public GroupInfo(String owner, int memberCount) {
+            this.owner = owner;
+            this.memberCount = memberCount;
+        }
+
+        public String getOwner() {
+            return owner;
+        }
+
+        public int getMemberCount() {
+            return memberCount;
+        }
+
+        public void incrementMemberCount() {
+            this.memberCount++;
+        }
+    }
+
 
     public synchronized String changeUsername(String oldUsername, String newUsername) {
         try {
@@ -2432,28 +2440,5 @@ public class ServerXMLHandler {
             e.printStackTrace();
         }
     }
-
-
-
-    private static class GroupInfo {
-        private String owner;
-        private int memberCount;
-
-        public GroupInfo(String owner, int memberCount) {
-            this.owner = owner;
-            this.memberCount = memberCount;
-        }
-
-        public String getOwner() {
-            return owner;
-        }
-
-        public int getMemberCount() {
-            return memberCount;
-        }
-
-        public void incrementMemberCount() {
-            this.memberCount++;
-        }
-    }
 }
+

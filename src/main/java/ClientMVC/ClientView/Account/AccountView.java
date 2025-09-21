@@ -16,7 +16,7 @@ public class AccountView extends Application {
     @Override
     public void start(Stage stage) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/AccountView/ClientAccountView.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/ClientAccountView.fxml"));
             Parent root = loader.load();
             primaryStage = stage;
             accountJFXController = loader.getController();
