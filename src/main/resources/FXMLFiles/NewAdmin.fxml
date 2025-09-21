@@ -16,39 +16,39 @@
         <HBox layoutX="20" layoutY="20" spacing="10" />
 
         <!-- Action Buttons -->
-        <Button fx:id="CreateButton" layoutX="21.0" layoutY="39.0" prefHeight="31.0" prefWidth="119.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Create Group" />
-        <Button fx:id="ActiveButton" layoutX="148.0" layoutY="39.0" prefHeight="31.0" prefWidth="119.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Active Users" />
-        <Button fx:id="CommunityButton" layoutX="275.0" layoutY="39.0" prefHeight="31.0" prefWidth="170.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Community Messages" />
-        <Button fx:id="AddButton" layoutX="454.0" layoutY="39.0" prefHeight="31.0" prefWidth="86.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Add User" />
-        <Button fx:id="refreshButton" layoutX="549.0" layoutY="39.0" prefHeight="30" prefWidth="80" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Refresh" />
+        <Button fx:id="CreateButton" layoutX="20.0" layoutY="30.0" prefHeight="31.0" prefWidth="119.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Create Group" />
+        <Button fx:id="ActiveButton" layoutX="147.0" layoutY="30.0" prefHeight="31.0" prefWidth="119.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Active Users" />
+        <Button fx:id="CommunityButton" layoutX="275.0" layoutY="30.0" prefHeight="31.0" prefWidth="170.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Community Messages" />
+        <Button fx:id="AddButton" layoutX="455.0" layoutY="30.0" prefHeight="31.0" prefWidth="86.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Add User" />
+        <Button fx:id="refreshButton" layoutX="549.0" layoutY="30.0" prefHeight="24.0" prefWidth="80" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Refresh" />
 
         <!-- Search Components -->
-        <TextField fx:id="searchField" layoutX="637.0" layoutY="39.0" prefHeight="31.0" prefWidth="159.0" promptText="Search..." style="-fx-background-radius: 20; -fx-background-color: #2a2a2a; -fx-text-fill: white;" />
-        <Button fx:id="searchButton" layoutX="801.0" layoutY="39.0" prefHeight="30" prefWidth="40" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="🔍" />
+        <TextField fx:id="searchField" layoutX="637.0" layoutY="30.0" prefHeight="31.0" prefWidth="159.0" promptText="Search..." style="-fx-background-radius: 20; -fx-background-color: #2a2a2a; -fx-text-fill: white;" />
+        <Button fx:id="searchButton" layoutX="801.0" layoutY="31.0" prefHeight="30" prefWidth="40" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="🔍" />
 
         <!-- Users Table -->
         <VBox layoutX="20" layoutY="70" spacing="5">
             <children>
-                <TableView fx:id="usersTable" prefHeight="200" prefWidth="823.0" style="-fx-background-color: #2a2a2a; -fx-text-fill: white;">
+                <TableView fx:id="usersTable" prefHeight="200" prefWidth="820" style="-fx-background-color: #2a2a2a; -fx-text-fill: white;">
                     <columns>
-                        <TableColumn fx:id="usernameCol" prefWidth="380" text="Username" />
-                        <TableColumn fx:id="passwordCol" prefWidth="380" text="Password" />
-                        <TableColumn fx:id="statusCol" prefWidth="75.0" text="Status" />
+                        <TableColumn fx:id="usernameCol" prefWidth="273.3" text="Username" />
+                        <TableColumn fx:id="passwordCol" prefWidth="273.3" text="Password" />
+                        <TableColumn fx:id="statusCol" prefWidth="273.3" text="Status" />
                     </columns>
                 </TableView>
             </children>
         </VBox>
 
         <!-- User Management Buttons -->
-        <Button fx:id="editButton" layoutX="20.0" layoutY="309.0" prefHeight="31.0" prefWidth="119.0" style="-fx-background-color: #0087b1; -fx-text-fill: white;" text="Edit" />
-        <Button fx:id="deleteButton" layoutX="152.0" layoutY="309.0" prefHeight="31.0" prefWidth="119.0" style="-fx-background-color: #b10000; -fx-text-fill: white;" text="Delete" />
+        <Button fx:id="editButton" layoutX="20.0" layoutY="298.0" prefHeight="31.0" prefWidth="119.0" style="-fx-background-color: #0087b1; -fx-text-fill: white;" text="Edit" />
+        <Button fx:id="deleteButton" layoutX="152.0" layoutY="298.0" prefHeight="31.0" prefWidth="119.0" style="-fx-background-color: #b10000; -fx-text-fill: white;" text="Delete" />
 
         <!-- Groups Table -->
-        <TableView fx:id="groupsTable" layoutX="50.0" layoutY="450.0" prefHeight="200.0" prefWidth="500.0">
+        <TableView fx:id="groupsTable" layoutX="17.0" layoutY="350.0" prefHeight="200.0" prefWidth="820" style="-fx-background-color: #2a2a2a; -fx-text-fill: white;">
             <columns>
-                <TableColumn fx:id="groupNameCol" prefWidth="200.0" text="Group Name" />
-                <TableColumn fx:id="groupOwnerCol" prefWidth="150.0" text="Owner" />
-                <TableColumn fx:id="memberCountCol" prefWidth="100.0" text="Members" />
+                <TableColumn fx:id="groupNameCol" prefWidth="273.3" text="Group Name" />
+                <TableColumn fx:id="groupOwnerCol" prefWidth="273.3" text="Owner" />
+                <TableColumn fx:id="memberCountCol" prefWidth="273.3" text="Members" />
             </columns>
         </TableView>
 

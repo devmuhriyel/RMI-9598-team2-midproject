@@ -1,6 +1,5 @@
-package AdminMVC.AdminView;
+package AdminMVC.AdminView.Admin;
 
-import AdminMVC.AdminControllers.AdminController;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
