@@ -1,4 +1,4 @@
-package AdminMVC.AdminView;
+package AdminMVC.AdminView.Connection;
 
 import javafx.application.Application;
 import javafx.application.Platform;

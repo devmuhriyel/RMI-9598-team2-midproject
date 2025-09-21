@@ -2,9 +2,9 @@ package AdminMVC.AdminControllers;
 
 import AdminMVC.AdminModel.ConnectionModel;
 import AdminMVC.AdminModel.UnifiedAdminModel;
-import AdminMVC.AdminView.AdminConnectionView;
-import AdminMVC.AdminView.AdminConnectionJFXController;
-import AdminMVC.AdminView.LoginView;
+import AdminMVC.AdminView.Connection.AdminConnectionView;
+import AdminMVC.AdminView.Connection.AdminConnectionJFXController;
+import AdminMVC.AdminView.Login.LoginView;
 import javafx.application.Platform;
 import javafx.stage.Stage;
 

@@ -1,4 +1,4 @@
-package AdminMVC.AdminView;
+package AdminMVC.AdminView.Login;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.*;

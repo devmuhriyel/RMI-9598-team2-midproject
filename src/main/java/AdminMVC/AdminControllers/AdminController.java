@@ -1,491 +1,433 @@
 package AdminMVC.AdminControllers;
 
 import AdminMVC.AdminModel.UnifiedAdminModel;
-import ClientMVC.ClientModel.AdminModel;
-import AdminMVC.AdminView.AdminPageJFXController;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.stage.Stage;
-import javafx.scene.control.TextField;
-import javafx.scene.control.Alert;
-import javafx.scene.control.TextInputDialog;
+import AdminMVC.AdminView.Admin.AdminPageJFXController;
 import javafx.application.Platform;
+import javafx.scene.control.*;
+import javafx.scene.layout.VBox;
 
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class AdminController {
+    private final UnifiedAdminModel model;
+    private final AdminPageJFXController ui;
 
-    private AdminPageJFXController view;
-    private UnifiedAdminModel adminModel;
-    private static UnifiedAdminModel sharedAdminModel; // Shared model for navigation
-
-    public AdminController(AdminPageJFXController view) {
-        this.view = view;
-        this.adminModel = sharedAdminModel; // Use shared model if available
-        if (this.adminModel == null) {
-            this.adminModel = new UnifiedAdminModel();
-        }
-        setupListeners();
-        initListeners();
-
-        // Load data if already connected
-        if (adminModel != null && adminModel.isConnected()) {
-            Platform.runLater(() -> adminModel.loadData());
-        }
+    public AdminController(AdminPageJFXController ui, UnifiedAdminModel model) {
+        this.ui = ui;
+        this.model = model;
+        initialize();
     }
 
-    // **CHANGED: Added constructor that accepts an existing admin model**
-    public AdminController(AdminPageJFXController view, UnifiedAdminModel adminModel) {
-        this.view = view;
-        this.adminModel = adminModel;
-        sharedAdminModel = adminModel; // Set as shared model
-        setupListeners();
-        initListeners();
+    private void initialize() {
+        setupSearchListener();
+        setupButtonListeners();
+        setupModelListeners();
 
-        // Load data immediately
-        if (adminModel != null && adminModel.isConnected()) {
-            Platform.runLater(() -> adminModel.loadData());
-        }
+        // Load initial data
+        refreshData();
     }
 
-    private void setupListeners() {
-        if (adminModel != null) {
-            adminModel.setDataUpdateListener(updateType -> {
-                Platform.runLater(() -> {
-                    switch (updateType) {
-                        case "USERS_UPDATED":
-                            if (view.getTableView() != null) {
-                                view.getTableView().setItems(adminModel.getAllUsers());
-                                view.getTableView().refresh();
-                            }
-                            break;
-                        case "GROUPS_UPDATED":
-                            if (view.getGroupsTableView() != null) {
-                                view.getGroupsTableView().setItems(adminModel.getAllGroups());
-                                view.getGroupsTableView().refresh();
-                            }
-                            break;
-                    }
-                });
-            });
-
-            adminModel.setOperationResultListener(result -> {
-                showAlert("Operation Result", result, Alert.AlertType.INFORMATION);
-            });
-
-            adminModel.setUserStatsListener(stats -> {
-                showAlert("User Statistics", stats, Alert.AlertType.INFORMATION);
-            });
-
-            adminModel.setActiveUsersUpdateListener(updateType -> {
-                if ("ACTIVE_USERS_UPDATED".equals(updateType)) {
-                    StringBuilder activeUsersText = new StringBuilder("Currently Active Users:\n\n");
-                    List<String> users = adminModel.getActiveUsers();
-                    if (users.isEmpty()) {
-                        activeUsersText.append("No active users");
-                    } else {
-                        for (String user : users) {
-                            activeUsersText.append("• ").append(user).append("\n");
-                        }
-                    }
-                    showAlert("Active Users", activeUsersText.toString(), Alert.AlertType.INFORMATION);
-                }
-            });
-
-            adminModel.setCommunityMessagesUpdateListener(updateType -> {
-                if ("COMMUNITY_MESSAGES_UPDATED".equals(updateType)) {
-                    StringBuilder messagesText = new StringBuilder("Recent Community Messages:\n\n");
-                    List<String> messages = adminModel.getCommunityMessages();
-                    if (messages.isEmpty()) {
-                        messagesText.append("No community messages");
-                    } else {
-                        int start = Math.max(0, messages.size() - 10);
-                        for (int i = start; i < messages.size(); i++) {
-                            messagesText.append(messages.get(i)).append("\n\n");
-                        }
-                    }
-                    showAlert("Community Messages", messagesText.toString(), Alert.AlertType.INFORMATION);
-                }
-            });
-        }
-    }
-
-    private void initListeners() {
-        // Users search
-        if (view.getSearchButton() != null) {
-            view.getSearchButton().setOnAction(e -> onSearchUsers());
-        }
-
-        // Groups search
-        if (view.getGroupSearchButton() != null) {
-            view.getGroupSearchButton().setOnAction(e -> onSearchGroups());
-        }
-
-        // Navigation
-        if (view.getGroupsButton() != null) {
-            view.getGroupsButton().setOnAction(e -> switchToGroups());
-        }
-        if (view.getBackToUsersButton() != null) {
-            view.getBackToUsersButton().setOnAction(e -> switchToUsers());
-        }
-
-        // Delete buttons
-        if (view.getDeleteButton() != null) {
-            view.getDeleteButton().setOnAction(e -> onDeleteUser());
-        }
-        if (view.getGroupDeleteButton() != null) {
-            view.getGroupDeleteButton().setOnAction(e -> onDeleteGroup());
-        }
-
-        // Edit buttons
-        if (view.getEditButton() != null) {
-            view.getEditButton().setOnAction(e -> onEditUser());
-        }
-        if (view.getGroupsEditButton() != null) {
-            view.getGroupsEditButton().setOnAction(e -> onEditGroups());
-        }
-
-        // Admin operation buttons
-        if (view.getCreateUserButton() != null) {
-            view.getCreateUserButton().setOnAction(e -> onCreateUser());
-        }
-        if (view.getCreateGroupButton() != null) {
-            view.getCreateGroupButton().setOnAction(e -> onCreateGroup());
-        }
-        if (view.getViewStatsButton() != null) {
-            view.getViewStatsButton().setOnAction(e -> onViewUserStats());
-        }
-        if (view.getViewActiveUsersButton() != null) {
-            view.getViewActiveUsersButton().setOnAction(e -> onViewActiveUsers());
-        }
-        if (view.getViewCommunityMessagesButton() != null) {
-            view.getViewCommunityMessagesButton().setOnAction(e -> onViewCommunityMessages());
-        }
-        if (view.getRefreshButton() != null) {
-            view.getRefreshButton().setOnAction(e -> onRefreshData());
-        }
-    }
-
-    private void onSearchUsers() {
-        if (!validateConnection()) return;
-
-        String keyword = "";
-        if (view.getSearchField() != null) {
-            keyword = view.getSearchField().getText().trim();
-        }
-
-        if (keyword.isEmpty()) {
-            // If no keyword, show all users
-            adminModel.requestAllUsers();
-        } else {
-            adminModel.searchUsers(keyword);
-        }
-    }
-
-    private void onSearchGroups() {
-        if (!validateConnection()) return;
-
-        String keyword = "";
-        if (view.getGroupSearchField() != null) {
-            keyword = view.getGroupSearchField().getText().trim();
-        }
-
-        if (keyword.isEmpty()) {
-            // If no keyword, show all groups
-            adminModel.requestAllGroups();
-        } else {
-            adminModel.searchGroups(keyword);
-        }
-    }
-
-    private void switchToGroups() {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/AdminGroups.fxml"));
-            Parent root = loader.load();
-            AdminPageJFXController newController = loader.getController();
-
-            // Pass the shared admin model
-            new AdminController(newController, sharedAdminModel);
-
-            Stage stage = new Stage();
-            stage.setScene(new Scene(root, 800, 600));
-            stage.setTitle("Groups Management");
-            stage.show();
-
-            // Close current window
-            if (view.getTableView() != null && view.getTableView().getScene() != null) {
-                Stage currentStage = (Stage) view.getTableView().getScene().getWindow();
-                currentStage.close();
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            showAlert("Error", "Failed to load Groups page: " + e.getMessage(), Alert.AlertType.ERROR);
-        }
-    }
-
-    private void switchToUsers() {
-        view.getGroupsTableView().getScene().getWindow().hide();
-        loadFXML("/FXMLFiles/Admin.fxml", "Admins Page");
-    }
-
-    private void loadFXML(String path, String title) {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/Admin.fxml"));
-            Parent root = loader.load();
-            AdminPageJFXController newController = loader.getController();
-
-            // Pass the shared admin model
-            new AdminController(newController, sharedAdminModel);
-
-            Stage stage = new Stage();
-            stage.setScene(new Scene(root, 800, 600));
-            stage.setTitle("Users Management");
-            stage.show();
-
-            // Close current window
-            if (view.getGroupsTableView() != null && view.getGroupsTableView().getScene() != null) {
-                Stage currentStage = (Stage) view.getGroupsTableView().getScene().getWindow();
-                currentStage.close();
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            showAlert("Error", "Failed to load Users page: " + e.getMessage(), Alert.AlertType.ERROR);
-        }
-    }
-
-    private void onDeleteUser() {
-        if (!validateConnection()) return;
-
-        AdminModel selected = null;
-        if (view.getTableView() != null) {
-            selected = view.getTableView().getSelectionModel().getSelectedItem();
-        }
-
-        AdminModel selected = view.getTableView().getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
-            confirmation.setTitle("Confirm Deletion");
-            confirmation.setHeaderText("Delete User");
-            confirmation.setContentText("Are you sure you want to delete user: " + selected.getUsername() + "?\n\nThis action cannot be undone.");
-
-            Optional<javafx.scene.control.ButtonType> result = confirmation.showAndWait();
-            if (result.isPresent() && result.get() == javafx.scene.control.ButtonType.OK) {
-                adminModel.deleteUser(selected.getUsername());
-            }
-        } else {
-            showAlert("No Selection", "Please select a user to delete", Alert.AlertType.WARNING);
-        }
-    }
-
-    private void onDeleteGroup() {
-        if (!validateConnection()) return;
-
-        AdminModel selected = null;
-        if (view.getGroupsTableView() != null) {
-            selected = view.getGroupsTableView().getSelectionModel().getSelectedItem();
-        }
-
-        if (selected != null) {
-            Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
-            confirmation.setTitle("Confirm Deletion");
-            confirmation.setHeaderText("Delete Group");
-            confirmation.setContentText("Are you sure you want to delete group: " + selected.getGroupName() + "?\n\nThis action cannot be undone.");
-
-            Optional<javafx.scene.control.ButtonType> result = confirmation.showAndWait();
-            if (result.isPresent() && result.get() == javafx.scene.control.ButtonType.OK) {
-                adminModel.deleteGroup(selected.getGroupName(), selected.getOwner());
-            }
-        } else {
-            showAlert("No Selection", "Please select a group to delete", Alert.AlertType.WARNING);
-        }
-    }
-
-    private void onEditUser() {
-        if (!validateConnection()) return;
-
-        AdminModel selected = null;
-        if (view.getTableView() != null) {
-            selected = view.getTableView().getSelectionModel().getSelectedItem();
-        }
-
-        if (selected == null) {
-            showAlert("No Selection", "Please select a user first", Alert.AlertType.WARNING);
-            return;
-        }
-
-        TextInputDialog dialog = new TextInputDialog();
-        dialog.setTitle("Change Password");
-        dialog.setHeaderText("Change password for: " + selected.getUsername());
-        dialog.setContentText("Enter new password:");
-
-        Optional<String> result = dialog.showAndWait();
-        if (result.isPresent() && !result.get().trim().isEmpty()) {
-            String newPassword = result.get().trim();
-            if (newPassword.length() < 4) {
-                showAlert("Invalid Password", "Password must be at least 4 characters long", Alert.AlertType.WARNING);
+    private void setupSearchListener() {
+        ui.setSearchListener(queryText -> {
+            String q = (queryText == null) ? "" : queryText.trim().toLowerCase();
+            if (q.isEmpty()) {
+                ui.renderUsers(ui.getOriginalUsers());
+                ui.renderGroups(ui.getOriginalGroups());
                 return;
             }
-            adminModel.changeUserPassword(selected.getUsername(), newPassword);
+
+            // Filter users
+            List<Map<String, String>> filteredUsers = filterUsers(ui.getOriginalUsers(), q);
+
+            // Filter groups
+            List<Map<String, String>> filteredGroups = filterGroups(ui.getOriginalGroups(), q);
+
+            ui.renderUsers(filteredUsers);
+            ui.renderGroups(filteredGroups);
+        });
+    }
+
+    private void setupButtonListeners() {
+        // Search button
+        if (ui.getSearchButton() != null) {
+            ui.getSearchButton().setOnAction(event -> {
+                String query = ui.getSearchField().getText();
+                if (query != null && !query.trim().isEmpty()) {
+                    performSearch(query.trim());
+                } else {
+                    refreshData();
+                }
+            });
+        }
+
+        // Add User button
+        if (ui.getAddButton() != null) {
+            ui.getAddButton().setOnAction(event -> showCreateUserDialog());
+        }
+
+        // Create Group button
+        if (ui.getCreateButton() != null) {
+            ui.getCreateButton().setOnAction(event -> showCreateGroupDialogEnhanced());
+        }
+
+        // Edit User button
+        if (ui.getEditButton() != null) {
+            ui.getEditButton().setOnAction(event -> editSelectedUser());
+        }
+
+        // Delete User button
+        if (ui.getDeleteButton() != null) {
+            ui.getDeleteButton().setOnAction(event -> deleteSelectedUser());
+        }
+
+        // Edit Group button
+        if (ui.getEditGroupButton() != null) {
+            ui.getEditGroupButton().setOnAction(event -> editSelectedGroup());
+        }
+
+        // Delete Group button
+        if (ui.getDeleteGroupButton() != null) {
+            ui.getDeleteGroupButton().setOnAction(event -> deleteSelectedGroup());
+        }
+
+        // Refresh button - shows all users
+        if (ui.getRefreshButton() != null) {
+            ui.getRefreshButton().setOnAction(event -> {
+                ui.setShowingActiveUsersOnly(false);
+                refreshData();
+            });
+        }
+
+        // Active Users button - shows only online users
+        if (ui.getActiveButton() != null) {
+            ui.getActiveButton().setOnAction(event -> {
+                ui.setShowingActiveUsersOnly(true);
+                showActiveUsers();
+            });
+        }
+
+        // Community Messages button
+        if (ui.getCommunityButton() != null) {
+            ui.getCommunityButton().setOnAction(event -> showCommunityMessages());
         }
     }
 
-    private void onEditGroups() {
-        showAlert("Info", "Group editing is not available. Use delete and create operations instead.", Alert.AlertType.INFORMATION);
+    private void setupModelListeners() {
+        // Set up data update listeners
+        model.setDataUpdateListener(updateType -> {
+            Platform.runLater(() -> {
+                switch (updateType) {
+                    case "USERS_UPDATED":
+                        ui.setUsers(model.getAllUsers(), ui.isShowingActiveUsersOnly());
+                        break;
+                    case "GROUPS_UPDATED":
+                        ui.setGroups(model.getAllGroups());
+                        break;
+                }
+            });
+        });
+
+        // Operation result listener
+        model.setOperationResultListener(result -> {
+            Platform.runLater(() -> {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Operation Result");
+                alert.setHeaderText(null);
+                alert.setContentText(result);
+                alert.showAndWait();
+            });
+        });
+
+        // Password reset listener
+        model.setPasswordResetListener(username -> {
+            Platform.runLater(() -> {
+                ui.showPasswordResetNotification(username);
+                ui.addPasswordResetRequest(username, generateVerificationCode());
+            });
+        });
     }
 
-    private void onCreateUser() {
-        if (!validateConnection()) return;
+    private void performSearch(String query) {
+        // Search both users and groups
+        model.searchUsers(query);
+        model.searchGroups(query);
+    }
 
+    private List<Map<String, String>> filterUsers(List<Map<String, String>> users, String queryLower) {
+        List<Map<String, String>> result = new ArrayList<>();
+        for (Map<String, String> user : users) {
+            if (user != null && user.get("username") != null &&
+                    user.get("username").toLowerCase().contains(queryLower)) {
+                result.add(user);
+            }
+        }
+        return result;
+    }
+
+    private List<Map<String, String>> filterGroups(List<Map<String, String>> groups, String queryLower) {
+        List<Map<String, String>> result = new ArrayList<>();
+        for (Map<String, String> group : groups) {
+            if (group != null && group.get("groupName") != null &&
+                    group.get("groupName").toLowerCase().contains(queryLower)) {
+                result.add(group);
+            }
+        }
+        return result;
+    }
+
+    private void refreshData() {
+        model.loadData(); // This will trigger the listeners to update the UI
+    }
+
+    private void showActiveUsers() {
+        model.requestActiveUsersOnly();
+        // The model listener will handle displaying the results
+    }
+
+    private void showCreateUserDialog() {
         TextInputDialog usernameDialog = new TextInputDialog();
         usernameDialog.setTitle("Create User");
         usernameDialog.setHeaderText("Create New User");
-        usernameDialog.setContentText("Username (min 3 characters):");
+        usernameDialog.setContentText("Username:");
 
         Optional<String> usernameResult = usernameDialog.showAndWait();
         if (usernameResult.isPresent() && !usernameResult.get().trim().isEmpty()) {
             String username = usernameResult.get().trim();
 
-            if (username.length() < 3) {
-                showAlert("Invalid Username", "Username must be at least 3 characters long", Alert.AlertType.WARNING);
-                return;
-            }
-
             TextInputDialog passwordDialog = new TextInputDialog();
             passwordDialog.setTitle("Create User");
-            passwordDialog.setHeaderText("Create New User: " + username);
-            passwordDialog.setContentText("Password (min 4 characters):");
+            passwordDialog.setHeaderText("Create New User");
+            passwordDialog.setContentText("Password:");
 
             Optional<String> passwordResult = passwordDialog.showAndWait();
             if (passwordResult.isPresent() && !passwordResult.get().trim().isEmpty()) {
                 String password = passwordResult.get().trim();
-
-                if (password.length() < 4) {
-                    showAlert("Invalid Password", "Password must be at least 4 characters long", Alert.AlertType.WARNING);
-                    return;
-                }
-
-                adminModel.createNewUser(username, password);
+                model.createNewUser(username, password);
             }
         }
     }
 
-    private void onCreateGroup() {
-        if (!validateConnection()) return;
+    private void showCreateGroupDialogEnhanced() {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Create Group");
+        dialog.setHeaderText("Create New Group");
 
-        TextInputDialog groupDialog = new TextInputDialog();
-        groupDialog.setTitle("Create Group");
-        groupDialog.setHeaderText("Create New Group");
-        groupDialog.setContentText("Group Name (min 2 characters):");
+        // Create form fields
+        TextField groupNameField = new TextField();
+        groupNameField.setPromptText("Group Name");
 
-        Optional<String> groupResult = groupDialog.showAndWait();
-        if (groupResult.isPresent() && !groupResult.get().trim().isEmpty()) {
-            String groupName = groupResult.get().trim();
+        TextField creatorField = new TextField();
+        creatorField.setPromptText("Creator Username");
 
-            if (groupName.length() < 2) {
-                showAlert("Invalid Group Name", "Group name must be at least 2 characters long", Alert.AlertType.WARNING);
-                return;
-            }
+        TextArea membersArea = new TextArea();
+        membersArea.setPromptText("Additional Members (comma-separated usernames)\nOptional - leave blank for group with just creator");
+        membersArea.setPrefRowCount(4);
 
-            TextInputDialog creatorDialog = new TextInputDialog();
-            creatorDialog.setTitle("Create Group");
-            creatorDialog.setHeaderText("Create New Group: " + groupName);
-            creatorDialog.setContentText("Creator Username:");
+        VBox content = new VBox(10);
+        content.getChildren().addAll(
+                new Label("Group Name:"), groupNameField,
+                new Label("Creator:"), creatorField,
+                new Label("Additional Members:"), membersArea
+        );
 
-            Optional<String> creatorResult = creatorDialog.showAndWait();
-            if (creatorResult.isPresent() && !creatorResult.get().trim().isEmpty()) {
-                String creator = creatorResult.get().trim();
+        dialog.getDialogPane().setContent(content);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
-                if (creator.length() < 3) {
-                    showAlert("Invalid Creator", "Creator username must be at least 3 characters long", Alert.AlertType.WARNING);
-                    return;
+        Optional<ButtonType> result = dialog.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            String groupName = groupNameField.getText().trim();
+            String creator = creatorField.getText().trim();
+            String membersText = membersArea.getText().trim();
+
+            if (!groupName.isEmpty() && !creator.isEmpty()) {
+                // Parse additional members
+                List<String> additionalMembers = new ArrayList<>();
+                if (!membersText.isEmpty()) {
+                    String[] members = membersText.split(",");
+                    for (String member : members) {
+                        String trimmedMember = member.trim();
+                        if (!trimmedMember.isEmpty()) {
+                            additionalMembers.add(trimmedMember);
+                        }
+                    }
                 }
 
-                adminModel.createNewGroup(groupName, creator);
+                model.createNewGroupWithMembers(groupName, creator, additionalMembers);
+            } else {
+                showAlert("Invalid Input", "Group name and creator are required.");
             }
         }
     }
 
-    private void onViewUserStats() {
-        if (!validateConnection()) return;
-
-        AdminModel selected = null;
-        if (view.getTableView() != null) {
-            selected = view.getTableView().getSelectionModel().getSelectedItem();
+    private void editSelectedUser() {
+        Map<String, String> selectedUser = ui.getSelectedUser();
+        if (selectedUser == null) {
+            showAlert("No Selection", "Please select a user to edit.");
+            return;
         }
 
-        AdminModel selected = view.getTableView().getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            adminModel.getUserStats(selected.getUsername());
+        String username = selectedUser.get("username");
+
+        // Check for password reset requests
+        String verificationCode = ui.getVerificationCodeForUser(username);
+        if (verificationCode != null) {
+            // Show verification dialog
+            TextInputDialog verificationDialog = new TextInputDialog();
+            verificationDialog.setTitle("Verify Password Reset");
+            verificationDialog.setHeaderText("User '" + username + "' requested password reset");
+            verificationDialog.setContentText("Enter verification code (sent to user):");
+
+            Optional<String> codeResult = verificationDialog.showAndWait();
+            if (codeResult.isPresent() && codeResult.get().equals(verificationCode)) {
+                // Verification successful, allow password change
+                TextInputDialog passwordDialog = new TextInputDialog();
+                passwordDialog.setTitle("Reset Password");
+                passwordDialog.setHeaderText("Reset Password for " + username);
+                passwordDialog.setContentText("New Password:");
+
+                Optional<String> passwordResult = passwordDialog.showAndWait();
+                if (passwordResult.isPresent() && !passwordResult.get().trim().isEmpty()) {
+                    String newPassword = passwordResult.get().trim();
+                    model.changeUserPassword(username, newPassword);
+                    ui.removePasswordResetRequest(username);
+                }
+            } else {
+                showAlert("Verification Failed", "Invalid verification code.");
+            }
         } else {
-            TextInputDialog dialog = new TextInputDialog();
-            dialog.setTitle("User Statistics");
-            dialog.setHeaderText("Get User Statistics");
-            dialog.setContentText("Enter username:");
+            // Normal password change
+            TextInputDialog passwordDialog = new TextInputDialog();
+            passwordDialog.setTitle("Edit User");
+            passwordDialog.setHeaderText("Change Password for " + username);
+            passwordDialog.setContentText("New Password:");
 
-            Optional<String> result = dialog.showAndWait();
+            Optional<String> result = passwordDialog.showAndWait();
             if (result.isPresent() && !result.get().trim().isEmpty()) {
-                adminModel.getUserStats(result.get().trim());
+                String newPassword = result.get().trim();
+                model.changeUserPassword(username, newPassword);
             }
         }
     }
 
-    private void onViewActiveUsers() {
-        if (!validateConnection()) return;
-        adminModel.requestActiveUsers();
-    }
-
-    private void onViewCommunityMessages() {
-        if (!validateConnection()) return;
-        adminModel.requestCommunityMessages();
-    }
-
-    private void onRefreshData() {
-        if (!validateConnection()) return;
-        adminModel.refreshData();
-        showAlert("Refresh", "Data refresh requested successfully", Alert.AlertType.INFORMATION);
-    }
-
-    private boolean validateConnection() {
-        if (adminModel == null || !adminModel.isConnected()) {
-            showAlert("Error", "Not connected to server. Please reconnect.", Alert.AlertType.ERROR);
-            return false;
+    private void deleteSelectedUser() {
+        Map<String, String> selectedUser = ui.getSelectedUser();
+        if (selectedUser == null) {
+            showAlert("No Selection", "Please select a user to delete.");
+            return;
         }
-        return true;
+
+        String username = selectedUser.get("username");
+
+        Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmAlert.setTitle("Confirm Deletion");
+        confirmAlert.setHeaderText("Delete User");
+        confirmAlert.setContentText("Are you sure you want to delete user: " + username + "?");
+
+        Optional<ButtonType> result = confirmAlert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            model.deleteUser(username);
+        }
     }
 
-    private void showAlert(String title, String message, Alert.AlertType type) {
+    private void editSelectedGroup() {
+        Map<String, String> selectedGroup = ui.getSelectedGroup();
+        if (selectedGroup == null) {
+            showAlert("No Selection", "Please select a group to edit.");
+            return;
+        }
+
+        String groupName = selectedGroup.get("groupName");
+        String owner = selectedGroup.get("username");
+
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Edit Group");
+        dialog.setHeaderText("Edit Group: " + groupName);
+
+        TextArea membersArea = new TextArea();
+        membersArea.setPromptText("Add members (comma-separated usernames)");
+        membersArea.setPrefRowCount(4);
+
+        VBox content = new VBox(10);
+        content.getChildren().addAll(
+                new Label("Current Owner: " + owner),
+                new Label("Add Members:"), membersArea
+        );
+
+        dialog.getDialogPane().setContent(content);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        Optional<ButtonType> result = dialog.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            String membersText = membersArea.getText().trim();
+            if (!membersText.isEmpty()) {
+                List<String> newMembers = Arrays.asList(membersText.split(","));
+                model.addMembersToGroup(groupName, newMembers);
+            }
+        }
+    }
+
+    private void deleteSelectedGroup() {
+        Map<String, String> selectedGroup = ui.getSelectedGroup();
+        if (selectedGroup == null) {
+            showAlert("No Selection", "Please select a group to delete.");
+            return;
+        }
+
+        String groupName = selectedGroup.get("groupName");
+        String owner = selectedGroup.get("username");
+
+        Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmAlert.setTitle("Confirm Deletion");
+        confirmAlert.setHeaderText("Delete Group");
+        confirmAlert.setContentText("Are you sure you want to delete group: " + groupName + "?");
+
+        Optional<ButtonType> result = confirmAlert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            model.deleteGroup(groupName, owner);
+        }
+    }
+
+    private void showCommunityMessages() {
+        model.requestCommunityMessages();
+        // The model listener will handle displaying the results
+    }
+
+    private String generateVerificationCode() {
+        return String.format("%06d", new java.util.Random().nextInt(1000000));
+    }
+
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    // Public methods for external use
+    public void connectToServer(String ip, String port) {
+        UnifiedAdminModel.ConnectionResult result = model.connect(ip, port);
         Platform.runLater(() -> {
-            Alert alert = new Alert(type);
-            alert.setTitle(title);
+            Alert alert = new Alert(
+                    result.getStatus() == UnifiedAdminModel.ConnectionStatus.SUCCESS ?
+                            Alert.AlertType.INFORMATION : Alert.AlertType.ERROR
+            );
+            alert.setTitle("Connection Result");
             alert.setHeaderText(null);
-            alert.setContentText(message);
+            alert.setContentText(result.getMessage());
             alert.showAndWait();
         });
     }
 
-    // Getters and setters
-    public void setAdminModel(UnifiedAdminModel adminModel) {
-        this.adminModel = adminModel;
-        sharedAdminModel = adminModel;
-        setupListeners();
-        if (adminModel != null && adminModel.isConnected()) {
-            adminModel.loadData();
-        }
+    public void loginAdmin(String username, String password) {
+        model.login(username, password);
     }
 
-    public UnifiedAdminModel getAdminModel() {
-        return adminModel;
-    }
-
-    public static UnifiedAdminModel getSharedAdminModel() {
-        return sharedAdminModel;
-    }
-
-    public static void setSharedAdminModel(UnifiedAdminModel model) {
-        sharedAdminModel = model;
+    public UnifiedAdminModel getModel() {
+        return model;
     }
 }

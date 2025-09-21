@@ -1,7 +1,7 @@
 package AdminMVC;
 
 import AdminMVC.AdminModel.ConnectionModel;
-import AdminMVC.AdminView.AdminConnectionView;
+import AdminMVC.AdminView.Connection.AdminConnectionView;
 import AdminMVC.AdminControllers.AdminConnectionController;
 import javafx.application.Platform;
 import javafx.stage.Stage;

@@ -1,4 +1,4 @@
-package AdminMVC.AdminView;
+package AdminMVC.AdminView.Connection;
 
 import javafx.animation.ScaleTransition;
 import javafx.animation.TranslateTransition;

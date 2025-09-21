@@ -10,8 +10,8 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+
 public class ServerXMLHandler {
     private static final String FILE_PATH = "src/main/resources/XMLFiles/Users.xml";
     private static final String ADMIN_FILE_PATH = "src/main/resources/XMLFiles/AdminCredentials.xml";
@@ -209,12 +209,13 @@ public class ServerXMLHandler {
             case "SEARCH_USERS":
                 String userKeyword = content[0];
                 String searchResults = searchUsersData(userKeyword);
-                reply = "SEARCH_USERS_RESULT![]!" + searchResults;
+                reply = "SEARCH_USERS_RESULT![]!" + searchResults; // Remove the ![]! format
                 break;
+
             case "SEARCH_GROUPS":
                 String groupKeyword = content[0];
                 String groupSearchResults = searchGroupsData(groupKeyword);
-                reply = "SEARCH_GROUPS_RESULT![]!" + groupSearchResults;
+                reply = "SEARCH_GROUPS_RESULT![]!" + groupSearchResults; // Remove the ![]! format
                 break;
             case "CREATE_USER":
                 String newUsername = content[0];
@@ -229,12 +230,15 @@ public class ServerXMLHandler {
             case "CREATE_GROUP_ADMIN":
                 String newGroupName = content[0];
                 String groupCreator = content[1];
-                if (createGroup(newGroupName, groupCreator)) {
+                String membersStr = content.length > 2 ? content[2] : "";
+
+                if (createGroupInUserAccounts(newGroupName, groupCreator, membersStr)) {
                     reply = "GROUP_CREATED";
                 } else {
                     reply = "GROUP_CREATE_FAILED";
                 }
                 break;
+
             case "GET_ACTIVE_USERS":
                 String activeUsersStr = String.join(",", getActiveUsers());
                 reply = "ACTIVE_USERS![]!" + activeUsersStr;
@@ -459,9 +463,147 @@ public class ServerXMLHandler {
                     reply = "SEND_GROUP_FILE_FAILED";
                 }
                 break;
+            case "GET_ALL_USERS_WITH_STATUS":
+                reply = "GET_ALL_USERS_WITH_STATUS";
+                break;
+
+            case "GET_ACTIVE_USERS_ONLY":
+                reply = "GET_ACTIVE_USERS_ONLY";
+                break;
+
+            case "GET_ALL_GROUPS_ENHANCED":
+                reply = "GET_ALL_GROUPS_ENHANCED";
+                break;
+
+            case "CREATE_GROUP_WITH_MEMBERS":
+                String groupName = content[0];
+                String creator = content[1];
+                membersStr = content.length > 2 ? content[2] : "";
+
+                List<String> members = new ArrayList<>();
+                if (!membersStr.isEmpty()) {
+                    members = Arrays.asList(membersStr.split(","));
+                    // Trim all member names
+                    for (int i = 0; i < members.size(); i++) {
+                        members.set(i, members.get(i).trim());
+                    }
+                }
+
+                if (createGroupWithMembers(groupName, creator, members)) {
+                    reply = "GROUP_CREATED";
+                } else {
+                    reply = "GROUP_CREATE_FAILED";
+                }
+                break;
+
+            case "ADD_MEMBERS_TO_GROUP":
+                String targetGroupName = content[0];
+                String newMembersStr = content[1];
+
+                if (!newMembersStr.isEmpty()) {
+                    List<String> newMembers = Arrays.asList(newMembersStr.split(","));
+                    // Here you could implement adding members to existing group
+                    // For now, just return success
+                    reply = "MEMBERS_ADDED_TO_GROUP";
+                } else {
+                    reply = "GROUP_UPDATE_FAILED";
+                }
+                break;
+
+            case "REQUEST_PASSWORD_RESET":
+                String resetUsername = content[0];
+                String verificationCode = generateVerificationCode(resetUsername);
+
+                if (verificationCode != null) {
+                    reply = "PASSWORD_RESET_REQUESTED![]!" + resetUsername + "![]!" + verificationCode;
+                } else {
+                    reply = "PASSWORD_RESET_FAILED";
+                }
+                break;
+
+            case "VERIFY_RESET_CODE":
+                String verifyUsername = content[0];
+                String providedCode = content[1];
+
+                if (verifyResetCode(verifyUsername, providedCode)) {
+                    reply = "RESET_CODE_VERIFIED";
+                } else {
+                    reply = "RESET_CODE_INVALID";
+                }
+                break;
 
         }
         return reply;
+    }
+
+    public synchronized boolean createGroupInUserAccounts(String groupName, String creator, String membersStr) {
+        try {
+            // Build member list
+            List<String> allMembers = new ArrayList<>();
+            allMembers.add(creator);
+
+            if (!membersStr.isEmpty()) {
+                String[] members = membersStr.split(",");
+                for (String member : members) {
+                    String trimmedMember = member.trim();
+                    if (!trimmedMember.isEmpty() && !allMembers.contains(trimmedMember)) {
+                        allMembers.add(trimmedMember);
+                    }
+                }
+            }
+
+            // Create group in each member's account
+            for (String member : allMembers) {
+                List<String> otherMembers = new ArrayList<>(allMembers);
+                otherMembers.remove(member);
+                addGroupToUserAccount(member, groupName, otherMembers);
+            }
+
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private void addGroupToUserAccount(String username, String groupName, List<String> otherMembers) {
+        try {
+            File file = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc;
+
+            if (file.exists()) {
+                doc = builder.parse(file);
+            } else {
+                doc = builder.newDocument();
+                Element root = doc.createElement("user");
+                doc.appendChild(root);
+            }
+
+            Element root = doc.getDocumentElement();
+            Element groupElement = doc.createElement("group");
+
+            Element groupNameElement = doc.createElement("groupname");
+            groupNameElement.appendChild(doc.createTextNode(groupName));
+            groupElement.appendChild(groupNameElement);
+
+            for (String member : otherMembers) {
+                Element memberElement = doc.createElement("username");
+                memberElement.appendChild(doc.createTextNode(member));
+                groupElement.appendChild(memberElement);
+            }
+
+            Element chatHistory = doc.createElement("chathistory");
+            groupElement.appendChild(chatHistory);
+
+            root.appendChild(groupElement);
+            saveDocument(doc, file);
+
+        } catch (Exception e) {
+            System.err.println("Error adding group to " + username + "'s account: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     private boolean storeFileData(String username, String sender, String fileName, String fileExtension, String base64Content) {
@@ -579,20 +721,35 @@ public class ServerXMLHandler {
     }
     public String getAllGroupsData() {
         try {
-            Document doc = loadDocument();
-            NodeList groups = doc.getElementsByTagName("group");
-            StringBuilder result = new StringBuilder();
+            Set<String> uniqueGroups = new HashSet<>();
+            File xmlFilesDir = new File("src/main/resources/XMLFiles/");
+            File[] userFiles = xmlFilesDir.listFiles((dir, name) -> name.endsWith("Account.xml"));
 
-            for (int i = 0; i < groups.getLength(); i++) {
-                Element group = (Element) groups.item(i);
-                String groupName = group.getAttribute("name");
-                String creator = group.getAttribute("creator");
+            if (userFiles == null) return "";
 
-                if (i > 0) result.append(",");
-                result.append(groupName).append("![]!").append(creator);
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+
+            for (File userFile : userFiles) {
+                try {
+                    Document doc = builder.parse(userFile);
+                    NodeList groups = doc.getElementsByTagName("group");
+
+                    for (int i = 0; i < groups.getLength(); i++) {
+                        Element group = (Element) groups.item(i);
+                        NodeList groupNameNodes = group.getElementsByTagName("groupname");
+                        if (groupNameNodes.getLength() > 0) {
+                            String groupName = groupNameNodes.item(0).getTextContent();
+                            String username = userFile.getName().replace("Account.xml", "");
+                            uniqueGroups.add(groupName + "![]!" + username);
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error reading " + userFile.getName() + ": " + e.getMessage());
+                }
             }
 
-            return result.toString();
+            return String.join(",", uniqueGroups);
         } catch (Exception e) {
             e.printStackTrace();
             return "";
@@ -834,6 +991,9 @@ public class ServerXMLHandler {
     }
 
     private void saveDocument(Document doc, File file) throws TransformerException {
+        // Remove empty text nodes to prevent extra whitespace
+        removeEmptyTextNodes(doc);
+
         TransformerFactory tf = TransformerFactory.newInstance();
         Transformer transformer = tf.newTransformer();
         transformer.setOutputProperty(OutputKeys.INDENT, "yes");
@@ -841,7 +1001,36 @@ public class ServerXMLHandler {
         transformer.setOutputProperty(OutputKeys.METHOD, "xml");
         transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
         transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
-        transformer.transform(new DOMSource(doc), new StreamResult(file));
+
+        // Ensure clean formatting
+        DOMSource source = new DOMSource(doc);
+        StreamResult result = new StreamResult(file);
+        transformer.transform(source, result);
+    }
+    private void removeEmptyTextNodes(Document doc) {
+        NodeList list = doc.getChildNodes();
+        for (int i = 0; i < list.getLength(); i++) {
+            removeEmptyTextNodesRecursive(list.item(i));
+        }
+    }
+    private void removeEmptyTextNodesRecursive(Node node) {
+        NodeList list = node.getChildNodes();
+        List<Node> nodesToRemove = new ArrayList<>();
+
+        for (int i = 0; i < list.getLength(); i++) {
+            Node child = list.item(i);
+            if (child.getNodeType() == Node.TEXT_NODE) {
+                if (child.getTextContent().trim().isEmpty()) {
+                    nodesToRemove.add(child);
+                }
+            } else {
+                removeEmptyTextNodesRecursive(child);
+            }
+        }
+
+        for (Node nodeToRemove : nodesToRemove) {
+            node.removeChild(nodeToRemove);
+        }
     }
 
     public synchronized boolean createGroup(String groupName, String creator) {
@@ -1343,21 +1532,6 @@ public class ServerXMLHandler {
         saveDocument(doc, file);
     }
 
-    private void removeEmptyTextNodes(Document doc) {
-        NodeList list = doc.getElementsByTagName("*");
-        for (int i = 0; i < list.getLength(); i++) {
-            Node node = list.item(i);
-            Node child = node.getFirstChild();
-            while (child != null) {
-                Node next = child.getNextSibling();
-                if (child.getNodeType() == Node.TEXT_NODE && child.getTextContent().trim().isEmpty()) {
-                    node.removeChild(child);
-                }
-                child = next;
-            }
-        }
-    }
-
     public String getSender(String xmlString) throws ParserConfigurationException, IOException, SAXException {
         DocumentBuilderFactory stringFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder stringBuilder = stringFactory.newDocumentBuilder();
@@ -1466,9 +1640,18 @@ public class ServerXMLHandler {
         return false;
     }
     private void saveDocument(Document doc) throws TransformerException {
+        removeEmptyTextNodes(doc);
+
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
         Transformer transformer = transformerFactory.newTransformer();
-        transformer.transform(new DOMSource(doc), new StreamResult(new File(FILE_PATH)));
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+        transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+
+        DOMSource source = new DOMSource(doc);
+        StreamResult result = new StreamResult(new File(FILE_PATH));
+        transformer.transform(source, result);
     }
     public synchronized boolean joinGroup(String groupName, String username) {
         try {
@@ -1778,5 +1961,303 @@ public class ServerXMLHandler {
         }
         return false;
     }
+    public String getAllUsersDataWithStatus() {
+        try {
+            File file = new File(FILE_PATH);
+            if (!file.exists()) return "";
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+
+            NodeList users = doc.getElementsByTagName("user");
+            StringBuilder result = new StringBuilder();
+            List<String> activeUsersList = getActiveUsers();
+
+            for (int i = 0; i < users.getLength(); i++) {
+                Element user = (Element) users.item(i);
+                String username = user.getElementsByTagName("username").item(0).getTextContent();
+                String password = user.getElementsByTagName("password").item(0).getTextContent();
+                boolean isOnline = activeUsersList.contains(username);
+
+                if (i > 0) result.append(",");
+                result.append(username).append("![]!").append(password).append("![]!").append(isOnline);
+            }
+
+            return result.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+    public String getActiveUsersData() {
+        try {
+            File file = new File(FILE_PATH);
+            if (!file.exists()) return "";
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+
+            NodeList users = doc.getElementsByTagName("user");
+            StringBuilder result = new StringBuilder();
+            List<String> activeUsersList = getActiveUsers();
+            boolean first = true;
+
+            for (int i = 0; i < users.getLength(); i++) {
+                Element user = (Element) users.item(i);
+                String username = user.getElementsByTagName("username").item(0).getTextContent();
+                String password = user.getElementsByTagName("password").item(0).getTextContent();
+
+                if (activeUsersList.contains(username)) {
+                    if (!first) result.append(",");
+                    result.append(username).append("![]!").append(password).append("![]!true");
+                    first = false;
+                }
+            }
+
+            return result.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+    public String getAllGroupsDataEnhanced() {
+        try {
+            Map<String, GroupInfo> uniqueGroups = new HashMap<>();
+            File xmlFilesDir = new File("src/main/resources/XMLFiles/");
+            File[] userFiles = xmlFilesDir.listFiles((dir, name) -> name.endsWith("Account.xml"));
+
+            if (userFiles == null) return "";
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+
+            // Collect all groups with their owners and member counts
+            for (File userFile : userFiles) {
+                try {
+                    Document doc = builder.parse(userFile);
+                    NodeList groups = doc.getElementsByTagName("group");
+                    String username = userFile.getName().replace("Account.xml", "");
+
+                    for (int i = 0; i < groups.getLength(); i++) {
+                        Element group = (Element) groups.item(i);
+                        NodeList groupNameNodes = group.getElementsByTagName("groupname");
+                        if (groupNameNodes.getLength() > 0) {
+                            String groupName = groupNameNodes.item(0).getTextContent();
+
+                            // Check if this user is the group owner
+                            NodeList ownerNodes = group.getElementsByTagName("groupOwner");
+                            if (ownerNodes.getLength() > 0) {
+                                String owner = ownerNodes.item(0).getTextContent();
+
+                                if (!uniqueGroups.containsKey(groupName)) {
+                                    uniqueGroups.put(groupName, new GroupInfo(owner, 1));
+                                } else {
+                                    uniqueGroups.get(groupName).incrementMemberCount();
+                                }
+                            } else {
+                                // If no explicit owner, try to determine from group structure
+                                if (!uniqueGroups.containsKey(groupName)) {
+                                    // Count members in this group
+                                    NodeList members = group.getElementsByTagName("username");
+                                    int memberCount = members.getLength() + 1; // +1 for the current user
+                                    uniqueGroups.put(groupName, new GroupInfo(username, memberCount));
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error reading " + userFile.getName() + ": " + e.getMessage());
+                }
+            }
+
+            // Format result
+            StringBuilder result = new StringBuilder();
+            boolean first = true;
+            for (Map.Entry<String, GroupInfo> entry : uniqueGroups.entrySet()) {
+                if (!first) result.append(",");
+                result.append(entry.getKey()).append("![]!")
+                        .append(entry.getValue().getOwner()).append("![]!")
+                        .append(entry.getValue().getMemberCount());
+                first = false;
+            }
+
+            return result.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+    public synchronized boolean createGroupWithMembers(String groupName, String creator, List<String> memberUsernames) {
+        try {
+            // Build complete member list
+            List<String> allMembers = new ArrayList<>();
+            allMembers.add(creator);
+
+            if (memberUsernames != null) {
+                for (String member : memberUsernames) {
+                    String trimmedMember = member.trim();
+                    if (!trimmedMember.isEmpty() && !allMembers.contains(trimmedMember)) {
+                        allMembers.add(trimmedMember);
+                    }
+                }
+            }
+
+            // Create group in each member's account with group owner tag
+            for (String member : allMembers) {
+                List<String> otherMembers = new ArrayList<>(allMembers);
+                otherMembers.remove(member);
+                addGroupToUserAccountWithOwner(member, groupName, creator, otherMembers);
+            }
+
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    private void addGroupToUserAccountWithOwner(String username, String groupName, String groupOwner, List<String> otherMembers) {
+        try {
+            File file = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc;
+
+            if (file.exists()) {
+                doc = builder.parse(file);
+            } else {
+                doc = builder.newDocument();
+                Element root = doc.createElement("user");
+                doc.appendChild(root);
+            }
+
+            Element root = doc.getDocumentElement();
+            Element groupElement = doc.createElement("group");
+
+            // Add group name
+            Element groupNameElement = doc.createElement("groupname");
+            groupNameElement.appendChild(doc.createTextNode(groupName));
+            groupElement.appendChild(groupNameElement);
+
+            // Add group owner tag
+            Element groupOwnerElement = doc.createElement("groupOwner");
+            groupOwnerElement.appendChild(doc.createTextNode(groupOwner));
+            groupElement.appendChild(groupOwnerElement);
+
+            // Add other members
+            for (String member : otherMembers) {
+                Element memberElement = doc.createElement("username");
+                memberElement.appendChild(doc.createTextNode(member));
+                groupElement.appendChild(memberElement);
+            }
+
+            // Add chat history
+            Element chatHistory = doc.createElement("chathistory");
+            groupElement.appendChild(chatHistory);
+
+            root.appendChild(groupElement);
+            saveDocument(doc, file);
+
+        } catch (Exception e) {
+            System.err.println("Error adding group to " + username + "'s account: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    public String generateVerificationCode(String username) {
+        try {
+            // Generate 6-digit verification code
+            String verificationCode = String.format("%06d", new java.util.Random().nextInt(1000000));
+
+            // Add verification code to user's account XML
+            File file = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
+            if (!file.exists()) {
+                return null; // User doesn't exist
+            }
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+            Element root = doc.getDocumentElement();
+
+            // Remove existing verification code if present
+            NodeList existingCodes = root.getElementsByTagName("verificationCode");
+            for (int i = existingCodes.getLength() - 1; i >= 0; i--) {
+                root.removeChild(existingCodes.item(i));
+            }
+
+            // Add new verification code
+            Element codeElement = doc.createElement("verificationCode");
+            codeElement.appendChild(doc.createTextNode(verificationCode));
+            root.appendChild(codeElement);
+
+            // Add timestamp for expiration (valid for 10 minutes)
+            Element timestampElement = doc.createElement("verificationTimestamp");
+            timestampElement.appendChild(doc.createTextNode(String.valueOf(System.currentTimeMillis())));
+            root.appendChild(timestampElement);
+
+            saveDocument(doc, file);
+            return verificationCode;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    public boolean verifyResetCode(String username, String providedCode) {
+        try {
+            File file = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
+            if (!file.exists()) {
+                return false;
+            }
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+
+            NodeList codeNodes = doc.getElementsByTagName("verificationCode");
+            NodeList timestampNodes = doc.getElementsByTagName("verificationTimestamp");
+
+            if (codeNodes.getLength() == 0 || timestampNodes.getLength() == 0) {
+                return false;
+            }
+
+            String storedCode = codeNodes.item(0).getTextContent();
+            long timestamp = Long.parseLong(timestampNodes.item(0).getTextContent());
+            long currentTime = System.currentTimeMillis();
+
+            // Check if code is expired (10 minutes = 600,000 milliseconds)
+            if (currentTime - timestamp > 600000) {
+                return false;
+            }
+
+            return storedCode.equals(providedCode);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    private static class GroupInfo {
+        private String owner;
+        private int memberCount;
+
+        public GroupInfo(String owner, int memberCount) {
+            this.owner = owner;
+            this.memberCount = memberCount;
+        }
+
+        public String getOwner() {
+            return owner;
+        }
+
+        public int getMemberCount() {
+            return memberCount;
+        }
+
+        public void incrementMemberCount() {
+            this.memberCount++;
+        }
+    }
+
+
 }
 

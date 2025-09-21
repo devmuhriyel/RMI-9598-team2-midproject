@@ -6,6 +6,7 @@ import org.w3c.dom.Document;
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class ClientThread implements Runnable {
@@ -59,6 +60,42 @@ public class ClientThread implements Runnable {
             while ((xmlMsg = readMSG.readLine()) != null) {
                 System.out.println("Received XML: " + xmlMsg);
                 String reply = xmlHandler.readMessage(xmlMsg);
+
+                // Handle compound replies that contain data
+                if (reply.startsWith("SEARCH_USERS_RESULT![]!")) {
+                    String[] parts = reply.split("!\\[]!", 2);
+                    String searchResults = parts.length > 1 ? parts[1] : "";
+                    sendMessage("<Response><reply>SEARCH_USERS_RESULT</reply><body>" + searchResults + "</body></Response>");
+                    continue;
+                }
+
+                if (reply.startsWith("SEARCH_GROUPS_RESULT![]!")) {
+                    String[] parts = reply.split("!\\[]!", 2);
+                    String searchResults = parts.length > 1 ? parts[1] : "";
+                    sendMessage("<Response><reply>SEARCH_GROUPS_RESULT</reply><body>" + searchResults + "</body></Response>");
+                    continue;
+                }
+
+                if (reply.startsWith("USER_STATS![]!")) {
+                    String[] parts = reply.split("!\\[]!", 2);
+                    String userStats = parts.length > 1 ? parts[1] : "";
+                    sendMessage("<Response><reply>USER_STATS</reply><body>" + userStats + "</body></Response>");
+                    continue;
+                }
+
+                if (reply.startsWith("ACTIVE_USERS![]!")) {
+                    String[] parts = reply.split("!\\[]!", 2);
+                    String activeUsersStr = parts.length > 1 ? parts[1] : "";
+                    sendMessage("<Response><reply>ACTIVE_USERS</reply><body>" + activeUsersStr + "</body></Response>");
+                    continue;
+                }
+
+                if (reply.startsWith("COMMUNITY_MESSAGES![]!")) {
+                    String[] parts = reply.split("!\\[]!", 2);
+                    String messagesStr = parts.length > 1 ? parts[1] : "";
+                    sendMessage("<Response><reply>COMMUNITY_MESSAGES</reply><body>" + messagesStr + "</body></Response>");
+                    continue;
+                }
 
                 switch (reply) {
                     // **CHANGED: Added admin login cases**
@@ -116,15 +153,15 @@ public class ClientThread implements Runnable {
                         break;
 
                     case "SEARCH_USERS_RESULT":
-                        String[] searchContent = extractContent(xmlMsg);
-                        String userSearchResults = xmlHandler.searchUsersData(searchContent[0]);
-                        sendMessage("<Response><reply>SEARCH_USERS_RESULT</reply><body>" + userSearchResults + "</body></Response>");
+                        String[] parts = reply.split("!\\[]!", 2);
+                        String searchResults = parts.length > 1 ? parts[1] : "";
+                        sendMessage("<Response><reply>SEARCH_USERS_RESULT</reply><body>" + searchResults + "</body></Response>");
                         break;
 
                     case "SEARCH_GROUPS_RESULT":
-                        String[] groupSearchContent = extractContent(xmlMsg);
-                        String groupSearchResults = xmlHandler.searchGroupsData(groupSearchContent[0]);
-                        sendMessage("<Response><reply>SEARCH_GROUPS_RESULT</reply><body>" + groupSearchResults + "</body></Response>");
+                        String[] groupParts = reply.split("!\\[]!", 2);
+                        String groupResults = groupParts.length > 1 ? groupParts[1] : "";
+                        sendMessage("<Response><reply>SEARCH_GROUPS_RESULT</reply><body>" + groupResults + "</body></Response>");
                         break;
 
                     case "USER_DELETED":
@@ -500,7 +537,52 @@ public class ClientThread implements Runnable {
                     case "GROUP_FILE_SEND_FAILED":
                         sendMessage("<Response><reply>GROUP_FILE_SEND_FAILED</reply><body>Failed to send file to group</body></Response>");
                         break;
+                    case "GET_ALL_USERS_WITH_STATUS":
+                        String usersDataWithStatus = xmlHandler.getAllUsersDataWithStatus();
+                        sendMessage("<Response><reply>USERS_WITH_STATUS</reply><body>" + usersDataWithStatus + "</body></Response>");
+                        break;
+
+                    case "GET_ACTIVE_USERS_ONLY":
+                        String activeUsersData = xmlHandler.getActiveUsersData();
+                        sendMessage("<Response><reply>ACTIVE_USERS_ONLY</reply><body>" + activeUsersData + "</body></Response>");
+                        break;
+
+                    case "GET_ALL_GROUPS_ENHANCED":
+                        String groupsDataEnhanced = xmlHandler.getAllGroupsDataEnhanced();
+                        sendMessage("<Response><reply>GROUPS_ENHANCED</reply><body>" + groupsDataEnhanced + "</body></Response>");
+                        break;
+
+                    case "CREATE_GROUP_WITH_MEMBERS":
+                        createGroupContent = extractContent(xmlMsg);
+                        String groupName = createGroupContent[0];
+                        String creator = createGroupContent[1];
+                        String membersStr = createGroupContent.length > 2 ? createGroupContent[2] : "";
+
+                        List<String> members = new ArrayList<>();
+                        if (!membersStr.isEmpty()) {
+                            members = Arrays.asList(membersStr.split(","));
+                        }
+
+                        if (xmlHandler.createGroupWithMembers(groupName, creator, members)) {
+                            sendMessage("<Response><reply>GROUP_CREATED</reply><body>Group created with members</body></Response>");
+                        } else {
+                            sendMessage("<Response><reply>GROUP_CREATE_FAILED</reply><body>Failed to create group</body></Response>");
+                        }
+                        break;
+
+                    case "REQUEST_PASSWORD_RESET":
+                        String[] resetContent = extractContent(xmlMsg);
+                        String resetUsername = resetContent[0];
+                        String verificationCode = xmlHandler.generateVerificationCode(resetUsername);
+
+                        if (verificationCode != null) {
+                            sendMessage("<Response><reply>PASSWORD_RESET_REQUESTED</reply><body>" + resetUsername + "![]!" + verificationCode + "</body></Response>");
+                        } else {
+                            sendMessage("<Response><reply>PASSWORD_RESET_FAILED</reply><body>User not found</body></Response>");
+                        }
+                        break;
                 }
+
             }
         } catch (Exception e) {
             e.printStackTrace();

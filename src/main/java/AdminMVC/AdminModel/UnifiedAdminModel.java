@@ -1,6 +1,5 @@
 package AdminMVC.AdminModel;
 
-import ClientMVC.ClientModel.AdminModel;
 import AdminMVC.AdminXMLHandler;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -9,6 +8,9 @@ import javafx.collections.ObservableList;
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
@@ -24,14 +26,16 @@ public class UnifiedAdminModel implements Runnable {
     private String adminUsername;
     private volatile boolean shouldStop = false;
 
-    private ObservableList<AdminModel> allUsers;
-    private ObservableList<AdminModel> allGroups;
+    // Data structures to store user and group information
+    private ObservableList<Map<String, String>> allUsers;
+    private ObservableList<Map<String, String>> allGroups;
     private ObservableList<String> activeUsers;
     private ObservableList<String> communityMessages;
     private static ArrayList<UnifiedAdminModel> adminClients = new ArrayList<>();
 
     private AdminXMLHandler adminXMLHandler;
 
+    private Consumer<String> passwordResetListener;
     private Consumer<String> messageListener;
     private Consumer<String> loginResponseListener;
     private Consumer<String> dataUpdateListener;
@@ -159,13 +163,6 @@ public class UnifiedAdminModel implements Runnable {
         }
     }
 
-    public void loadData() {
-        requestAllUsers();
-        requestAllGroups();
-        requestActiveUsers();
-        requestCommunityMessages();
-    }
-
     public void requestAllUsers() {
         try {
             if (writeMSG != null && isConnected()) {
@@ -179,10 +176,49 @@ public class UnifiedAdminModel implements Runnable {
         }
     }
 
+    public void requestAllUsersWithStatus() {
+        try {
+            if (writeMSG != null && isConnected()) {
+                String request = adminXMLHandler.createGetAllUsersWithStatusRequest();
+                writeMSG.write(request);
+                writeMSG.newLine();
+                writeMSG.flush();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void requestActiveUsersOnly() {
+        try {
+            if (writeMSG != null && isConnected()) {
+                String request = adminXMLHandler.createGetActiveUsersOnlyRequest();
+                writeMSG.write(request);
+                writeMSG.newLine();
+                writeMSG.flush();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void requestAllGroups() {
         try {
             if (writeMSG != null && isConnected()) {
                 String request = adminXMLHandler.createGetAllGroupsRequest();
+                writeMSG.write(request);
+                writeMSG.newLine();
+                writeMSG.flush();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void requestAllGroupsEnhanced() {
+        try {
+            if (writeMSG != null && isConnected()) {
+                String request = adminXMLHandler.createGetAllGroupsEnhancedRequest();
                 writeMSG.write(request);
                 writeMSG.newLine();
                 writeMSG.flush();
@@ -352,6 +388,69 @@ public class UnifiedAdminModel implements Runnable {
         }
     }
 
+    public void createNewGroupWithMembers(String groupName, String creator, List<String> members) {
+        if (!adminXMLHandler.validateGroupName(groupName) || !adminXMLHandler.validateUsername(creator)) {
+            System.err.println("Invalid group name or creator format");
+            return;
+        }
+
+        try {
+            if (writeMSG != null && isConnected()) {
+                String membersStr = members != null ? String.join(",", members) : "";
+                String request = adminXMLHandler.createNewGroupWithMembersRequest(groupName, creator, membersStr);
+                writeMSG.write(request);
+                writeMSG.newLine();
+                writeMSG.flush();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void addMembersToGroup(String groupName, List<String> newMembers) {
+        if (!adminXMLHandler.validateGroupName(groupName)) {
+            System.err.println("Invalid group name format");
+            return;
+        }
+
+        try {
+            if (writeMSG != null && isConnected()) {
+                String membersStr = String.join(",", newMembers);
+                String request = adminXMLHandler.createAddMembersToGroupRequest(groupName, membersStr);
+                writeMSG.write(request);
+                writeMSG.newLine();
+                writeMSG.flush();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void requestPasswordReset(String username) {
+        if (!adminXMLHandler.validateUsername(username)) {
+            System.err.println("Invalid username format: " + username);
+            return;
+        }
+
+        try {
+            if (writeMSG != null && isConnected()) {
+                String request = adminXMLHandler.createPasswordResetRequest(username);
+                writeMSG.write(request);
+                writeMSG.newLine();
+                writeMSG.flush();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void loadData() {
+        requestAllUsersWithStatus();
+        requestAllGroupsEnhanced();
+        requestActiveUsers();
+        requestCommunityMessages();
+    }
+
     public void stopListening() {
         shouldStop = true;
     }
@@ -391,6 +490,27 @@ public class UnifiedAdminModel implements Runnable {
 
     private void handleServerResponse(String reply, String finalMsg) {
         switch (reply) {
+            case "USERS_WITH_STATUS":
+                handleUsersWithStatusResponse(finalMsg);
+                break;
+
+            case "ACTIVE_USERS_ONLY":
+                handleActiveUsersOnlyResponse(finalMsg);
+                break;
+
+            case "GROUPS_ENHANCED":
+                handleGroupsEnhancedResponse(finalMsg);
+                break;
+
+            case "PASSWORD_RESET_REQUESTED":
+                handlePasswordResetResponse(finalMsg);
+                break;
+
+            case "MEMBERS_ADDED_TO_GROUP":
+                handleOperationResponse("Members added to group successfully", finalMsg);
+                loadData(); // Refresh data
+                break;
+
             case "ADMIN_LOGIN_SUCCESS":
                 try {
                     String responseBody = adminXMLHandler.getResponseBody(finalMsg);
@@ -517,6 +637,101 @@ public class UnifiedAdminModel implements Runnable {
         }
     }
 
+    private void handleUsersWithStatusResponse(String xmlResponse) {
+        try {
+            String body = adminXMLHandler.getResponseBody(xmlResponse);
+            if (body != null && !body.isEmpty()) {
+                Platform.runLater(() -> {
+                    allUsers.clear();
+                    String[] userEntries = body.split(",");
+                    for (String entry : userEntries) {
+                        if (!entry.trim().isEmpty()) {
+                            String[] parts = entry.split("!\\[]!");
+                            if (parts.length >= 3) {
+                                Map<String, String> user = new HashMap<>();
+                                user.put("username", parts[0]);
+                                user.put("password", parts[1]);
+                                user.put("status", Boolean.parseBoolean(parts[2]) ? "Online" : "Offline");
+                                user.put("isOnline", parts[2]);
+                                allUsers.add(user);
+                            }
+                        }
+                    }
+
+                    if (dataUpdateListener != null) {
+                        dataUpdateListener.accept("USERS_UPDATED");
+                    }
+                });
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling users with status response: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void handleActiveUsersOnlyResponse(String xmlResponse) {
+        try {
+            String body = adminXMLHandler.getResponseBody(xmlResponse);
+            if (body != null && !body.isEmpty()) {
+                Platform.runLater(() -> {
+                    allUsers.clear();
+                    String[] userEntries = body.split(",");
+                    for (String entry : userEntries) {
+                        if (!entry.trim().isEmpty()) {
+                            String[] parts = entry.split("!\\[]!");
+                            if (parts.length >= 3) {
+                                Map<String, String> user = new HashMap<>();
+                                user.put("username", parts[0]);
+                                user.put("password", parts[1]);
+                                user.put("status", "Online");
+                                user.put("isOnline", "true");
+                                allUsers.add(user);
+                            }
+                        }
+                    }
+
+                    if (dataUpdateListener != null) {
+                        dataUpdateListener.accept("USERS_UPDATED");
+                    }
+                });
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling active users only response: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void handleGroupsEnhancedResponse(String xmlResponse) {
+        try {
+            String body = adminXMLHandler.getResponseBody(xmlResponse);
+            if (body != null && !body.isEmpty()) {
+                Platform.runLater(() -> {
+                    allGroups.clear();
+                    String[] groupEntries = body.split(",");
+                    for (String entry : groupEntries) {
+                        if (!entry.trim().isEmpty()) {
+                            String[] parts = entry.split("!\\[]!");
+                            if (parts.length >= 3) {
+                                Map<String, String> group = new HashMap<>();
+                                group.put("groupName", parts[0]);
+                                group.put("username", parts[1]); // owner
+                                group.put("memberCount", parts[2]);
+                                allGroups.add(group);
+                            }
+                        }
+                    }
+
+                    if (dataUpdateListener != null) {
+                        dataUpdateListener.accept("GROUPS_UPDATED");
+                    }
+                });
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling groups enhanced response: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
     private void handleUsersResponse(String xmlResponse) {
         try {
             String body = adminXMLHandler.getResponseBody(xmlResponse);
@@ -528,7 +743,12 @@ public class UnifiedAdminModel implements Runnable {
                         if (!entry.trim().isEmpty()) {
                             String[] parts = entry.split("!\\[]!");
                             if (parts.length >= 2) {
-                                allUsers.add(new AdminModel(parts[0], parts[1]));
+                                Map<String, String> user = new HashMap<>();
+                                user.put("username", parts[0]);
+                                user.put("password", parts[1]);
+                                user.put("status", "Unknown");
+                                user.put("isOnline", "false");
+                                allUsers.add(user);
                             }
                         }
                     }
@@ -555,7 +775,11 @@ public class UnifiedAdminModel implements Runnable {
                         if (!entry.trim().isEmpty()) {
                             String[] parts = entry.split("!\\[]!");
                             if (parts.length >= 2) {
-                                allGroups.add(new AdminModel(parts[1], parts[0], true)); // owner, groupName, isGroup
+                                Map<String, String> group = new HashMap<>();
+                                group.put("groupName", parts[0]);
+                                group.put("username", parts[1]); // owner
+                                group.put("memberCount", "1");
+                                allGroups.add(group);
                             }
                         }
                     }
@@ -567,6 +791,26 @@ public class UnifiedAdminModel implements Runnable {
             }
         } catch (Exception e) {
             System.err.println("Error handling groups response: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void handlePasswordResetResponse(String xmlResponse) {
+        try {
+            String body = adminXMLHandler.getResponseBody(xmlResponse);
+            if (body != null && !body.isEmpty()) {
+                String[] parts = body.split("!\\[]!");
+                if (parts.length >= 2) {
+                    String username = parts[0];
+                    String verificationCode = parts[1];
+
+                    if (passwordResetListener != null) {
+                        Platform.runLater(() -> passwordResetListener.accept(username));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling password reset response: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -655,11 +899,11 @@ public class UnifiedAdminModel implements Runnable {
     }
 
     // Getters
-    public ObservableList<AdminModel> getAllUsers() {
+    public ObservableList<Map<String, String>> getAllUsers() {
         return allUsers;
     }
 
-    public ObservableList<AdminModel> getAllGroups() {
+    public ObservableList<Map<String, String>> getAllGroups() {
         return allGroups;
     }
 
@@ -723,6 +967,10 @@ public class UnifiedAdminModel implements Runnable {
 
     public void setUserStatsListener(Consumer<String> listener) {
         this.userStatsListener = listener;
+    }
+
+    public void setPasswordResetListener(Consumer<String> listener) {
+        this.passwordResetListener = listener;
     }
 
     public void setAdminUsername(String adminUsername) {

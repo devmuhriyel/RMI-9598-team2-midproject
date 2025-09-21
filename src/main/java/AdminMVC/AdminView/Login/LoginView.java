@@ -1,6 +1,5 @@
-package AdminMVC.AdminView;
+package AdminMVC.AdminView.Login;
 
-import AdminMVC.AdminView.LoginJFXController;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;

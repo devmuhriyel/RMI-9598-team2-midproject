@@ -205,4 +205,13 @@
             </chat>
         </chathistory>
     </group>
+    <group>
+        <groupname>BananaGang</groupname>
+        <groupOwner>joshua</groupOwner>
+        <username>joshua</username>
+        <username>rea</username>
+        <username>bob</username>
+        <username>carl</username>
+        <chathistory/>
+    </group>
 </user>
