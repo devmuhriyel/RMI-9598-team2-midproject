@@ -859,7 +859,6 @@ public class UnifiedClientModel implements Runnable {
     }
 
 
-
     public void setUsername(String username) {
         this.username = username;
     }

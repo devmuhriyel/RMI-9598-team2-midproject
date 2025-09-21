@@ -566,9 +566,11 @@ public class UserXMLHandler {
     public static boolean addFriendRequest(String fromUser, String toUser) {
         try {
             File file = new File("src/main/resources/XMLFiles/Requests.xml");
+
+            // If file doesn't exist, create a new XML structure
             if (!file.exists()) {
-                System.out.println("Requests.xml file not found. Creating a new one...");
-                // If the file doesn’t exist, create a basic structure
+                System.out.println("Requests.xml not found. Creating a new one...");
+                file.getParentFile().mkdirs();
                 DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
                 DocumentBuilder builder = factory.newDocumentBuilder();
                 Document doc = builder.newDocument();
@@ -576,19 +578,35 @@ public class UserXMLHandler {
                 Element root = doc.createElement("requests");
                 doc.appendChild(root);
 
-                // Save the new empty file
                 saveDocument(doc, file.getPath());
             }
 
-            // Load the existing document
+            // Parse existing document
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
             Document doc = builder.parse(file);
             doc.getDocumentElement().normalize();
 
-            Element root = doc.getDocumentElement();
+            NodeList requestNodes = doc.getElementsByTagName("request");
 
-            // Create <request> entry
+            // Check if request already exists
+            for (int i = 0; i < requestNodes.getLength(); i++) {
+                Node reqNode = requestNodes.item(i);
+                if (reqNode.getNodeType() == Node.ELEMENT_NODE) {
+                    Element reqElement = (Element) reqNode;
+                    String existingFrom = reqElement.getElementsByTagName("from").item(0).getTextContent();
+                    String existingTo = reqElement.getElementsByTagName("to").item(0).getTextContent();
+                    String status = reqElement.getElementsByTagName("status").item(0).getTextContent();
+
+                    if (existingFrom.equals(fromUser) && existingTo.equals(toUser) && status.equalsIgnoreCase("pending")) {
+                        System.out.println("Friend request already exists: " + fromUser + " → " + toUser);
+                        return false; // Prevent duplicate
+                    }
+                }
+            }
+
+            // Create new <request> element
+            Element root = doc.getDocumentElement();
             Element requestElement = doc.createElement("request");
 
             Element fromElement = doc.createElement("from");
@@ -605,8 +623,9 @@ public class UserXMLHandler {
 
             root.appendChild(requestElement);
 
+            // Save updated XML
             saveDocument(doc, file.getPath());
-            System.out.println("Friend request from " + fromUser + " to " + toUser + " added.");
+            System.out.println("Friend request added: " + fromUser + " → " + toUser);
             return true;
 
         } catch (Exception e) {
@@ -620,7 +639,10 @@ public class UserXMLHandler {
         List<String> requests = new ArrayList<>();
         try {
             File file = new File("src/main/resources/XMLFiles/Requests.xml");
-            if (!file.exists()) return requests;
+            if (!file.exists()) {
+                System.out.println("Requests.xml not found. Returning empty list.");
+                return requests;
+            }
 
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
@@ -630,18 +652,67 @@ public class UserXMLHandler {
             NodeList requestNodes = doc.getElementsByTagName("request");
             for (int i = 0; i < requestNodes.getLength(); i++) {
                 Element reqEl = (Element) requestNodes.item(i);
+
                 String from = reqEl.getElementsByTagName("from").item(0).getTextContent();
                 String to = reqEl.getElementsByTagName("to").item(0).getTextContent();
+                String status = reqEl.getElementsByTagName("status").item(0).getTextContent();
 
-                if (from.equals(sender)) {
+                if (from.equals(sender) && status.equalsIgnoreCase("pending")) {
                     requests.add(to);
                 }
             }
+
+            System.out.println("Loaded " + requests.size() + " sent requests for user: " + sender);
+
         } catch (Exception e) {
+            System.err.println("Error while loading sent requests for " + sender + ": " + e.getMessage());
             e.printStackTrace();
         }
         return requests;
     }
+
+
+    public static void removeFriendRequest(String from, String to) {
+        try {
+            File xmlFile = new File("src/main/resources/XMLFiles/Requests.xml");
+            if (!xmlFile.exists()) {
+                System.out.println("Requests.xml not found: " + xmlFile.getPath());
+                return;
+            }
+
+            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+            Document doc = dBuilder.parse(xmlFile);
+            doc.getDocumentElement().normalize();
+
+            NodeList requests = doc.getElementsByTagName("request");
+            boolean removed = false;
+
+            for (int i = 0; i < requests.getLength(); i++) {
+                Element reqElement = (Element) requests.item(i);
+                String f = reqElement.getElementsByTagName("from").item(0).getTextContent();
+                String t = reqElement.getElementsByTagName("to").item(0).getTextContent();
+
+                if (f.equals(from) && t.equals(to)) {
+                    reqElement.getParentNode().removeChild(reqElement);
+                    removed = true;
+                    break;
+                }
+            }
+
+            if (removed) {
+                saveDocument(doc, xmlFile.getPath());
+                System.out.println("Removed request: " + from + " → " + to);
+            } else {
+                System.out.println("No matching request found for " + from + " → " + to);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
 
     private static void saveDocument(Document doc, String filePath) {
         try {

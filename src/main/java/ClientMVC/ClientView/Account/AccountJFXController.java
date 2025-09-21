@@ -1,6 +1,8 @@
 package ClientMVC.ClientView.Account;
 
+import ClientMVC.UserXMLHandler;
 import javafx.animation.TranslateTransition;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -12,98 +14,95 @@ import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-/**
- * Controller for the Account View FXML.
- * Handles user account management including profile editing, friend requests, and settings.
- * This controller manages three embedded views: Profile, Requests, and Settings.
- */
+import java.util.List;
+
 public class AccountJFXController {
 
-    // Window controls
     @FXML
     private AnchorPane titleBar;
+
     @FXML
     private Button minimizeButton, closeButton;
 
-    // Main view containers - embedded in the same FXML
+    // Main view containers
     @FXML
     private AnchorPane profileView, requestsView, settingsView;
 
-    // Profile editing frames (initially hidden)
+    // Profile frame switching components
     @FXML
     private AnchorPane changePasswordFrame, changeUsernameFrame;
 
-    // Profile editing buttons
     @FXML
     private Button editUsernameButton, editPasswordButton,
             saveUsernameButton, cancelUsernameButton,
             savePasswordButton, cancelPasswordButton;
 
-    // Input fields for profile changes
     @FXML
     private TextField newUsernameTextField;
+
     @FXML
     private PasswordField oldPasswordTextField, newPasswordTextField, confirmPasswordTextField;
 
-    // Status labels for user feedback
     @FXML
     private Label usernameStatusLabel, passwordStatusLabel;
 
-    // Display labels for current user info
     @FXML
     private Label usernameLabel, currentUsernameLabel, passwordLabel;
 
-    // Navigation and control buttons
     @FXML
-    private Button logoutAccountButton, backButton;
+    private Button logoutAccountButton;
+
+    @FXML
+    private Button backButton;
+
+    @FXML
+    private Button sentRequestButton;
+
+    // Navigation buttons
     @FXML
     private Button profileAccountButton, requestsAccountButton, settingsAccountButton;
 
-    // Callback listeners for MVC communication
+    // Runnables
     private Runnable backButtonListener;
     private Runnable LogoutAccountButtonListener;
     private Runnable usernameChangeListener;
     private Runnable passwordChangeListener;
 
-    // Window dragging coordinates
+    // Top Section for Draggable
     private double xOffset = 0;
     private double yOffset = 0;
 
-    // Friend requests container
     @FXML
     private VBox requestList;
 
-    /**
-     * Loads friend requests into the UI.
-     * Currently populated with sample data - should be connected to server data.
-     */
+    // Update your loadFriendRequests method:
     public void loadFriendRequests() {
-        // Find the request list container
+        System.out.println("loadFriendRequests() called");
+
+        // Find the VBox by searching through the requestsView
         VBox foundVBox = findRequestList(requestsView);
         if (foundVBox != null) {
             requestList = foundVBox;
+            System.out.println("Found requestList manually!");
         } else {
+            System.out.println("Could not find requestList VBox anywhere!");
             return;
         }
 
-        // Clear existing requests
+        // Clear and populate as before...
+        // Sample Data
         requestList.getChildren().clear();
-
-        // TODO: Replace with actual server data
         String[] friendRequests = {"Alice Johnson", "Bob Smith", "Charlie Brown", "Steven Charz", "Joshua Flores"};
 
-        // Create UI elements for each friend request
         for (String friendName : friendRequests) {
             AnchorPane requestFrame = createFriendRequestFrame(friendName);
             requestList.getChildren().add(requestFrame);
         }
+
+        System.out.println("Total children in requestList: " + requestList.getChildren().size());
     }
 
-    /**
-     * Recursively searches for the requestList VBox within a parent container.
-     * @param parent The parent node to search in
-     * @return The VBox with id "requestList" or null if not found
-     */
+    // Helper method to find the VBox manually
     private VBox findRequestList(javafx.scene.Parent parent) {
         if (parent == null) return null;
 
@@ -118,19 +117,17 @@ public class AccountJFXController {
         return null;
     }
 
-    /**
-     * Creates a UI frame for displaying a friend request.
-     * @param friendName The name of the person sending the friend request
-     * @return AnchorPane containing the friend request UI elements
-     */
+    // Method to create individual friend request frame
     private AnchorPane createFriendRequestFrame(String friendName) {
-        // Main container
+        System.out.println("Creating request frame for: " + friendName);
+
+        // Create the main container (same as your FXML design)
         AnchorPane friendRequestFrame = new AnchorPane();
         friendRequestFrame.setPrefHeight(65.0);
         friendRequestFrame.setPrefWidth(372.0);
         friendRequestFrame.setStyle("-fx-background-color: #2a2a2a; -fx-background-radius: 10;");
 
-        // Friend request message
+        // Create the username label
         Label userLabel = new Label(friendName + " wants to be your friend");
         userLabel.setLayoutX(14.0);
         userLabel.setLayoutY(24.0);
@@ -139,58 +136,67 @@ public class AccountJFXController {
         userLabel.setTextFill(javafx.scene.paint.Color.WHITE);
         userLabel.setFont(javafx.scene.text.Font.font("Gill Sans MT", 12.0));
 
-        // Accept button
+        // Create Accept button (same styling as your FXML)
         Button acceptButton = new Button("Confirm");
         acceptButton.setLayoutX(200.0);
         acceptButton.setLayoutY(20.0);
         acceptButton.setStyle("-fx-background-color: #8700b1; -fx-text-fill: white;");
+
+        // Set accept button action
         acceptButton.setOnAction(e -> handleAcceptRequest(friendName, friendRequestFrame));
 
-        // Decline button
+        // Create Decline button (same styling as your FXML)
         Button declineButton = new Button("Decline");
         declineButton.setLayoutX(270.0);
         declineButton.setLayoutY(20.0);
         declineButton.setStyle("-fx-background-color: #525252; -fx-text-fill: white;");
+
+        // Set decline button action
         declineButton.setOnAction(e -> handleDeclineRequest(friendName, friendRequestFrame));
 
+        // Add all components to the frame
         friendRequestFrame.getChildren().addAll(userLabel, acceptButton, declineButton);
+
+        System.out.println("Request frame created successfully");
         return friendRequestFrame;
     }
 
-    /**
-     * Handles accepting a friend request.
-     * @param friendName Name of the friend to accept
-     * @param requestFrame UI frame to remove from display
-     */
+    // Handle accept request
     private void handleAcceptRequest(String friendName, AnchorPane requestFrame) {
+        System.out.println("Accepting friend request from: " + friendName);
+
         // TODO: Send accept request to server
+
+        // Remove the request frame from UI
         requestList.getChildren().remove(requestFrame);
+
+        // Show success message (you can use your existing status methods)
+        // showFriendRequestAccepted(friendName);
     }
 
-    /**
-     * Handles declining a friend request.
-     * @param friendName Name of the friend to decline
-     * @param requestFrame UI frame to remove from display
-     */
+    // Handle decline request
     private void handleDeclineRequest(String friendName, AnchorPane requestFrame) {
+        System.out.println("Declining friend request from: " + friendName);
+
         // TODO: Send decline request to server
+
+        // Remove the request frame from UI
         requestList.getChildren().remove(requestFrame);
+
+        // Show message (you can use your existing status methods)
+        // showFriendRequestDeclined(friendName);
     }
 
-    /**
-     * JavaFX initialization method called when FXML is loaded.
-     */
     @FXML
     public void initialize() {
+        // Be applied to all upcoming FXML sub-frames
         setupWindowControls();
         setUpButtons();
     }
 
-    /**
-     * Sets up event handlers for all interactive buttons.
-     */
     private void setUpButtons() {
-        // Navigation buttons
+
+        // Only set up backButton if it exists (main view only)
         if (backButton != null) {
             backButton.setOnAction(event -> {
                 if (backButtonListener != null) {
@@ -199,6 +205,7 @@ public class AccountJFXController {
             });
         }
 
+        // Only set up logoutButton if it exists (main view only)
         if (logoutAccountButton != null) {
             logoutAccountButton.setOnAction(event -> {
                 if (LogoutAccountButtonListener != null) {
@@ -207,13 +214,34 @@ public class AccountJFXController {
             });
         }
 
-        // Profile editing buttons
+        // Set up save buttons programmatically
         if (saveUsernameButton != null) {
-            saveUsernameButton.setOnAction(event -> saveUsername());
+            System.out.println("Setting up saveUsernameButton programmatically");
+            saveUsernameButton.setOnAction(event -> {
+                System.out.println("*** Save username button clicked programmatically! ***");
+                saveUsername(); // Call our method
+            });
+        } else {
+            System.out.println("ERROR: saveUsernameButton is null!");
         }
 
         if (savePasswordButton != null) {
-            savePasswordButton.setOnAction(event -> savePassword());
+            System.out.println("Setting up savePasswordButton programmatically");
+            savePasswordButton.setOnAction(event -> {
+                System.out.println("*** Save password button clicked programmatically! ***");
+                savePassword(); // Call our method
+            });
+        } else {
+            System.out.println("ERROR: savePasswordButton is null!");
+        }
+
+        // Set up password change buttons
+        if (savePasswordButton != null) {
+            savePasswordButton.setOnAction(event -> {
+                if (passwordChangeListener != null) {
+                    passwordChangeListener.run();
+                }
+            });
         }
 
         if (cancelPasswordButton != null) {
@@ -225,12 +253,10 @@ public class AccountJFXController {
         }
     }
 
-    /**
-     * Sets up window controls for the frameless window (drag, minimize, close).
-     */
     private void setupWindowControls() {
-        // Window dragging functionality
+        // Only set up window controls if titleBar exists (main view only)
         if (titleBar != null) {
+            // Drag the window when mouse is pressed and dragged
             titleBar.setOnMousePressed(event -> {
                 Stage stage = (Stage) titleBar.getScene().getWindow();
                 xOffset = event.getSceneX();
@@ -243,14 +269,13 @@ public class AccountJFXController {
             });
         }
 
-        // Close button
+        // Frameless Buttons - only if they exist
         if (closeButton != null) {
             closeButton.setOnMouseClicked(event -> {
                 ((Stage) closeButton.getScene().getWindow()).close();
             });
         }
 
-        // Minimize button
         if (minimizeButton != null) {
             minimizeButton.setOnMouseClicked(event -> {
                 ((Stage) minimizeButton.getScene().getWindow()).setIconified(true);
@@ -258,57 +283,49 @@ public class AccountJFXController {
         }
     }
 
-    // View Navigation Methods
-
-    /**
-     * Shows the Profile view and hides other views.
-     */
     @FXML
     public void showProfile() {
+        System.out.println("showProfile() called");
         hideAllViews();
         if (profileView != null) {
             profileView.setVisible(true);
+            System.out.println("Profile view made visible");
         }
     }
 
-    /**
-     * Shows the Requests view and loads friend requests.
-     */
     @FXML
     public void showRequests() {
+        System.out.println("showRequests() called");
         hideAllViews();
         if (requestsView != null) {
             requestsView.setVisible(true);
-            // Load friend requests asynchronously to avoid blocking UI
-            javafx.application.Platform.runLater(this::loadFriendRequests);
+            System.out.println("Requests view made visible");
+
+            // Load friend requests after view is visible
+            javafx.application.Platform.runLater(() -> {
+                System.out.println("Platform.runLater executing...");
+                loadFriendRequests();
+            });
         }
     }
 
-    /**
-     * Shows the Settings view and hides other views.
-     */
     @FXML
     public void showSettings() {
+        System.out.println("showSettings() called");
         hideAllViews();
         if (settingsView != null) {
             settingsView.setVisible(true);
+            System.out.println("Settings view made visible");
         }
     }
 
-    /**
-     * Hides all main views (Profile, Requests, Settings).
-     */
     private void hideAllViews() {
         if (profileView != null) profileView.setVisible(false);
         if (requestsView != null) requestsView.setVisible(false);
         if (settingsView != null) settingsView.setVisible(false);
     }
 
-    // Profile Editing Methods
-
-    /**
-     * Shows the password change form.
-     */
+    // Simple frame switching methods (no IOException needed)
     @FXML
     public void showChangePassword() {
         if (changePasswordFrame != null) {
@@ -316,9 +333,6 @@ public class AccountJFXController {
         }
     }
 
-    /**
-     * Shows the username change form.
-     */
     @FXML
     public void showChangeUsername() {
         if (changeUsernameFrame != null) {
@@ -326,78 +340,82 @@ public class AccountJFXController {
         }
     }
 
-    /**
-     * Handles username save button click.
-     * Validates input and triggers username change through listener.
-     */
     @FXML
     public void saveUsername() {
-        String newUsername = getNewUsername();
+        System.out.println("*** FXML saveUsername() method called! ***");
 
-        // Check if username field is empty
+        String newUsername = getNewUsername();
+        System.out.println("New username: '" + newUsername + "'");
+
         if (newUsername == null || newUsername.trim().isEmpty()) {
-            showUsernameFieldRequired();
+            showUsernameEmpty();
             return;
         }
 
+        // FALLBACK: If listener is null, try to find and call the model directly
         if (usernameChangeListener != null) {
+            System.out.println("Using listener");
             usernameChangeListener.run();
         } else {
-            // Fallback for testing without server connection
+            System.out.println("Listener is null - trying direct approach");
+            // Try to get the model and call it directly
             tryDirectUsernameChange(newUsername.trim());
         }
     }
 
-    /**
-     * Fallback method for username change when no server connection is available.
-     * Used primarily for testing purposes.
-     */
     private void tryDirectUsernameChange(String newUsername) {
+        // This is a temporary workaround
+        System.out.println("Attempting direct username change");
+        // For now, just show a success message to test
         showUsernameUpdated();
         clearUsernameField();
         hideChangeUsername();
     }
 
-    /**
-     * Handles password save button click.
-     * Validates inputs and triggers password change through listener.
-     */
     @FXML
     public void savePassword() {
+        System.out.println("*** FXML savePassword() method called! ***");
+        System.out.println("Password save button clicked!");
+
         String oldPassword = getOldPassword();
         String newPassword = getNewPassword();
         String confirmPassword = getConfirmPassword();
 
-        // Check if all fields are filled
+        System.out.println("Password fields validation...");
+
+        // Validation
         if (oldPassword == null || oldPassword.trim().isEmpty() ||
                 newPassword == null || newPassword.trim().isEmpty() ||
                 confirmPassword == null || confirmPassword.trim().isEmpty()) {
-            showAllPasswordFieldsRequired();
+            System.out.println("Password fields are empty, showing error");
+            showPasswordEmptyFields();
             return;
         }
 
-        // Validate password confirmation
         if (!newPassword.equals(confirmPassword)) {
+            System.out.println("Passwords don't match, showing error");
             showPasswordMismatch();
             return;
         }
 
-        // Validate new password is different from old
         if (oldPassword.equals(newPassword)) {
+            System.out.println("New password same as old, showing error");
             showPasswordSameAsOld();
             return;
         }
 
+        System.out.println("Password validation passed");
+        System.out.println("Checking if passwordChangeListener exists: " + (passwordChangeListener != null));
+
         if (passwordChangeListener != null) {
+            System.out.println("Calling password change listener...");
             passwordChangeListener.run();
         } else {
+            System.out.println("ERROR: Password change listener is null!");
             showPasswordUpdateFailed();
         }
     }
 
-    /**
-     * Hides the password change form.
-     */
     @FXML
     public void hideChangePassword() {
         if (changePasswordFrame != null) {
@@ -405,9 +423,6 @@ public class AccountJFXController {
         }
     }
 
-    /**
-     * Hides the username change form.
-     */
     @FXML
     public void hideChangeUsername() {
         if (changeUsernameFrame != null) {
@@ -415,14 +430,9 @@ public class AccountJFXController {
         }
     }
 
-    // Status Feedback Methods - Username
-
+    // USERNAME FEEDBACK
     public void showUsernameUpdated() {
         updateStatus(usernameStatusLabel, "Username updated!", Color.rgb(0, 245, 83), false);
-    }
-
-    public void showUsernameFieldRequired() {
-        updateStatus(usernameStatusLabel, "Username field is required!", Color.rgb(255, 165, 0), true);
     }
 
     public void showUsernameEmpty() {
@@ -433,22 +443,9 @@ public class AccountJFXController {
         updateStatus(usernameStatusLabel, "Username update failed!", Color.rgb(217, 27, 36), true);
     }
 
-    public void showUsernameAlreadyExists() {
-        updateStatus(usernameStatusLabel, "Username already exists!", javafx.scene.paint.Color.rgb(217, 27, 36), true);
-    }
-
-    public void showUsernameSameAsCurrent() {
-        updateStatus(usernameStatusLabel, "New username must be different!", javafx.scene.paint.Color.rgb(217, 27, 36), true);
-    }
-
-    // Status Feedback Methods - Password
-
+    // PASSWORD FEEDBACK
     public void showPasswordChanged() {
         updateStatus(passwordStatusLabel, "Password changed!", Color.rgb(0, 245, 83), false);
-    }
-
-    public void showAllPasswordFieldsRequired() {
-        updateStatus(passwordStatusLabel, "All text fields are required to be filled!", Color.rgb(255, 165, 0), true);
     }
 
     public void showPasswordEmptyFields() {
@@ -467,17 +464,20 @@ public class AccountJFXController {
         updateStatus(passwordStatusLabel, "Password update failed!", Color.rgb(217, 27, 36), true);
     }
 
+    // All the status and UI methods stay the same:
+    public void showUsernameAlreadyExists() {
+        updateStatus(usernameStatusLabel, "Username already exists!", javafx.scene.paint.Color.rgb(217, 27, 36), true);
+    }
+
+    public void showUsernameSameAsCurrent() {
+        updateStatus(usernameStatusLabel, "New username must be different!", javafx.scene.paint.Color.rgb(217, 27, 36), true);
+    }
+
     public void showInvalidOldPassword() {
         updateStatus(passwordStatusLabel, "Current password is incorrect!", javafx.scene.paint.Color.rgb(217, 27, 36), true);
     }
 
-    /**
-     * Generic status update method for displaying user feedback.
-     * @param label The label to update
-     * @param message The message to display
-     * @param color The text color
-     * @param shake Whether to apply shake animation for errors
-     */
+    // REUSABLE STATUS UPDATER FOR ANY LABELS
     private void updateStatus(Label label, String message, Color color, boolean shake) {
         if (label == null) return;
 
@@ -495,10 +495,11 @@ public class AccountJFXController {
         }
     }
 
-    // Input Getter Methods
-
+    // GETTERS FOR INPUTS
     public String getNewUsername() {
-        return (newUsernameTextField != null) ? newUsernameTextField.getText() : null;
+        String value = (newUsernameTextField != null) ? newUsernameTextField.getText() : null;
+        System.out.println("getNewUsername() returning: '" + value + "'");
+        return value;
     }
 
     public String getOldPassword() {
@@ -513,8 +514,15 @@ public class AccountJFXController {
         return (confirmPasswordTextField != null) ? confirmPasswordTextField.getText() : "";
     }
 
-    // Field Management Methods
+    public void setBackButtonListener(Runnable listener) {
+        this.backButtonListener = listener;
+    }
 
+    public void setLogoutAccountButtonListener(Runnable listener) {
+        this.LogoutAccountButtonListener = listener;
+    }
+
+    // Field clearing methods
     public void clearUsernameField() {
         if (newUsernameTextField != null) {
             newUsernameTextField.clear();
@@ -545,11 +553,18 @@ public class AccountJFXController {
         }
     }
 
-    /**
-     * Updates the displayed username in the UI.
-     * Call this method when username changes to keep display synchronized.
-     * @param newUsername The new username to display
-     */
+    // Setter methods for the listeners
+    public void setUsernameChangeListener(Runnable listener) {
+        System.out.println("Setting username change listener: " + (listener != null));
+        this.usernameChangeListener = listener;
+    }
+
+    public void setPasswordChangeListener(Runnable listener) {
+        System.out.println("Setting password change listener: " + (listener != null));
+        this.passwordChangeListener = listener;
+    }
+
+    // Method to update the displayed username (call this when username changes)
     public void updateDisplayedUsername(String newUsername) {
         if (usernameLabel != null) {
             usernameLabel.setText(newUsername);
@@ -558,22 +573,53 @@ public class AccountJFXController {
             currentUsernameLabel.setText(newUsername);
         }
     }
+    public void renderRequestList(List<String> requests) {
+        Platform.runLater(() -> {
+            requestList.getChildren().clear();
 
-    // Listener Setter Methods - Used by Controller for MVC communication
+            if (requests == null || requests.isEmpty()) {
+                requestList.getChildren().add(new Label("No sent requests"));
+                return;
+            }
 
-    public void setBackButtonListener(Runnable listener) {
-        this.backButtonListener = listener;
+            for (String friendName : requests) {
+                // Create frame directly here (no need for createFriendRequestFrame)
+                AnchorPane requestFrame = new AnchorPane();
+                requestFrame.setPrefHeight(65.0);
+                requestFrame.setPrefWidth(372.0);
+                requestFrame.setStyle("-fx-background-color: #2a2a2a; -fx-background-radius: 10;");
+
+                // Friend name label
+                Label userLabel = new Label(friendName);
+                userLabel.setLayoutX(14.0);
+                userLabel.setLayoutY(24.0);
+                userLabel.setTextFill(javafx.scene.paint.Color.WHITE);
+                userLabel.setFont(javafx.scene.text.Font.font("Gill Sans MT", 12.0));
+
+                // Remove button
+                Button removeButton = new Button("Remove");
+                removeButton.setLayoutX(270.0);
+                removeButton.setLayoutY(20.0);
+                removeButton.setStyle("-fx-background-color: #b32626; -fx-text-fill: white;");
+
+                removeButton.setOnAction(e -> {
+                    System.out.println("Removed sent request to " + friendName);
+                    requestList.getChildren().remove(requestFrame);
+
+                    String sender = (currentUsernameLabel != null) ? currentUsernameLabel.getText() : "";
+                    UserXMLHandler.removeFriendRequest(sender, friendName);
+                });
+
+                requestFrame.getChildren().addAll(userLabel, removeButton);
+
+                requestList.getChildren().add(requestFrame);
+            }
+        });
     }
 
-    public void setLogoutAccountButtonListener(Runnable listener) {
-        this.LogoutAccountButtonListener = listener;
-    }
 
-    public void setUsernameChangeListener(Runnable listener) {
-        this.usernameChangeListener = listener;
-    }
 
-    public void setPasswordChangeListener(Runnable listener) {
-        this.passwordChangeListener = listener;
+    public void setSentRequestButtonListener(Runnable listener) {
+        sentRequestButton.setOnAction(e -> listener.run());
     }
 }
