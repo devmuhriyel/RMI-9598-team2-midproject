@@ -20,9 +20,7 @@ public class AccountView extends Application {
             Parent root = loader.load();
             primaryStage = stage;
             accountJFXController = loader.getController();
-
-            // REMOVED: accountJFXController.showProfile();
-            // This will be called by the controller after listeners are set up
+            accountJFXController.showProfile(); // opens default
 
             Scene scene = new Scene(root);
             stage.initStyle(javafx.stage.StageStyle.UNDECORATED); // Removes title bar
@@ -37,11 +35,9 @@ public class AccountView extends Application {
             e.printStackTrace();
         }
     }
-
     public AccountJFXController getFXController() {
         return accountJFXController;
     }
-
     // expose stage for reuse
     public Stage getStage() {
         return primaryStage;

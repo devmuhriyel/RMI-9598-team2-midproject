@@ -1413,10 +1413,15 @@ public class ServerXMLHandler {
                 return "USERNAME_CHANGE_FAILED";
             }
 
-            // Save the updated document
+            // FIXED: Use consistent transformer settings
+            removeEmptyTextNodes(doc);
             TransformerFactory tf = TransformerFactory.newInstance();
             Transformer transformer = tf.newTransformer();
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+            transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
             transformer.transform(new DOMSource(doc), new StreamResult(file));
 
             // Rename the user's account XML file
@@ -1484,10 +1489,15 @@ public class ServerXMLHandler {
                 return "PASSWORD_CHANGE_FAILED";
             }
 
-            // Save the updated document
+            // FIXED: Use consistent transformer settings
+            removeEmptyTextNodes(doc);
             TransformerFactory tf = TransformerFactory.newInstance();
             Transformer transformer = tf.newTransformer();
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+            transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
             transformer.transform(new DOMSource(doc), new StreamResult(file));
 
             System.out.println("Password changed for user: " + username);

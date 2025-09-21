@@ -31,6 +31,9 @@ public class AccountController {
     private void initialize() {
         System.out.println("AccountController initialize() called");
 
+        // Set the current username in the display
+        accountJFXController.updateDisplayedUsername(model.getUsername());
+
         // Handle back button click
         accountJFXController.setBackButtonListener(() -> {
             view.getStage().close();
@@ -76,20 +79,24 @@ public class AccountController {
     private void setupAccountUpdateHandling() {
         // Listen for account update responses from server
         model.setAccountUpdateListener(response -> {
-            String[] parts = response.split("!\\[]!", 2);
-            String status = parts[0];
+            System.out.println("Raw server response: " + response);
 
-            System.out.println("Received account update response: " + status);
+            // Parse the XML response to get the status
+            String status = extractStatusFromResponse(response);
+            System.out.println("Extracted status: " + status);
 
             switch (status) {
                 case "USERNAME_CHANGED":
-                    handleUsernameChangeSuccess(parts.length > 1 ? parts[1] : "");
+                    handleUsernameChangeSuccess(response);
                     break;
                 case "USERNAME_CHANGE_FAILED":
                     accountJFXController.showUsernameUpdateFailed();
+                    // Close the form after showing error
+                    accountJFXController.hideChangeUsername();
                     break;
                 case "USERNAME_EXISTS":
                     accountJFXController.showUsernameAlreadyExists();
+                    // Don't close form so user can try again
                     break;
                 case "PASSWORD_CHANGED":
                     accountJFXController.showPasswordChanged();
@@ -98,12 +105,42 @@ public class AccountController {
                     break;
                 case "PASSWORD_CHANGE_FAILED":
                     accountJFXController.showPasswordUpdateFailed();
+                    accountJFXController.hideChangePassword();
                     break;
                 case "INVALID_OLD_PASSWORD":
                     accountJFXController.showInvalidOldPassword();
+                    // Don't close form so user can try again
+                    break;
+                default:
+                    System.out.println("Unknown status received: " + status);
                     break;
             }
         });
+    }
+
+    private String extractStatusFromResponse(String xmlResponse) {
+        try {
+            // Look for status attribute in XML
+            if (xmlResponse.contains("status=\"")) {
+                int startIndex = xmlResponse.indexOf("status=\"") + 8;
+                int endIndex = xmlResponse.indexOf("\"", startIndex);
+                if (endIndex > startIndex) {
+                    return xmlResponse.substring(startIndex, endIndex);
+                }
+            }
+
+            // Fallback: look for common status patterns in the response
+            if (xmlResponse.contains("USERNAME_CHANGED")) return "USERNAME_CHANGED";
+            if (xmlResponse.contains("USERNAME_CHANGE_FAILED")) return "USERNAME_CHANGE_FAILED";
+            if (xmlResponse.contains("USERNAME_EXISTS")) return "USERNAME_EXISTS";
+            if (xmlResponse.contains("PASSWORD_CHANGED")) return "PASSWORD_CHANGED";
+            if (xmlResponse.contains("PASSWORD_CHANGE_FAILED")) return "PASSWORD_CHANGE_FAILED";
+            if (xmlResponse.contains("INVALID_OLD_PASSWORD")) return "INVALID_OLD_PASSWORD";
+
+        } catch (Exception e) {
+            System.err.println("Error extracting status from response: " + e.getMessage());
+        }
+        return "UNKNOWN";
     }
 
     private void handleUsernameChangeSuccess(String xmlResponse) {
@@ -113,6 +150,8 @@ public class AccountController {
             if (newUsername != null && !newUsername.isEmpty()) {
                 // Update model's username
                 model.setUsername(newUsername);
+                // Update the display
+                accountJFXController.updateDisplayedUsername(newUsername);
             }
 
             accountJFXController.showUsernameUpdated();
@@ -139,17 +178,20 @@ public class AccountController {
         return null;
     }
 
-    private void clearPasswordFields() {
-        accountJFXController.clearPasswordFields();
-    }
-
     // Method to handle username change request
     public void handleUsernameChange() {
         String newUsername = accountJFXController.getNewUsername();
+        String currentUsername = model.getUsername();
 
         // Validation
         if (newUsername == null || newUsername.trim().isEmpty()) {
             accountJFXController.showUsernameEmpty();
+            return;
+        }
+
+        // Check if new username is the same as current username
+        if (newUsername.trim().equals(currentUsername)) {
+            accountJFXController.showUsernameSameAsCurrent();
             return;
         }
 
@@ -170,6 +212,12 @@ public class AccountController {
         model.changePassword(oldPassword, newPassword);
     }
 
+    private void sendMessage(String msg) throws IOException {
+        serverWriter.write(msg);
+        serverWriter.newLine();
+        serverWriter.flush();
+    }
+}
 
 
 //    public void listRequests(String user) throws IOException {
@@ -190,12 +238,3 @@ public class AccountController {
 //    public void updateRequests(java.util.List<String> requests) {
 //        model.setFriendRequests(requests);
 //    }
-
-    private void sendMessage(String msg) throws IOException {
-        serverWriter.write(msg);
-        serverWriter.newLine();
-        serverWriter.flush();
-    }
-}
-
-
