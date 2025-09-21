@@ -6,6 +6,7 @@
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.effect.Bloom?>
 <?import javafx.scene.effect.Glow?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
@@ -68,7 +69,7 @@
                                 <Glow />
                             </effect>
                         </Label>
-      
+
                         <!-- USERNAME SECTION -->
                         <AnchorPane fx:id="usernameSection" layoutY="50.0" prefHeight="130.0" prefWidth="390.0" style="-fx-background-color: #202020;">
                             <children>
@@ -88,15 +89,15 @@
                                     </children>
                                 </VBox>
                                 <Button fx:id="editUsernameButton" layoutX="290.0" layoutY="34.0" mnemonicParsing="false" onAction="#showChangeUsername" prefHeight="25.0" prefWidth="45.0" text="Edit" />
-      
+
                                 <!-- Change Username Form (Initially Hidden) -->
                                 <AnchorPane fx:id="changeUsernameFrame" prefHeight="130.0" prefWidth="390.0" style="-fx-background-color: #202020;" visible="false">
                                     <children>
-                                        <VBox fx:id="changeUsernameContainer" alignment="TOP_CENTER" prefHeight="100.0" prefWidth="390.0" spacing="10.0">
+                                        <VBox fx:id="changeUsernameContainer" alignment="TOP_CENTER" prefHeight="127.0" prefWidth="390.0" spacing="10.0">
                                             <children>
                                                 <HBox fx:id="currentUsernameDisplay" alignment="CENTER" fillHeight="false" prefHeight="25.0" prefWidth="200.0" spacing="20.0">
                                                     <children>
-                                                        <Label contentDisplay="CENTER" prefHeight="20.0" prefWidth="80.0" text="Current" textFill="WHITE">
+                                                        <Label contentDisplay="CENTER" prefHeight="20.0" prefWidth="100.0" text="Current" textFill="WHITE">
                                                             <font>
                                                                 <Font name="Gill Sans MT" size="12.0" />
                                                             </font>
@@ -106,7 +107,7 @@
                                                 </HBox>
                                                 <HBox fx:id="newUsernameInput" alignment="CENTER" fillHeight="false" prefHeight="25.0" prefWidth="200.0" spacing="20.0">
                                                     <children>
-                                                        <Label fx:id="newUsernameLabel" contentDisplay="CENTER" prefHeight="20.0" prefWidth="80.0" text="New" textAlignment="CENTER" textFill="WHITE">
+                                                        <Label fx:id="newUsernameLabel" contentDisplay="CENTER" prefHeight="20.0" prefWidth="100.0" text="New Username" textAlignment="CENTER" textFill="WHITE">
                                                             <font>
                                                                 <Font name="Gill Sans MT" size="12.0" />
                                                             </font>
@@ -114,26 +115,24 @@
                                                         <TextField fx:id="newUsernameTextField" prefHeight="25.0" prefWidth="150.0" promptText="New Username" />
                                                     </children>
                                                 </HBox>
-                                                <AnchorPane fx:id="usernameButtonContainer" prefHeight="30.0" prefWidth="390.0">
+                                                <AnchorPane fx:id="usernameButtonContainer" prefHeight="49.0" prefWidth="390.0">
                                                     <children>
-                                                        <Button fx:id="saveUsernameButton" alignment="CENTER" contentDisplay="CENTER" layoutX="315.0" layoutY="2.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="45.0" styleClass="theme-buttons" text="Save" />
-                                                        <Button fx:id="cancelUsernameButton" alignment="CENTER" contentDisplay="CENTER" layoutX="240.0" layoutY="2.0" mnemonicParsing="false" onAction="#hideChangeUsername" prefHeight="25.0" prefWidth="70.0" styleClass="theme-buttons" text="Cancel" />
+                                                        <Button fx:id="saveUsernameButton" alignment="CENTER" contentDisplay="CENTER" layoutX="315.0" layoutY="12.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="45.0" styleClass="theme-buttons" text="Save" />
+                                                        <Button fx:id="cancelUsernameButton" alignment="CENTER" contentDisplay="CENTER" layoutX="240.0" layoutY="12.0" mnemonicParsing="false" onAction="#hideChangeUsername" prefHeight="25.0" prefWidth="70.0" styleClass="theme-buttons" text="Cancel" />
+                                                        <Label fx:id="usernameStatusLabel" alignment="CENTER" layoutX="45.0" layoutY="13.0" prefHeight="24.0" prefWidth="160.0" text=" " textAlignment="JUSTIFY" textFill="WHITE">
+                                                            <font>
+                                                                <Font name="HP Simplified Jpan Regular" size="12.0" />
+                                                            </font>
+                                                        </Label>
                                                     </children>
                                                 </AnchorPane>
                                             </children>
                                         </VBox>
                                     </children>
                                 </AnchorPane>
-      
-                                <!-- Username Status - Outside the form, always visible -->
-                                <Label fx:id="usernameStatusLabel" alignment="CENTER" layoutX="95.0" layoutY="34.0" prefHeight="20.0" prefWidth="200.0" text="" textAlignment="CENTER" textFill="WHITE">
-                                    <font>
-                                        <Font name="HP Simplified Jpan Regular" size="12.0" />
-                                    </font>
-                                </Label>
                             </children>
                         </AnchorPane>
-      
+
                         <!-- PASSWORD SECTION -->
                         <AnchorPane fx:id="passwordSection" layoutY="192.0" prefHeight="189.0" prefWidth="390.0" style="-fx-background-color: #202020;">
                             <children>
@@ -147,13 +146,13 @@
                                                         <Font name="Gill Sans MT" size="12.0" />
                                                     </font>
                                                 </Label>
-                                                <Label fx:id="passwordLabel" prefHeight="25.0" prefWidth="150.0" text="••••••••" textFill="WHITE" />
+                                                <Label fx:id="passwordLabel" prefHeight="25.0" prefWidth="150.0" text="************" textFill="WHITE" />
                                             </children>
                                         </HBox>
                                     </children>
                                 </VBox>
                                 <Button fx:id="editPasswordButton" layoutX="290.0" layoutY="30.0" mnemonicParsing="false" onAction="#showChangePassword" prefHeight="25.0" prefWidth="45.0" text="Edit" />
-      
+
                                 <!-- Change Password Form (Initially Hidden) -->
                                 <AnchorPane fx:id="changePasswordFrame" prefHeight="189.0" prefWidth="390.0" style="-fx-background-color: #202020;" visible="false">
                                     <children>
@@ -193,7 +192,7 @@
                                                     <children>
                                                         <Button fx:id="savePasswordButton" alignment="CENTER" contentDisplay="CENTER" layoutX="315.0" layoutY="12.0" mnemonicParsing="false" onAction="#savePassword" prefHeight="25.0" prefWidth="45.0" styleClass="theme-buttons" text="Save" />
                                                         <Button fx:id="cancelPasswordButton" alignment="CENTER" contentDisplay="CENTER" layoutX="240.0" layoutY="12.0" mnemonicParsing="false" onAction="#hideChangePassword" prefHeight="25.0" prefWidth="70.0" styleClass="theme-buttons" text="Cancel" />
-                                                        <Label fx:id="passwordStatusLabel" alignment="CENTER" layoutX="90.0" layoutY="13.0" prefHeight="24.0" prefWidth="160.0" text=" " textAlignment="JUSTIFY" textFill="WHITE">
+                                                        <Label fx:id="passwordStatusLabel" alignment="CENTER" layoutX="45.0" layoutY="13.0" prefHeight="24.0" prefWidth="160.0" text=" " textAlignment="JUSTIFY" textFill="WHITE">
                                                             <font>
                                                                 <Font name="HP Simplified Jpan Regular" size="12.0" />
                                                             </font>
@@ -210,7 +209,7 @@
                 </AnchorPane>
 
                 <!-- REQUESTS VIEW - Initially Hidden -->
-                <AnchorPane fx:id="requestsView" layoutY="36.0" prefHeight="367.0" prefWidth="390.0" style="-fx-background-color: #202020;">
+                <AnchorPane fx:id="requestsView" layoutY="36.0" prefHeight="367.0" prefWidth="390.0" style="-fx-background-color: #202020;" visible="false">
                     <children>
                         <Label fx:id="requestsLabel" alignment="CENTER" contentDisplay="TOP" prefHeight="38.0" prefWidth="390.0" text="FRIENDS" textFill="WHITE">
                             <font>
@@ -222,14 +221,12 @@
                         </Label>
                         <AnchorPane fx:id="requestMainFrame" layoutX="1.0" layoutY="22.0" prefHeight="342.0" prefWidth="382.0">
                             <children>
-                                <ScrollPane fx:id="requestScrollPane" fitToWidth="true" layoutY="62.0" prefHeight="279.0" prefWidth="382.0" style="-fx-background: transparent; -fx-background-color: transparent;" vbarPolicy="ALWAYS">
+                                <ScrollPane fx:id="requestScrollPane" fitToWidth="true" layoutY="29.0" prefHeight="312.0" prefWidth="382.0" style="-fx-background: transparent; -fx-background-color: transparent;" vbarPolicy="ALWAYS">
                                     <content>
-                                        <VBox fx:id="requestList" alignment="TOP_CENTER" prefHeight="284.0" prefWidth="367.0" spacing="15.0" style="-fx-padding: 15;">
+                                        <VBox fx:id="requestList" alignment="TOP_CENTER" prefHeight="312.0" prefWidth="366.0" spacing="15.0" style="-fx-padding: 15;">
                                         </VBox>
                                     </content>
                                 </ScrollPane>
-                        <Button layoutX="20.0" layoutY="27.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="150.0" text="Friend Requests" />
-                        <Button fx:id="sentRequestButton" layoutX="196.0" layoutY="27.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="150.0" text="Sent Requests" />
                             </children>
                         </AnchorPane>
                     </children>
@@ -266,7 +263,7 @@
         <!-- Back Navigation -->
         <AnchorPane fx:id="backNavigation" layoutY="36.0" prefHeight="79.0" prefWidth="210.0">
             <children>
-                <Button fx:id="backButton" alignment="CENTER" layoutX="14.0" layoutY="11.0" mnemonicParsing="false" prefHeight="35.0" prefWidth="42.0" style="-fx-background-radius: 100; -fx-background-color: dedcff;" stylesheets="@../style.css" text="🔙">
+                <Button fx:id="backButton" alignment="CENTER" layoutX="14.0" layoutY="11.0" mnemonicParsing="false" prefHeight="35.0" prefWidth="42.0" style="-fx-background-radius: 100; -fx-background-color: dedcff;" stylesheets="@../style.css" text="Ã°Å¸â€â„¢">
                     <font>
                         <Font size="16.0" />
                     </font>

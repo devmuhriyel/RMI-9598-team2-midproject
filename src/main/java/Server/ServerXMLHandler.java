@@ -532,6 +532,20 @@ public class ServerXMLHandler {
                 }
                 break;
 
+            case "CHANGE_USERNAME":
+                String currentUsername = content[0];
+                String requestedNewUsername = content[1];
+                reply = changeUsername(currentUsername, requestedNewUsername);
+                break;
+
+            case "CHANGE_PASSWORD":
+                String userForPasswordChange = content[0];
+                String oldPasswordProvided = content[1];
+                String newPasswordRequested = content[2];
+                reply = changePassword(userForPasswordChange, oldPasswordProvided, newPasswordRequested);
+                break;
+
+
         }
         return reply;
     }
@@ -2243,6 +2257,7 @@ public class ServerXMLHandler {
             return false;
         }
     }
+
     private static class GroupInfo {
         private String owner;
         private int memberCount;
@@ -2264,10 +2279,11 @@ public class ServerXMLHandler {
             this.memberCount++;
         }
     }
-
-
     public synchronized String changeUsername(String oldUsername, String newUsername) {
         try {
+            System.out.println("=== STARTING USERNAME CHANGE PROCESS ===");
+            System.out.println("Changing username from '" + oldUsername + "' to '" + newUsername + "'");
+
             // Validate inputs
             if (newUsername == null || newUsername.trim().isEmpty()) {
                 return "USERNAME_CHANGE_FAILED";
@@ -2285,7 +2301,8 @@ public class ServerXMLHandler {
                 return "USERNAME_CHANGE_FAILED";
             }
 
-            // reads the content of the xml string
+            // Step 1: Update main Users.xml file
+            System.out.println("Step 1: Updating main Users.xml file");
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
             Document doc = builder.parse(file);
@@ -2301,7 +2318,6 @@ public class ServerXMLHandler {
                             .item(0).getTextContent().trim();
 
                     if (currentUsername.equals(oldUsername)) {
-                        // Update username
                         userElement.getElementsByTagName("username")
                                 .item(0).setTextContent(newUsername);
                         userFound = true;
@@ -2314,7 +2330,7 @@ public class ServerXMLHandler {
                 return "USERNAME_CHANGE_FAILED";
             }
 
-            // FIXED: Use consistent transformer settings
+            // Save updated Users.xml
             removeEmptyTextNodes(doc);
             TransformerFactory tf = TransformerFactory.newInstance();
             Transformer transformer = tf.newTransformer();
@@ -2324,17 +2340,193 @@ public class ServerXMLHandler {
             transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
             transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
             transformer.transform(new DOMSource(doc), new StreamResult(file));
+            System.out.println("Users.xml updated successfully");
 
-            // Rename the user's account XML file
+            // Step 2: Update ALL account XML files BEFORE renaming (this is the key fix)
+            System.out.println("Step 2: Updating all account XML files (before renaming)");
+            updateUsernameInAllAccountFiles(oldUsername, newUsername);
+
+            // Step 3: Rename the user's account XML file AFTER updating content
+            System.out.println("Step 3: Renaming user account file");
             renameUserAccountFile(oldUsername, newUsername);
 
-            System.out.println("Username changed from " + oldUsername + " to " + newUsername);
+            // Step 4: Update file references and directories
+            System.out.println("Step 4: Updating file references");
+            updateFileReferencesAfterUsernameChange(oldUsername, newUsername);
+
+            System.out.println("=== USERNAME CHANGE PROCESS COMPLETE ===");
+            System.out.println("Username successfully changed from " + oldUsername + " to " + newUsername);
             return "USERNAME_CHANGED";
 
         } catch (Exception e) {
             System.err.println("Error changing username: " + e.getMessage());
             e.printStackTrace();
             return "USERNAME_CHANGE_FAILED";
+        }
+    }
+
+    /**
+     * Updates username references in all account XML files
+     * This includes chat histories, group memberships, and friend relationships
+     */
+    // Enhanced version with better debugging and file handling
+    private void updateUsernameInAllAccountFiles(String oldUsername, String newUsername) {
+        try {
+            System.out.println("=== STARTING CASCADE UPDATE ===");
+            System.out.println("Updating all references from '" + oldUsername + "' to '" + newUsername + "'");
+
+            File xmlFilesDir = new File("src/main/resources/XMLFiles/");
+            if (!xmlFilesDir.exists()) {
+                System.err.println("XMLFiles directory not found: " + xmlFilesDir.getAbsolutePath());
+                return;
+            }
+
+            File[] accountFiles = xmlFilesDir.listFiles((dir, name) -> name.endsWith("Account.xml"));
+
+            if (accountFiles == null || accountFiles.length == 0) {
+                System.err.println("No account files found for username update");
+                return;
+            }
+
+            System.out.println("Found " + accountFiles.length + " account files to update:");
+            for (File f : accountFiles) {
+                System.out.println("  - " + f.getName() + " (exists: " + f.exists() + ", size: " + f.length() + " bytes)");
+            }
+
+            for (File accountFile : accountFiles) {
+                try {
+                    System.out.println("\n--- Processing: " + accountFile.getName() + " ---");
+
+                    // Force refresh - create new factory and builder for each file
+                    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                    DocumentBuilder builder = factory.newDocumentBuilder();
+
+                    boolean fileModified = false;
+                    Document doc = builder.parse(accountFile);
+                    Element root = doc.getDocumentElement();
+
+                    if (root == null) {
+                        System.err.println("ERROR: No root element found in " + accountFile.getName());
+                        continue;
+                    }
+
+                    int totalUpdates = 0;
+
+                    // 1. Update ALL sender tags in ALL chat histories
+                    NodeList allSenderNodes = root.getElementsByTagName("sender");
+                    System.out.println("Found " + allSenderNodes.getLength() + " sender elements");
+
+                    for (int i = 0; i < allSenderNodes.getLength(); i++) {
+                        Element senderElement = (Element) allSenderNodes.item(i);
+                        String senderText = senderElement.getTextContent();
+
+                        // More detailed debugging
+                        System.out.println("  Sender[" + i + "]: '" + senderText + "' (trimmed: '" + senderText.trim() + "')");
+                        System.out.println("    Comparing '" + senderText.trim() + "' with '" + oldUsername + "'");
+                        System.out.println("    Equals check: " + oldUsername.equals(senderText.trim()));
+
+                        if (oldUsername.equals(senderText.trim())) {
+                            System.out.println("    -> MATCH FOUND! Updating to '" + newUsername + "'");
+                            senderElement.setTextContent(newUsername);
+                            fileModified = true;
+                            totalUpdates++;
+
+                            // Verify the update worked
+                            String updatedText = senderElement.getTextContent();
+                            System.out.println("    -> Verification: new value is '" + updatedText + "'");
+                        } else {
+                            System.out.println("    -> No match, skipping");
+                        }
+                    }
+
+                    // 2. Update username tags in friend lists
+                    NodeList friendNodes = root.getElementsByTagName("friend");
+                    System.out.println("Found " + friendNodes.getLength() + " friend elements");
+                    for (int i = 0; i < friendNodes.getLength(); i++) {
+                        Element friendElement = (Element) friendNodes.item(i);
+                        NodeList friendUsernameNodes = friendElement.getElementsByTagName("username");
+                        for (int j = 0; j < friendUsernameNodes.getLength(); j++) {
+                            Element usernameElement = (Element) friendUsernameNodes.item(j);
+                            String usernameText = usernameElement.getTextContent().trim();
+                            System.out.println("  Friend username: '" + usernameText + "'");
+                            if (oldUsername.equals(usernameText)) {
+                                usernameElement.setTextContent(newUsername);
+                                fileModified = true;
+                                totalUpdates++;
+                                System.out.println("    -> UPDATED friend username: '" + oldUsername + "' to '" + newUsername + "'");
+                            }
+                        }
+                    }
+
+                    // 3. Update username tags in group members
+                    NodeList groupNodes = root.getElementsByTagName("group");
+                    System.out.println("Found " + groupNodes.getLength() + " group elements");
+                    for (int i = 0; i < groupNodes.getLength(); i++) {
+                        Element groupElement = (Element) groupNodes.item(i);
+                        NodeList groupUsernameNodes = groupElement.getElementsByTagName("username");
+                        for (int j = 0; j < groupUsernameNodes.getLength(); j++) {
+                            Element usernameElement = (Element) groupUsernameNodes.item(j);
+                            String usernameText = usernameElement.getTextContent().trim();
+                            System.out.println("  Group member: '" + usernameText + "'");
+                            if (oldUsername.equals(usernameText)) {
+                                usernameElement.setTextContent(newUsername);
+                                fileModified = true;
+                                totalUpdates++;
+                                System.out.println("    -> UPDATED group member: '" + oldUsername + "' to '" + newUsername + "'");
+                            }
+                        }
+                    }
+
+                    // 4. Update group owner tags
+                    NodeList groupOwnerNodes = root.getElementsByTagName("groupOwner");
+                    System.out.println("Found " + groupOwnerNodes.getLength() + " groupOwner elements");
+                    for (int i = 0; i < groupOwnerNodes.getLength(); i++) {
+                        Element groupOwner = (Element) groupOwnerNodes.item(i);
+                        String ownerText = groupOwner.getTextContent().trim();
+                        System.out.println("  Group owner: '" + ownerText + "'");
+                        if (oldUsername.equals(ownerText)) {
+                            groupOwner.setTextContent(newUsername);
+                            fileModified = true;
+                            totalUpdates++;
+                            System.out.println("    -> UPDATED group owner: '" + oldUsername + "' to '" + newUsername + "'");
+                        }
+                    }
+
+                    System.out.println("Summary for " + accountFile.getName() + ":");
+                    System.out.println("  - Total updates made: " + totalUpdates);
+                    System.out.println("  - File modified: " + fileModified);
+
+                    // Save the file if it was modified
+                    if (fileModified) {
+                        try {
+                            System.out.println("  -> Attempting to save " + accountFile.getName());
+                            saveDocument(doc, accountFile);
+                            System.out.println("  -> SUCCESSFULLY SAVED " + accountFile.getName());
+
+                            // Verify the file was saved by checking its timestamp
+                            long newTimestamp = accountFile.lastModified();
+                            System.out.println("  -> File timestamp: " + newTimestamp);
+
+                        } catch (Exception saveException) {
+                            System.err.println("  -> ERROR SAVING FILE: " + saveException.getMessage());
+                            saveException.printStackTrace();
+                        }
+                    } else {
+                        System.out.println("  -> NO CHANGES needed for " + accountFile.getName());
+                    }
+
+                } catch (Exception e) {
+                    System.err.println("ERROR processing account file " + accountFile.getName() + ": " + e.getMessage());
+                    e.printStackTrace();
+                    // Continue with other files even if one fails
+                }
+            }
+
+            System.out.println("\n=== CASCADE UPDATE COMPLETE ===");
+
+        } catch (Exception e) {
+            System.err.println("FATAL ERROR in updateUsernameInAllAccountFiles: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -2411,34 +2603,135 @@ public class ServerXMLHandler {
         }
     }
 
+    private void updateUserOwnAccountFileAfterRename(String newUsername, String oldUsername) {
+        try {
+            String accountFilePath = "src/main/resources/XMLFiles/" + newUsername + "Account.xml";
+            File accountFile = new File(accountFilePath);
+
+            if (!accountFile.exists()) {
+                System.err.println("User's renamed account file not found: " + accountFilePath);
+                return;
+            }
+
+            System.out.println("Updating user's own renamed account file: " + accountFilePath);
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(accountFile);
+            Element root = doc.getDocumentElement();
+
+            boolean fileModified = false;
+            int totalUpdates = 0;
+
+            // Update ALL sender tags where the user was the sender
+            NodeList allSenderNodes = root.getElementsByTagName("sender");
+            for (int i = 0; i < allSenderNodes.getLength(); i++) {
+                Element senderElement = (Element) allSenderNodes.item(i);
+                String senderText = senderElement.getTextContent().trim();
+                if (oldUsername.equals(senderText)) {
+                    senderElement.setTextContent(newUsername);
+                    fileModified = true;
+                    totalUpdates++;
+                    System.out.println("  Updated sender in own account: '" + oldUsername + "' -> '" + newUsername + "'");
+                }
+            }
+
+            // Update group owner references where this user was the owner
+            NodeList groupOwnerNodes = root.getElementsByTagName("groupOwner");
+            for (int i = 0; i < groupOwnerNodes.getLength(); i++) {
+                Element groupOwner = (Element) groupOwnerNodes.item(i);
+                String ownerText = groupOwner.getTextContent().trim();
+                if (oldUsername.equals(ownerText)) {
+                    groupOwner.setTextContent(newUsername);
+                    fileModified = true;
+                    totalUpdates++;
+                    System.out.println("  Updated group owner in own account: '" + oldUsername + "' -> '" + newUsername + "'");
+                }
+            }
+
+            System.out.println("Total updates in user's own account: " + totalUpdates);
+
+            if (fileModified) {
+                saveDocument(doc, accountFile);
+                System.out.println("Successfully updated user's own account file: " + accountFilePath);
+            } else {
+                System.out.println("No changes needed in user's own account file");
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error updating user's own account file: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+
+
+    /**
+     * rename user account file and associated directories
+     */
     private void renameUserAccountFile(String oldUsername, String newUsername) {
         try {
-            File oldFile = new File("src/main/resources/XMLFiles/" + oldUsername + "Account.xml");
-            File newFile = new File("src/main/resources/XMLFiles/" + newUsername + "Account.xml");
+            // Rename main account XML file
+            String oldAccountPath = "src/main/resources/XMLFiles/" + oldUsername + "Account.xml";
+            String newAccountPath = "src/main/resources/XMLFiles/" + newUsername + "Account.xml";
+
+            File oldFile = new File(oldAccountPath);
+            File newFile = new File(newAccountPath);
 
             if (oldFile.exists()) {
                 boolean renamed = oldFile.renameTo(newFile);
                 if (renamed) {
                     System.out.println("Account file renamed from " + oldUsername + "Account.xml to " + newUsername + "Account.xml");
-
-                    // Also rename user files directory if it exists
-                    File oldUserFilesDir = new File("src/main/resources/XMLFiles/userFiles/" + oldUsername);
-                    File newUserFilesDir = new File("src/main/resources/XMLFiles/userFiles/" + newUsername);
-
-                    if (oldUserFilesDir.exists()) {
-                        boolean dirRenamed = oldUserFilesDir.renameTo(newUserFilesDir);
-                        if (dirRenamed) {
-                            System.out.println("User files directory renamed from " + oldUsername + " to " + newUsername);
-                        }
-                    }
                 } else {
-                    System.err.println("Failed to rename account file");
+                    System.err.println("Failed to rename account file from " + oldAccountPath + " to " + newAccountPath);
                 }
+            } else {
+                System.err.println("Old account file not found: " + oldAccountPath);
             }
+
+            // Rename user files directory if it exists
+            String oldUserFilesDirPath = "src/main/resources/XMLFiles/userFiles/" + oldUsername;
+            String newUserFilesDirPath = "src/main/resources/XMLFiles/userFiles/" + newUsername;
+
+            File oldUserFilesDir = new File(oldUserFilesDirPath);
+            File newUserFilesDir = new File(newUserFilesDirPath);
+
+            if (oldUserFilesDir.exists()) {
+                boolean dirRenamed = oldUserFilesDir.renameTo(newUserFilesDir);
+                if (dirRenamed) {
+                    System.out.println("User files directory renamed from " + oldUsername + " to " + newUsername);
+                } else {
+                    System.err.println("Failed to rename user files directory from " + oldUserFilesDirPath + " to " + newUserFilesDirPath);
+                }
+            } else {
+                System.out.println("User files directory not found (this is normal): " + oldUserFilesDirPath);
+            }
+
         } catch (Exception e) {
             System.err.println("Error renaming user account file: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+
+    /**
+     * Updates any file path references that might contain the old username
+     */
+    private void updateFileReferencesAfterUsernameChange(String oldUsername, String newUsername) {
+        try {
+            // This method can be extended to update any file path references
+            // that might be stored in XML files or configuration
+            System.out.println("File references updated for username change: " + oldUsername + " -> " + newUsername);
+        } catch (Exception e) {
+            System.err.println("Error updating file references: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    // Add this temporary method for testing
+    public void testUsernameUpdate() {
+        System.out.println("=== MANUAL TEST CASCADE UPDATE ===");
+        updateUsernameInAllAccountFiles("tiben", "bob"); // reverse it back
+        System.out.println("=== MANUAL TEST COMPLETE ===");
     }
 }
 

@@ -815,6 +815,7 @@ public class ClientThread implements Runnable {
             case "SEND_GROUP_FILE":
                 handleSendGroupFile(xmlMsg, reply);
                 break;
+
             /*
              * Helper Methods Overview:
              * ------------------------

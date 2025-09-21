@@ -1,26 +1,28 @@
 package ClientMVC.ClientController;
 
-import ClientMVC.ClientModel.AccountModel;
 import ClientMVC.ClientModel.UnifiedClientModel;
 import ClientMVC.ClientView.Account.AccountView;
 import ClientMVC.ClientView.Account.AccountJFXController;
-import ClientMVC.ClientModel.AccountModel;
 import ClientMVC.ClientView.Home.HomeView;
 import ClientMVC.ClientView.Login.LoginView;
-import javafx.application.Platform;
 import javafx.stage.Stage;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.util.List;
-
+/**
+ * Controller for Account Management functionality.
+ * Handles the communication between AccountView and UnifiedClientModel.
+ * Manages user account operations like username/password changes.
+ */
 public class AccountController {
     private final UnifiedClientModel model;
     private final AccountView view;
     private final AccountJFXController accountJFXController;
-    private BufferedWriter serverWriter;
 
-    //This for the Friend Function
+    /**
+     * Constructor for AccountController.
+     * @param model The unified client model for server communication
+     * @param view The account view
+     * @param accountJFXController The FXML controller for the account view
+     */
     public AccountController(UnifiedClientModel model, AccountView view, AccountJFXController accountJFXController) {
         this.view = view;
         this.model = model;
@@ -29,14 +31,14 @@ public class AccountController {
         initialize();
     }
 
-
+    /**
+     * Initializes the controller by setting up listeners and displaying current user info.
+     */
     private void initialize() {
-        System.out.println("AccountController initialize() called");
-
         // Set the current username in the display
         accountJFXController.updateDisplayedUsername(model.getUsername());
 
-        // Handle back button click
+        // Handle back button - return to home view
         accountJFXController.setBackButtonListener(() -> {
             view.getStage().close();
             HomeView homeView = new HomeView();
@@ -45,7 +47,7 @@ public class AccountController {
             new HomeController(model, homeView, homeView.getFXController());
         });
 
-        // Handle logout
+        // Handle logout - return to login view
         accountJFXController.setLogoutAccountButtonListener(() -> {
             view.getStage().close();
             LoginView loginView = new LoginView();
@@ -58,39 +60,28 @@ public class AccountController {
             new LoginController(loginView, model, loginView.getFXController());
         });
 
-        accountJFXController.setSentRequestButtonListener(() -> {
-            List<String> sentRequests = model.getSentRequests();
-            Platform.runLater(() -> accountJFXController.renderRequestList(sentRequests));
-        });
-
-        // Set up account update handling
+        // Set up server response handling
         setupAccountUpdateHandling();
 
-        // Connect the button actions - PROPER MVC WAY
-        System.out.println("Setting up username and password change listeners");
+        // Connect UI actions to controller methods
         accountJFXController.setUsernameChangeListener(this::handleUsernameChange);
         accountJFXController.setPasswordChangeListener(this::handlePasswordChange);
 
-        System.out.println("AccountController initialization complete");
-
-        // NOW show the profile view after listeners are set up
+        // Show profile view by default
         try {
             accountJFXController.showProfile();
-            System.out.println("Profile view loaded after listeners were set");
         } catch (Exception e) {
             System.err.println("Error loading profile view: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
+    /**
+     * Sets up listeners for server responses to account update requests.
+     */
     private void setupAccountUpdateHandling() {
-        // Listen for account update responses from server
         model.setAccountUpdateListener(response -> {
-            System.out.println("Raw server response: " + response);
-
-            // Parse the XML response to get the status
             String status = extractStatusFromResponse(response);
-            System.out.println("Extracted status: " + status);
 
             switch (status) {
                 case "USERNAME_CHANGED":
@@ -98,12 +89,11 @@ public class AccountController {
                     break;
                 case "USERNAME_CHANGE_FAILED":
                     accountJFXController.showUsernameUpdateFailed();
-                    // Close the form after showing error
                     accountJFXController.hideChangeUsername();
                     break;
                 case "USERNAME_EXISTS":
                     accountJFXController.showUsernameAlreadyExists();
-                    // Don't close form so user can try again
+                    // Keep form open so user can try again
                     break;
                 case "PASSWORD_CHANGED":
                     accountJFXController.showPasswordChanged();
@@ -116,15 +106,20 @@ public class AccountController {
                     break;
                 case "INVALID_OLD_PASSWORD":
                     accountJFXController.showInvalidOldPassword();
-                    // Don't close form so user can try again
+                    // Keep form open so user can correct the old password
                     break;
                 default:
-                    System.out.println("Unknown status received: " + status);
+                    System.err.println("Unknown account update status: " + status);
                     break;
             }
         });
     }
 
+    /**
+     * Extracts the status from server XML response.
+     * @param xmlResponse The XML response from server
+     * @return The status string or "UNKNOWN" if not found
+     */
     private String extractStatusFromResponse(String xmlResponse) {
         try {
             // Look for status attribute in XML
@@ -136,7 +131,7 @@ public class AccountController {
                 }
             }
 
-            // Fallback: look for common status patterns in the response
+            // Fallback: look for status patterns in the response body
             if (xmlResponse.contains("USERNAME_CHANGED")) return "USERNAME_CHANGED";
             if (xmlResponse.contains("USERNAME_CHANGE_FAILED")) return "USERNAME_CHANGE_FAILED";
             if (xmlResponse.contains("USERNAME_EXISTS")) return "USERNAME_EXISTS";
@@ -150,9 +145,13 @@ public class AccountController {
         return "UNKNOWN";
     }
 
+    /**
+     * Handles successful username change response from server.
+     * @param xmlResponse The server response containing the new username
+     */
     private void handleUsernameChangeSuccess(String xmlResponse) {
         try {
-            // Extract new username from server response if needed
+            // Extract new username from server response
             String newUsername = extractNewUsernameFromResponse(xmlResponse);
             if (newUsername != null && !newUsername.isEmpty()) {
                 // Update model's username
@@ -161,16 +160,23 @@ public class AccountController {
                 accountJFXController.updateDisplayedUsername(newUsername);
             }
 
+            // Show success message and clean up UI
             accountJFXController.showUsernameUpdated();
             accountJFXController.clearUsernameField();
             accountJFXController.hideChangeUsername();
         } catch (Exception e) {
             System.err.println("Error handling username change success: " + e.getMessage());
+            // Still show success and hide form even if extraction fails
             accountJFXController.showUsernameUpdated();
             accountJFXController.hideChangeUsername();
         }
     }
 
+    /**
+     * Extracts the new username from server response.
+     * @param xmlResponse The XML response from server
+     * @return The new username or null if not found
+     */
     private String extractNewUsernameFromResponse(String xmlResponse) {
         try {
             if (xmlResponse != null && xmlResponse.contains("Username successfully changed to ")) {
@@ -185,18 +191,21 @@ public class AccountController {
         return null;
     }
 
-    // Method to handle username change request
+    /**
+     * Handles username change request from UI.
+     * Validates input and sends request to server.
+     */
     public void handleUsernameChange() {
         String newUsername = accountJFXController.getNewUsername();
         String currentUsername = model.getUsername();
 
-        // Validation
+        // Validate input is not empty
         if (newUsername == null || newUsername.trim().isEmpty()) {
             accountJFXController.showUsernameEmpty();
             return;
         }
 
-        // Check if new username is the same as current username
+        // Validate new username is different from current
         if (newUsername.trim().equals(currentUsername)) {
             accountJFXController.showUsernameSameAsCurrent();
             return;
@@ -206,42 +215,15 @@ public class AccountController {
         model.changeUsername(newUsername.trim());
     }
 
-    // Method to handle password change request
+    /**
+     * Handles password change request from UI.
+     * The validation is already done in the view, so we just send the request.
+     */
     public void handlePasswordChange() {
-        System.out.println("=== AccountController.handlePasswordChange() called ===");
         String oldPassword = accountJFXController.getOldPassword();
         String newPassword = accountJFXController.getNewPassword();
 
-        // Server-side validation could be added here if needed
-        // But the view already did basic validation
-
-        System.out.println("Sending password change request to server");
+        // Send request to server
         model.changePassword(oldPassword, newPassword);
     }
-
-    private void sendMessage(String msg) throws IOException {
-        serverWriter.write(msg);
-        serverWriter.newLine();
-        serverWriter.flush();
-    }
 }
-
-
-//    public void listRequests(String user) throws IOException {
-//        String msg = "<Request type=\"LIST_REQUESTS\"><content>" + user + "</content></Request>";
-//        sendMessage(msg);
-//    }
-//
-//    public void acceptRequest(String user, String friend) throws IOException {
-//        String msg = "<Request type=\"ACCEPT_REQUEST\"><content>" + user + "waw" + friend + "</content></Request>";
-//        sendMessage(msg);
-//    }
-//
-//    public void declineRequest(String user, String friend) throws IOException {
-//        String msg = "<Request type=\"DECLINE_REQUEST\"><content>" + user + "waw" + friend + "</content></Request>";
-//        sendMessage(msg);
-//    }
-//
-//    public void updateRequests(java.util.List<String> requests) {
-//        model.setFriendRequests(requests);
-//    }

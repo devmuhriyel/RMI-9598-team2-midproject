@@ -73,9 +73,9 @@
                         <Button fx:id="groupEditButton" text="Edit"
                                 style="-fx-background-color: #0087b1; -fx-text-fill: white;"/>
                     </HBox>
-                <padding>
-                    <Insets top="20" bottom="20" left="20" right="20"/>
-                </padding>
+                    <padding>
+                        <Insets top="20" bottom="20" left="20" right="20"/>
+                    </padding>
                 </VBox>
             </bottom>
         </BorderPane>

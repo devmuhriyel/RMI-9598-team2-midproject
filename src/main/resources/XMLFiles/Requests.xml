@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<requests>
-    
-    <request>
-        <from>alice</from>
-        <to>rea</to>
-        <status>pending</status>
-    </request>
-</requests>
