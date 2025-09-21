@@ -55,7 +55,7 @@
     </friend>
     <group>
         <groupname>Project Team</groupname>
-        <username>blob</username>
+        <username>bob</username>
         <username>charlie</username>
         <username>alice</username>
         <chathistory>
@@ -68,11 +68,11 @@
                 <msg>si bOb</msg>
             </chat>
             <chat>
-                <sender>blob</sender>
+                <sender>bob</sender>
                 <msg>hello</msg>
             </chat>
             <chat>
-                <sender>blob</sender>
+                <sender>bob</sender>
                 <msg>hello</msg>
             </chat>
             <chat>
@@ -140,11 +140,11 @@
                 <msg>hello</msg>
             </chat>
             <chat>
-                <sender>blob</sender>
+                <sender>bob</sender>
                 <msg>hiiiiii</msg>
             </chat>
             <chat>
-                <sender>blob</sender>
+                <sender>bob</sender>
                 <msg>hiiiiii</msg>
             </chat>
             <chat>
@@ -164,11 +164,11 @@
                 <msg>ggwp</msg>
             </chat>
             <chat>
-                <sender>blob</sender>
+                <sender>bob</sender>
                 <msg>okayyyyy</msg>
             </chat>
             <chat>
-                <sender>blob</sender>
+                <sender>bob</sender>
                 <msg>yeahhhh</msg>
             </chat>
             <chat>
@@ -180,7 +180,7 @@
                 <msg>IM INNN</msg>
             </chat>
             <chat>
-                <sender>blob</sender>
+                <sender>bob</sender>
                 <msg>yaahhhh</msg>
             </chat>
             <chat>
@@ -210,7 +210,7 @@
         <groupOwner>joshua</groupOwner>
         <username>joshua</username>
         <username>rea</username>
-        <username>blob</username>
+        <username>bob</username>
         <username>carl</username>
         <chathistory/>
     </group>
