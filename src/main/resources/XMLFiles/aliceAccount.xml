@@ -427,6 +427,10 @@
                 <sender>bob</sender>
                 <msg>[FILE: RobloxScreenShot20240806_230456934.png]</msg>
             </chat>
+            <chat>
+                <sender>bob</sender>
+                <msg>hii</msg>
+            </chat>
         </chathistory>
     </friend>
     <friend>

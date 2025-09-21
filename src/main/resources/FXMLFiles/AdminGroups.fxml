@@ -28,7 +28,6 @@
             </children>
         </VBox>
 
-        <!-- Main Content -->
         <BorderPane layoutX="180.0" prefHeight="600.0" prefWidth="620.0"
                     style="-fx-background-color: #202020;">
             <top>
