@@ -2,9 +2,13 @@ package AdminMVC.AdminControllers;
 
 import AdminMVC.AdminModel.UnifiedAdminModel;
 import AdminMVC.AdminView.Admin.AdminPageJFXController;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,6 +33,14 @@ public class AdminController {
 
         // Load initial data
         refreshData();
+        startAutoRefresh();
+    }
+    private void startAutoRefresh() {
+        Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(5), event -> {
+            model.requestAllUsersWithStatus(); // or model.loadData();
+        }));
+        timeline.setCycleCount(Animation.INDEFINITE);
+        timeline.play();
     }
 
     private void setupSearchListener() {

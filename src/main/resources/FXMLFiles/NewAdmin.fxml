@@ -17,14 +17,13 @@
 
         <!-- Action Buttons -->
         <Button fx:id="CreateButton" layoutX="20.0" layoutY="30.0" prefHeight="31.0" prefWidth="119.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Create Group" />
-        <Button fx:id="ActiveButton" layoutX="147.0" layoutY="30.0" prefHeight="31.0" prefWidth="119.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Active Users" />
-        <Button fx:id="CommunityButton" layoutX="275.0" layoutY="30.0" prefHeight="31.0" prefWidth="170.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Community Messages" />
-        <Button fx:id="AddButton" layoutX="455.0" layoutY="30.0" prefHeight="31.0" prefWidth="86.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Add User" />
-        <Button fx:id="refreshButton" layoutX="549.0" layoutY="30.0" prefHeight="24.0" prefWidth="80" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Refresh" />
+        <Button fx:id="ActiveButton" layoutX="158.0" layoutY="30.0" prefHeight="31.0" prefWidth="119.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Active Users" />
+        <Button fx:id="CommunityButton" layoutX="296.0" layoutY="30.0" prefHeight="31.0" prefWidth="170.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Community Messages" />
+        <Button fx:id="AddButton" layoutX="485.0" layoutY="30.0" prefHeight="31.0" prefWidth="86.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Add User" />
+        <Button fx:id="refreshButton" layoutX="588.0" layoutY="30.0" prefHeight="24.0" prefWidth="80" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Refresh" />
 
         <!-- Search Components -->
-        <TextField fx:id="searchField" layoutX="637.0" layoutY="30.0" prefHeight="31.0" prefWidth="159.0" promptText="Search..." style="-fx-background-radius: 20; -fx-background-color: #2a2a2a; -fx-text-fill: white;" />
-        <Button fx:id="searchButton" layoutX="801.0" layoutY="31.0" prefHeight="30" prefWidth="40" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="🔍" />
+        <TextField fx:id="searchField" layoutX="682.0" layoutY="30.0" prefHeight="31.0" prefWidth="159.0" promptText="Search..." style="-fx-background-radius: 20; -fx-background-color: #2a2a2a; -fx-text-fill: white;" />
 
         <!-- Users Table -->
         <VBox layoutX="20" layoutY="70" spacing="5">
