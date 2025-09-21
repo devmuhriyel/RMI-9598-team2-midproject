@@ -3,11 +3,6 @@ package AdminMVC.AdminControllers;
 import AdminMVC.AdminModel.UnifiedAdminModel;
 import ClientMVC.ClientModel.AdminModel;
 import AdminMVC.AdminView.AdminPageJFXController;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.stage.Stage;
-import javafx.scene.control.TextField;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextInputDialog;
 import javafx.application.Platform;
@@ -36,11 +31,10 @@ public class AdminController {
         }
     }
 
-    // **CHANGED: Added constructor that accepts an existing admin model**
     public AdminController(AdminPageJFXController view, UnifiedAdminModel adminModel) {
         this.view = view;
         this.adminModel = adminModel;
-        sharedAdminModel = adminModel; // Set as shared model
+        sharedAdminModel = adminModel;
         setupListeners();
         initListeners();
 
@@ -113,52 +107,20 @@ public class AdminController {
     }
 
     private void initListeners() {
-        // Users search
+        // Search functionality
         if (view.getSearchButton() != null) {
             view.getSearchButton().setOnAction(e -> onSearchUsers());
         }
 
-        // Groups search
-        if (view.getGroupSearchButton() != null) {
-            view.getGroupSearchButton().setOnAction(e -> onSearchGroups());
-        }
-
-        // Navigation
-        if (view.getGroupsButton() != null) {
-            view.getGroupsButton().setOnAction(e -> switchToGroups());
-        }
-        if (view.getBackToUsersButton() != null) {
-            view.getBackToUsersButton().setOnAction(e -> switchToUsers());
-        }
-
-        // Delete buttons
-        if (view.getDeleteButton() != null) {
-            view.getDeleteButton().setOnAction(e -> onDeleteUser());
-        }
-        if (view.getGroupDeleteButton() != null) {
-            view.getGroupDeleteButton().setOnAction(e -> onDeleteGroup());
-        }
-
-        // Edit buttons
-        if (view.getEditButton() != null) {
-            view.getEditButton().setOnAction(e -> onEditUser());
-        }
-        if (view.getGroupsEditButton() != null) {
-            view.getGroupsEditButton().setOnAction(e -> onEditGroups());
-        }
-
-        // Admin operation buttons
+        // Main admin operation buttons
         if (view.getCreateUserButton() != null) {
             view.getCreateUserButton().setOnAction(e -> onCreateUser());
         }
-        if (view.getCreateGroupButton() != null) {
-            view.getCreateGroupButton().setOnAction(e -> onCreateGroup());
-        }
-        if (view.getViewStatsButton() != null) {
-            view.getViewStatsButton().setOnAction(e -> onViewUserStats());
-        }
         if (view.getViewActiveUsersButton() != null) {
             view.getViewActiveUsersButton().setOnAction(e -> onViewActiveUsers());
+        }
+        if (view.getCreateGroupButton() != null) {
+            view.getCreateGroupButton().setOnAction(e -> onCreateGroup());
         }
         if (view.getViewCommunityMessagesButton() != null) {
             view.getViewCommunityMessagesButton().setOnAction(e -> onViewCommunityMessages());
@@ -166,8 +128,25 @@ public class AdminController {
         if (view.getRefreshButton() != null) {
             view.getRefreshButton().setOnAction(e -> onRefreshData());
         }
+
+        // Edit and Delete buttons for users
+        if (view.getEditButton() != null) {
+            view.getEditButton().setOnAction(e -> onEditUser());
+        }
+        if (view.getDeleteButton() != null) {
+            view.getDeleteButton().setOnAction(e -> onDeleteUser());
+        }
+
+        // Edit and Delete buttons for groups
+        if (view.getGroupsEditButton() != null) {
+            view.getGroupsEditButton().setOnAction(e -> onEditGroups());
+        }
+        if (view.getGroupDeleteButton() != null) {
+            view.getGroupDeleteButton().setOnAction(e -> onDeleteGroup());
+        }
     }
 
+    // Search functionality
     private void onSearchUsers() {
         if (!validateConnection()) return;
 
@@ -177,166 +156,13 @@ public class AdminController {
         }
 
         if (keyword.isEmpty()) {
-            // If no keyword, show all users
             adminModel.requestAllUsers();
         } else {
             adminModel.searchUsers(keyword);
         }
     }
 
-    private void onSearchGroups() {
-        if (!validateConnection()) return;
-
-        String keyword = "";
-        if (view.getGroupSearchField() != null) {
-            keyword = view.getGroupSearchField().getText().trim();
-        }
-
-        if (keyword.isEmpty()) {
-            // If no keyword, show all groups
-            adminModel.requestAllGroups();
-        } else {
-            adminModel.searchGroups(keyword);
-        }
-    }
-
-    private void switchToGroups() {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/AdminGroups.fxml"));
-            Parent root = loader.load();
-            AdminPageJFXController newController = loader.getController();
-
-            // Pass the shared admin model
-            new AdminController(newController, sharedAdminModel);
-
-            Stage stage = new Stage();
-            stage.setScene(new Scene(root, 800, 600));
-            stage.setTitle("Groups Management");
-            stage.show();
-
-            // Close current window
-            if (view.getTableView() != null && view.getTableView().getScene() != null) {
-                Stage currentStage = (Stage) view.getTableView().getScene().getWindow();
-                currentStage.close();
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            showAlert("Error", "Failed to load Groups page: " + e.getMessage(), Alert.AlertType.ERROR);
-        }
-    }
-
-    private void switchToUsers() {
-        view.getGroupsTableView().getScene().getWindow().hide();
-        loadFXML("/FXMLFiles/Admin.fxml", "Admins Page");
-    }
-
-    private void loadFXML(String path, String title) {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/Admin.fxml"));
-            Parent root = loader.load();
-            AdminPageJFXController newController = loader.getController();
-
-            // Pass the shared admin model
-            new AdminController(newController, sharedAdminModel);
-
-            Stage stage = new Stage();
-            stage.setScene(new Scene(root, 800, 600));
-            stage.setTitle("Users Management");
-            stage.show();
-
-            // Close current window
-            if (view.getGroupsTableView() != null && view.getGroupsTableView().getScene() != null) {
-                Stage currentStage = (Stage) view.getGroupsTableView().getScene().getWindow();
-                currentStage.close();
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            showAlert("Error", "Failed to load Users page: " + e.getMessage(), Alert.AlertType.ERROR);
-        }
-    }
-
-    private void onDeleteUser() {
-        if (!validateConnection()) return;
-
-        AdminModel selected = null;
-        if (view.getTableView() != null) {
-            selected = view.getTableView().getSelectionModel().getSelectedItem();
-        }
-
-        AdminModel selected = view.getTableView().getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
-            confirmation.setTitle("Confirm Deletion");
-            confirmation.setHeaderText("Delete User");
-            confirmation.setContentText("Are you sure you want to delete user: " + selected.getUsername() + "?\n\nThis action cannot be undone.");
-
-            Optional<javafx.scene.control.ButtonType> result = confirmation.showAndWait();
-            if (result.isPresent() && result.get() == javafx.scene.control.ButtonType.OK) {
-                adminModel.deleteUser(selected.getUsername());
-            }
-        } else {
-            showAlert("No Selection", "Please select a user to delete", Alert.AlertType.WARNING);
-        }
-    }
-
-    private void onDeleteGroup() {
-        if (!validateConnection()) return;
-
-        AdminModel selected = null;
-        if (view.getGroupsTableView() != null) {
-            selected = view.getGroupsTableView().getSelectionModel().getSelectedItem();
-        }
-
-        if (selected != null) {
-            Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
-            confirmation.setTitle("Confirm Deletion");
-            confirmation.setHeaderText("Delete Group");
-            confirmation.setContentText("Are you sure you want to delete group: " + selected.getGroupName() + "?\n\nThis action cannot be undone.");
-
-            Optional<javafx.scene.control.ButtonType> result = confirmation.showAndWait();
-            if (result.isPresent() && result.get() == javafx.scene.control.ButtonType.OK) {
-                adminModel.deleteGroup(selected.getGroupName(), selected.getOwner());
-            }
-        } else {
-            showAlert("No Selection", "Please select a group to delete", Alert.AlertType.WARNING);
-        }
-    }
-
-    private void onEditUser() {
-        if (!validateConnection()) return;
-
-        AdminModel selected = null;
-        if (view.getTableView() != null) {
-            selected = view.getTableView().getSelectionModel().getSelectedItem();
-        }
-
-        if (selected == null) {
-            showAlert("No Selection", "Please select a user first", Alert.AlertType.WARNING);
-            return;
-        }
-
-        TextInputDialog dialog = new TextInputDialog();
-        dialog.setTitle("Change Password");
-        dialog.setHeaderText("Change password for: " + selected.getUsername());
-        dialog.setContentText("Enter new password:");
-
-        Optional<String> result = dialog.showAndWait();
-        if (result.isPresent() && !result.get().trim().isEmpty()) {
-            String newPassword = result.get().trim();
-            if (newPassword.length() < 4) {
-                showAlert("Invalid Password", "Password must be at least 4 characters long", Alert.AlertType.WARNING);
-                return;
-            }
-            adminModel.changeUserPassword(selected.getUsername(), newPassword);
-        }
-    }
-
-    private void onEditGroups() {
-        showAlert("Info", "Group editing is not available. Use delete and create operations instead.", Alert.AlertType.INFORMATION);
-    }
-
+    // User operations
     private void onCreateUser() {
         if (!validateConnection()) return;
 
@@ -373,6 +199,64 @@ public class AdminController {
         }
     }
 
+    private void onEditUser() {
+        if (!validateConnection()) return;
+
+        AdminModel selected = null;
+        if (view.getTableView() != null) {
+            selected = view.getTableView().getSelectionModel().getSelectedItem();
+        }
+
+        if (selected == null) {
+            showAlert("No Selection", "Please select a user first", Alert.AlertType.WARNING);
+            return;
+        }
+
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Change Password");
+        dialog.setHeaderText("Change password for: " + selected.getUsername());
+        dialog.setContentText("Enter new password:");
+
+        Optional<String> result = dialog.showAndWait();
+        if (result.isPresent() && !result.get().trim().isEmpty()) {
+            String newPassword = result.get().trim();
+            if (newPassword.length() < 4) {
+                showAlert("Invalid Password", "Password must be at least 4 characters long", Alert.AlertType.WARNING);
+                return;
+            }
+            adminModel.changeUserPassword(selected.getUsername(), newPassword);
+        }
+    }
+
+    private void onDeleteUser() {
+        if (!validateConnection()) return;
+
+        AdminModel selected = null;
+        if (view.getTableView() != null) {
+            selected = view.getTableView().getSelectionModel().getSelectedItem();
+        }
+
+        if (selected != null) {
+            Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+            confirmation.setTitle("Confirm Deletion");
+            confirmation.setHeaderText("Delete User");
+            confirmation.setContentText("Are you sure you want to delete user: " + selected.getUsername() + "?\n\nThis action cannot be undone.");
+
+            Optional<javafx.scene.control.ButtonType> result = confirmation.showAndWait();
+            if (result.isPresent() && result.get() == javafx.scene.control.ButtonType.OK) {
+                adminModel.deleteUser(selected.getUsername());
+            }
+        } else {
+            showAlert("No Selection", "Please select a user to delete", Alert.AlertType.WARNING);
+        }
+    }
+
+    private void onViewActiveUsers() {
+        if (!validateConnection()) return;
+        adminModel.requestActiveUsers();
+    }
+
+    // Group operations
     private void onCreateGroup() {
         if (!validateConnection()) return;
 
@@ -409,35 +293,34 @@ public class AdminController {
         }
     }
 
-    private void onViewUserStats() {
+    private void onEditGroups() {
+        showAlert("Info", "Group editing is not available. Use delete and create operations instead.", Alert.AlertType.INFORMATION);
+    }
+
+    private void onDeleteGroup() {
         if (!validateConnection()) return;
 
         AdminModel selected = null;
-        if (view.getTableView() != null) {
-            selected = view.getTableView().getSelectionModel().getSelectedItem();
+        if (view.getGroupsTableView() != null) {
+            selected = view.getGroupsTableView().getSelectionModel().getSelectedItem();
         }
 
-        AdminModel selected = view.getTableView().getSelectionModel().getSelectedItem();
         if (selected != null) {
-            adminModel.getUserStats(selected.getUsername());
-        } else {
-            TextInputDialog dialog = new TextInputDialog();
-            dialog.setTitle("User Statistics");
-            dialog.setHeaderText("Get User Statistics");
-            dialog.setContentText("Enter username:");
+            Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+            confirmation.setTitle("Confirm Deletion");
+            confirmation.setHeaderText("Delete Group");
+            confirmation.setContentText("Are you sure you want to delete group: " + selected.getGroupName() + "?\n\nThis action cannot be undone.");
 
-            Optional<String> result = dialog.showAndWait();
-            if (result.isPresent() && !result.get().trim().isEmpty()) {
-                adminModel.getUserStats(result.get().trim());
+            Optional<javafx.scene.control.ButtonType> result = confirmation.showAndWait();
+            if (result.isPresent() && result.get() == javafx.scene.control.ButtonType.OK) {
+                adminModel.deleteGroup(selected.getGroupName(), selected.getOwner());
             }
+        } else {
+            showAlert("No Selection", "Please select a group to delete", Alert.AlertType.WARNING);
         }
     }
 
-    private void onViewActiveUsers() {
-        if (!validateConnection()) return;
-        adminModel.requestActiveUsers();
-    }
-
+    // Community operations
     private void onViewCommunityMessages() {
         if (!validateConnection()) return;
         adminModel.requestCommunityMessages();
@@ -449,6 +332,7 @@ public class AdminController {
         showAlert("Refresh", "Data refresh requested successfully", Alert.AlertType.INFORMATION);
     }
 
+    // Utility methods
     private boolean validateConnection() {
         if (adminModel == null || !adminModel.isConnected()) {
             showAlert("Error", "Not connected to server. Please reconnect.", Alert.AlertType.ERROR);

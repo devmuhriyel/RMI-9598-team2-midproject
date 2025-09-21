@@ -8,81 +8,78 @@ import javafx.scene.control.cell.PropertyValueFactory;
 public class AdminPageJFXController {
 
     // Users Table
-    @FXML private TableView<AdminModel> tableView;
+    @FXML private TableView<AdminModel> usersTable;
     @FXML private TableColumn<AdminModel, String> usernameCol;
     @FXML private TableColumn<AdminModel, String> passwordCol;
 
     // Groups Table
-    @FXML private TableView<AdminModel> groupsTableView;
+    @FXML private TableView<AdminModel> groupsTable;
     @FXML private TableColumn<AdminModel, String> groupOwnerCol;
-    @FXML private TableColumn<AdminModel, String> groupCol;
+    @FXML private TableColumn<AdminModel, String> groupNameCol;
 
-    // Users form fields
+    // Search field
     @FXML private TextField searchField;
     @FXML private Button searchButton;
 
-    // Delete Buttons
-    @FXML private Button deleteButton;
-    @FXML private Button groupDeleteButton;
+    // Main action buttons (matching FXML fx:id names)
+    @FXML private Button AddButton;              // Add User
+    @FXML private Button ActiveButton;           // Active Users
+    @FXML private Button CreateButton;           // Create Group
+    @FXML private Button CommunityButton;        // Community Messages
+    @FXML private Button refreshButton;          // Refresh
 
-    // Groups form fields
-    @FXML private TextField groupSearchField;
-    @FXML private Button groupSearchButton;
-
-    // Navigation
-    @FXML private Button groupsButton;        // Switch to Groups
-    @FXML private Button backToUsersButton;   // Switch to Users
-
-    // Edit buttons
+    // Edit and Delete buttons for users
     @FXML private Button editButton;
-    @FXML private Button groupEditButton;
+    @FXML private Button deleteButton;
 
-    // **CHANGED: Added new admin operation buttons**
-    @FXML private Button createUserButton;
-    @FXML private Button createGroupButton;
-    @FXML private Button viewStatsButton;
-    @FXML private Button viewActiveUsersButton;
-    @FXML private Button viewCommunityMessagesButton;
-    @FXML private Button refreshButton;
+    // Edit and Delete buttons for groups
+    @FXML private Button editGroupButton;
+    @FXML private Button deleteGroupButton;
 
     @FXML
     private void initialize() {
         // Users Table setup
-        if (tableView != null) {
+        if (usersTable != null) {
             usernameCol.setCellValueFactory(new PropertyValueFactory<>("username"));
             passwordCol.setCellValueFactory(new PropertyValueFactory<>("password"));
         }
 
         // Groups Table setup
-        if (groupsTableView != null) {
+        if (groupsTable != null) {
             groupOwnerCol.setCellValueFactory(new PropertyValueFactory<>("owner"));
-            groupCol.setCellValueFactory(new PropertyValueFactory<>("groupName"));
+            groupNameCol.setCellValueFactory(new PropertyValueFactory<>("groupName"));
         }
     }
 
-    // --- Getters for Controller ---
-    public TableView<AdminModel> getTableView() { return tableView; }
-    public TableView<AdminModel> getGroupsTableView() { return groupsTableView; }
+    // --- Getters for Controller (Updated to match FXML) ---
 
+    // Table getters
+    public TableView<AdminModel> getTableView() { return usersTable; }
+    public TableView<AdminModel> getGroupsTableView() { return groupsTable; }
+
+    // Search getters
     public TextField getSearchField() { return searchField; }
     public Button getSearchButton() { return searchButton; }
 
-    public TextField getGroupSearchField() { return groupSearchField; }
-    public Button getGroupSearchButton() { return groupSearchButton; }
+    // Main action button getters (mapped to AdminController expected names)
+    public Button getCreateUserButton() { return AddButton; }              // Add User -> Create User
+    public Button getViewActiveUsersButton() { return ActiveButton; }      // Active Users
+    public Button getCreateGroupButton() { return CreateButton; }          // Create Group
+    public Button getViewCommunityMessagesButton() { return CommunityButton; } // Community Messages
+    public Button getRefreshButton() { return refreshButton; }             // Refresh
 
-    public Button getGroupsButton() { return groupsButton; }
-    public Button getBackToUsersButton() { return backToUsersButton; }
-    public Button getDeleteButton() { return deleteButton; }
-    public Button getGroupDeleteButton() { return groupDeleteButton; }
-
+    // Edit and Delete button getters for users
     public Button getEditButton() { return editButton; }
-    public Button getGroupsEditButton() { return groupEditButton; }
+    public Button getDeleteButton() { return deleteButton; }
 
-    // **CHANGED: Added getters for new admin operation buttons**
-    public Button getCreateUserButton() { return createUserButton; }
-    public Button getCreateGroupButton() { return createGroupButton; }
-    public Button getViewStatsButton() { return viewStatsButton; }
-    public Button getViewActiveUsersButton() { return viewActiveUsersButton; }
-    public Button getViewCommunityMessagesButton() { return viewCommunityMessagesButton; }
-    public Button getRefreshButton() { return refreshButton; }
+    // Edit and Delete button getters for groups
+    public Button getGroupsEditButton() { return editGroupButton; }
+    public Button getGroupDeleteButton() { return deleteGroupButton; }
+
+    // Getters that return null for buttons not in FXML (to avoid null pointer exceptions)
+    public TextField getGroupSearchField() { return null; }
+    public Button getGroupSearchButton() { return null; }
+    public Button getGroupsButton() { return null; }
+    public Button getBackToUsersButton() { return null; }
+    public Button getViewStatsButton() { return null; }
 }

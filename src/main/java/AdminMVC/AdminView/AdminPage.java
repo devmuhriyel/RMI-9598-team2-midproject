@@ -13,7 +13,7 @@ public class AdminPage extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/Admin.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/NewAdmin.fxml"));
         Parent root = loader.load();
         jfxController = loader.getController();
 
@@ -21,7 +21,7 @@ public class AdminPage extends Application {
         new AdminController(jfxController);
 
         stage.setTitle("Admin Page");
-        stage.setScene(new Scene(root, 800, 600));
+        stage.setScene(new Scene(root, 865, 620));
         stage.setResizable(true);
         stage.show();
     }

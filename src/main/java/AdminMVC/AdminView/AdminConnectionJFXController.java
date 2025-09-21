@@ -83,10 +83,10 @@ public class AdminConnectionJFXController {
 
         // Set default values to match your original controller
         if (ipAddressTextField != null) {
-            ipAddressTextField.setText("localhost");
+            ipAddressTextField.setText("127.0.0.1");
         }
         if (portTextField != null) {
-            portTextField.setText("12345");
+            portTextField.setText("1234");
         }
     }
 
