@@ -572,22 +572,48 @@ public class AccountJFXController {
             currentUsernameLabel.setText(newUsername);
         }
     }
-
     public void renderRequestList(List<String> requests) {
         Platform.runLater(() -> {
             requestList.getChildren().clear();
 
             if (requests == null || requests.isEmpty()) {
-                requestList.getChildren().add(new Label("No friend requests"));
+                requestList.getChildren().add(new Label("No sent requests"));
                 return;
             }
 
             for (String friendName : requests) {
-                AnchorPane frame = createFriendRequestFrame(friendName);
-                requestList.getChildren().add(frame);
+                // Create frame directly here (no need for createFriendRequestFrame)
+                AnchorPane requestFrame = new AnchorPane();
+                requestFrame.setPrefHeight(65.0);
+                requestFrame.setPrefWidth(372.0);
+                requestFrame.setStyle("-fx-background-color: #2a2a2a; -fx-background-radius: 10;");
+
+                // Friend name label
+                Label userLabel = new Label(friendName);
+                userLabel.setLayoutX(14.0);
+                userLabel.setLayoutY(24.0);
+                userLabel.setTextFill(javafx.scene.paint.Color.WHITE);
+                userLabel.setFont(javafx.scene.text.Font.font("Gill Sans MT", 12.0));
+
+                // Remove button
+                Button removeButton = new Button("Remove");
+                removeButton.setLayoutX(270.0);
+                removeButton.setLayoutY(20.0);
+                removeButton.setStyle("-fx-background-color: #b32626; -fx-text-fill: white;");
+
+                removeButton.setOnAction(e -> {
+                    System.out.println("Removed sent request to " + friendName);
+                    requestList.getChildren().remove(requestFrame);
+                    // TODO: delete from Request.xml here
+                });
+
+                requestFrame.getChildren().addAll(userLabel, removeButton);
+
+                requestList.getChildren().add(requestFrame);
             }
         });
     }
+
 
 
     public void setSentRequestButtonListener(Runnable listener) {
