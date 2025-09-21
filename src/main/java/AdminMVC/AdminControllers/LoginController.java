@@ -1,9 +1,9 @@
 package AdminMVC.AdminControllers;
 
 import AdminMVC.AdminModel.UnifiedAdminModel;
-import AdminMVC.AdminView.AdminPage;
-import AdminMVC.AdminView.LoginJFXController;
-import AdminMVC.AdminView.LoginView;
+import AdminMVC.AdminView.Admin.AdminView;
+import AdminMVC.AdminView.Login.LoginJFXController;
+import AdminMVC.AdminView.Login.LoginView;
 import AdminMVC.AdminXMLHandler;
 
 import javafx.application.Platform;
@@ -37,7 +37,7 @@ public class LoginController {
             if ("LOGIN_SUCCESS".equals(response)) {
                 view.login(); // Close login window
                 try {
-                    AdminPage homeView = new AdminPage();
+                    AdminView homeView = new AdminView();
                     Stage stage1 = new Stage();
                     homeView.start(stage1);
                     new AdminController(homeView.getFXController(), model);

@@ -8,7 +8,7 @@
 
 <AnchorPane fx:id="groupsRoot" prefHeight="600.0" prefWidth="800.0"
             xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="AdminMVC.AdminView.AdminPageJFXController">
+            fx:controller="AdminMVC.AdminView.Admin.AdminPageJFXController">
 
     <children>
 
@@ -28,7 +28,6 @@
             </children>
         </VBox>
 
-        <!-- Main Content -->
         <BorderPane layoutX="180.0" prefHeight="600.0" prefWidth="620.0"
                     style="-fx-background-color: #202020;">
             <top>

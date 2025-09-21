@@ -585,4 +585,17 @@
             </chat>
         </chathistory>
     </group>
+    <group>
+        <groupname>Carl</groupname>
+        <chathistory/>
+    </group>
+    <group>
+        <groupname>BananaGang</groupname>
+        <groupOwner>joshua</groupOwner>
+        <username>joshua</username>
+        <username>rea</username>
+        <username>charlie</username>
+        <username>carl</username>
+        <chathistory/>
+    </group>
 </user>

@@ -7,6 +7,7 @@ import org.w3c.dom.NodeList;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
+import java.util.List;
 
 public class AdminXMLHandler {
 
@@ -232,5 +233,86 @@ public class AdminXMLHandler {
     public boolean validatePassword(String password) {
         return password != null && !password.trim().isEmpty() &&
                 !password.contains("![]!") && password.length() >= 4;
+    }
+    public String createGetAllUsersWithStatusRequest() {
+        return "<Request><type>GET_ALL_USERS_WITH_STATUS</type><content></content></Request>";
+    }
+
+    /**
+     * Creates a request to get only active users
+     */
+    public String createGetActiveUsersOnlyRequest() {
+        return "<Request><type>GET_ACTIVE_USERS_ONLY</type><content></content></Request>";
+    }
+
+    /**
+     * Creates a request to get all groups with enhanced information (member count, unique groups)
+     */
+    public String createGetAllGroupsEnhancedRequest() {
+        return "<Request><type>GET_ALL_GROUPS_ENHANCED</type><content></content></Request>";
+    }
+
+    /**
+     * Creates a request to create a new group with multiple members
+     */
+    public String createNewGroupWithMembersRequest(String groupName, String creator, String membersStr) {
+        return "<Request><type>CREATE_GROUP_WITH_MEMBERS</type><content>" +
+                groupName + "![]!" + creator + "![]!" + membersStr + "</content></Request>";
+    }
+
+    /**
+     * Creates a request to add members to an existing group
+     */
+    public String createAddMembersToGroupRequest(String groupName, String membersStr) {
+        return "<Request><type>ADD_MEMBERS_TO_GROUP</type><content>" +
+                groupName + "![]!" + membersStr + "</content></Request>";
+    }
+
+    /**
+     * Creates a request for password reset (initiated by user)
+     */
+    public String createPasswordResetRequest(String username) {
+        return "<Request><type>REQUEST_PASSWORD_RESET</type><content>" + username + "</content></Request>";
+    }
+
+    /**
+     * Creates a request to verify password reset code
+     */
+    public String createVerifyResetCodeRequest(String username, String verificationCode) {
+        return "<Request><type>VERIFY_RESET_CODE</type><content>" +
+                username + "![]!" + verificationCode + "</content></Request>";
+    }
+
+    /**
+     * Creates a request to get password reset requests for admin
+     */
+    public String createGetPasswordResetRequestsRequest() {
+        return "<Request><type>GET_PASSWORD_RESET_REQUESTS</type><content></content></Request>";
+    }
+
+    /**
+     * Validates group creation input including members
+     */
+    public boolean validateGroupCreation(String groupName, String creator, List<String> members) {
+        if (!validateGroupName(groupName) || !validateUsername(creator)) {
+            return false;
+        }
+
+        if (members != null) {
+            for (String member : members) {
+                if (!validateUsername(member)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Validates verification code format
+     */
+    public boolean validateVerificationCode(String code) {
+        return code != null && code.matches("\\d{6}");
     }
 }

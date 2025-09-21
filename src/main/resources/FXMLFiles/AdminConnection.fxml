@@ -13,7 +13,7 @@
 <?import javafx.scene.paint.Color?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane fx:id="parent" prefHeight="343.0" prefWidth="557.0" snapToPixel="false" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="AdminMVC.AdminView.AdminConnectionJFXController">
+<AnchorPane fx:id="parent" prefHeight="343.0" prefWidth="557.0" snapToPixel="false" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="AdminMVC.AdminView.Connection.AdminConnectionJFXController">
     <children>
         <AnchorPane fx:id="connectionFrame" prefHeight="326.0" prefWidth="561.0">
             <children>
