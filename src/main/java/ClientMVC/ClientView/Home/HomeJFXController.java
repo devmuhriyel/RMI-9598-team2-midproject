@@ -2,6 +2,7 @@ package ClientMVC.ClientView.Home;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Label;
@@ -147,7 +148,14 @@ public class HomeJFXController {
                         addBtn.setOnAction(event -> {
                             if (addFriendListener != null) {
                                 System.out.println("Add friend: " + user);
-                                addFriendListener.accept(user); // send username to controller
+                                addFriendListener.accept(user);
+
+                                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                                alert.setTitle(null);
+                                alert.setHeaderText(null);
+                                alert.setContentText("Request sent to " + user +"!");
+                                alert.getDialogPane().setPrefSize(250, 100); // smaller popup
+                                alert.showAndWait();
                             }
                         });
 
