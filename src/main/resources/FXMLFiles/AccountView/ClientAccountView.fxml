@@ -6,7 +6,6 @@
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.effect.Bloom?>
 <?import javafx.scene.effect.Glow?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
@@ -69,7 +68,7 @@
                                 <Glow />
                             </effect>
                         </Label>
-
+      
                         <!-- USERNAME SECTION -->
                         <AnchorPane fx:id="usernameSection" layoutY="50.0" prefHeight="130.0" prefWidth="390.0" style="-fx-background-color: #202020;">
                             <children>
@@ -89,7 +88,7 @@
                                     </children>
                                 </VBox>
                                 <Button fx:id="editUsernameButton" layoutX="290.0" layoutY="34.0" mnemonicParsing="false" onAction="#showChangeUsername" prefHeight="25.0" prefWidth="45.0" text="Edit" />
-
+      
                                 <!-- Change Username Form (Initially Hidden) -->
                                 <AnchorPane fx:id="changeUsernameFrame" prefHeight="130.0" prefWidth="390.0" style="-fx-background-color: #202020;" visible="false">
                                     <children>
@@ -125,7 +124,7 @@
                                         </VBox>
                                     </children>
                                 </AnchorPane>
-
+      
                                 <!-- Username Status - Outside the form, always visible -->
                                 <Label fx:id="usernameStatusLabel" alignment="CENTER" layoutX="95.0" layoutY="34.0" prefHeight="20.0" prefWidth="200.0" text="" textAlignment="CENTER" textFill="WHITE">
                                     <font>
@@ -134,7 +133,7 @@
                                 </Label>
                             </children>
                         </AnchorPane>
-
+      
                         <!-- PASSWORD SECTION -->
                         <AnchorPane fx:id="passwordSection" layoutY="192.0" prefHeight="189.0" prefWidth="390.0" style="-fx-background-color: #202020;">
                             <children>
@@ -154,7 +153,7 @@
                                     </children>
                                 </VBox>
                                 <Button fx:id="editPasswordButton" layoutX="290.0" layoutY="30.0" mnemonicParsing="false" onAction="#showChangePassword" prefHeight="25.0" prefWidth="45.0" text="Edit" />
-
+      
                                 <!-- Change Password Form (Initially Hidden) -->
                                 <AnchorPane fx:id="changePasswordFrame" prefHeight="189.0" prefWidth="390.0" style="-fx-background-color: #202020;" visible="false">
                                     <children>
@@ -211,7 +210,7 @@
                 </AnchorPane>
 
                 <!-- REQUESTS VIEW - Initially Hidden -->
-                <AnchorPane fx:id="requestsView" layoutY="36.0" prefHeight="367.0" prefWidth="390.0" style="-fx-background-color: #202020;" visible="false">
+                <AnchorPane fx:id="requestsView" layoutY="36.0" prefHeight="367.0" prefWidth="390.0" style="-fx-background-color: #202020;">
                     <children>
                         <Label fx:id="requestsLabel" alignment="CENTER" contentDisplay="TOP" prefHeight="38.0" prefWidth="390.0" text="FRIENDS" textFill="WHITE">
                             <font>
@@ -223,12 +222,14 @@
                         </Label>
                         <AnchorPane fx:id="requestMainFrame" layoutX="1.0" layoutY="22.0" prefHeight="342.0" prefWidth="382.0">
                             <children>
-                                <ScrollPane fx:id="requestScrollPane" fitToWidth="true" layoutY="29.0" prefHeight="312.0" prefWidth="382.0" style="-fx-background: transparent; -fx-background-color: transparent;" vbarPolicy="ALWAYS">
+                                <ScrollPane fx:id="requestScrollPane" fitToWidth="true" layoutY="62.0" prefHeight="279.0" prefWidth="382.0" style="-fx-background: transparent; -fx-background-color: transparent;" vbarPolicy="ALWAYS">
                                     <content>
-                                        <VBox fx:id="requestList" alignment="TOP_CENTER" prefHeight="312.0" prefWidth="366.0" spacing="15.0" style="-fx-padding: 15;">
+                                        <VBox fx:id="requestList" alignment="TOP_CENTER" prefHeight="284.0" prefWidth="367.0" spacing="15.0" style="-fx-padding: 15;">
                                         </VBox>
                                     </content>
                                 </ScrollPane>
+                        <Button layoutX="20.0" layoutY="27.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="150.0" text="Friend Requests" />
+                        <Button fx:id="sentRequestButton" layoutX="196.0" layoutY="27.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="150.0" text="Sent Requests" />
                             </children>
                         </AnchorPane>
                     </children>

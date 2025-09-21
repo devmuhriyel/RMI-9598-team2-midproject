@@ -615,6 +615,34 @@ public class UserXMLHandler {
             return false;
         }
     }
+
+    public static List<String> getSentRequests(String sender) {
+        List<String> requests = new ArrayList<>();
+        try {
+            File file = new File("src/main/resources/XMLFiles/Requests.xml");
+            if (!file.exists()) return requests;
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+            doc.getDocumentElement().normalize();
+
+            NodeList requestNodes = doc.getElementsByTagName("request");
+            for (int i = 0; i < requestNodes.getLength(); i++) {
+                Element reqEl = (Element) requestNodes.item(i);
+                String from = reqEl.getElementsByTagName("from").item(0).getTextContent();
+                String to = reqEl.getElementsByTagName("to").item(0).getTextContent();
+
+                if (from.equals(sender)) {
+                    requests.add(to);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return requests;
+    }
+
     private static void saveDocument(Document doc, String filePath) {
         try {
             TransformerFactory transformerFactory = TransformerFactory.newInstance();

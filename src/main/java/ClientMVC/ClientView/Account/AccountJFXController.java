@@ -1,6 +1,7 @@
 package ClientMVC.ClientView.Account;
 
 import javafx.animation.TranslateTransition;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -11,6 +12,8 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+
+import java.util.List;
 
 public class AccountJFXController {
 
@@ -50,6 +53,9 @@ public class AccountJFXController {
 
     @FXML
     private Button backButton;
+
+    @FXML
+    private Button sentRequestButton;
 
     // Navigation buttons
     @FXML
@@ -565,5 +571,26 @@ public class AccountJFXController {
         if (currentUsernameLabel != null) {
             currentUsernameLabel.setText(newUsername);
         }
+    }
+
+    public void renderRequestList(List<String> requests) {
+        Platform.runLater(() -> {
+            requestList.getChildren().clear();
+
+            if (requests == null || requests.isEmpty()) {
+                requestList.getChildren().add(new Label("No friend requests"));
+                return;
+            }
+
+            for (String friendName : requests) {
+                AnchorPane frame = createFriendRequestFrame(friendName);
+                requestList.getChildren().add(frame);
+            }
+        });
+    }
+
+
+    public void setSentRequestButtonListener(Runnable listener) {
+        sentRequestButton.setOnAction(e -> listener.run());
     }
 }

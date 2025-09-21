@@ -7,10 +7,12 @@ import ClientMVC.ClientView.Account.AccountJFXController;
 import ClientMVC.ClientModel.AccountModel;
 import ClientMVC.ClientView.Home.HomeView;
 import ClientMVC.ClientView.Login.LoginView;
+import javafx.application.Platform;
 import javafx.stage.Stage;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.util.List;
 
 public class AccountController {
     private final UnifiedClientModel model;
@@ -54,6 +56,11 @@ public class AccountController {
                 throw new RuntimeException(e);
             }
             new LoginController(loginView, model, loginView.getFXController());
+        });
+
+        accountJFXController.setSentRequestButtonListener(() -> {
+            List<String> sentRequests = model.getSentRequests();
+            Platform.runLater(() -> accountJFXController.renderRequestList(sentRequests));
         });
 
         // Set up account update handling
