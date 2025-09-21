@@ -93,11 +93,11 @@
                                 <!-- Change Username Form (Initially Hidden) -->
                                 <AnchorPane fx:id="changeUsernameFrame" prefHeight="130.0" prefWidth="390.0" style="-fx-background-color: #202020;" visible="false">
                                     <children>
-                                        <VBox fx:id="changeUsernameContainer" alignment="TOP_CENTER" prefHeight="127.0" prefWidth="390.0" spacing="10.0">
+                                        <VBox fx:id="changeUsernameContainer" alignment="TOP_CENTER" prefHeight="100.0" prefWidth="390.0" spacing="10.0">
                                             <children>
                                                 <HBox fx:id="currentUsernameDisplay" alignment="CENTER" fillHeight="false" prefHeight="25.0" prefWidth="200.0" spacing="20.0">
                                                     <children>
-                                                        <Label contentDisplay="CENTER" prefHeight="20.0" prefWidth="100.0" text="Current" textFill="WHITE">
+                                                        <Label contentDisplay="CENTER" prefHeight="20.0" prefWidth="80.0" text="Current" textFill="WHITE">
                                                             <font>
                                                                 <Font name="Gill Sans MT" size="12.0" />
                                                             </font>
@@ -107,7 +107,7 @@
                                                 </HBox>
                                                 <HBox fx:id="newUsernameInput" alignment="CENTER" fillHeight="false" prefHeight="25.0" prefWidth="200.0" spacing="20.0">
                                                     <children>
-                                                        <Label fx:id="newUsernameLabel" contentDisplay="CENTER" prefHeight="20.0" prefWidth="100.0" text="New Username" textAlignment="CENTER" textFill="WHITE">
+                                                        <Label fx:id="newUsernameLabel" contentDisplay="CENTER" prefHeight="20.0" prefWidth="80.0" text="New" textAlignment="CENTER" textFill="WHITE">
                                                             <font>
                                                                 <Font name="Gill Sans MT" size="12.0" />
                                                             </font>
@@ -115,21 +115,23 @@
                                                         <TextField fx:id="newUsernameTextField" prefHeight="25.0" prefWidth="150.0" promptText="New Username" />
                                                     </children>
                                                 </HBox>
-                                                <AnchorPane fx:id="usernameButtonContainer" prefHeight="49.0" prefWidth="390.0">
+                                                <AnchorPane fx:id="usernameButtonContainer" prefHeight="30.0" prefWidth="390.0">
                                                     <children>
-                                                        <Button fx:id="saveUsernameButton" alignment="CENTER" contentDisplay="CENTER" layoutX="315.0" layoutY="12.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="45.0" styleClass="theme-buttons" text="Save" />
-                                                        <Button fx:id="cancelUsernameButton" alignment="CENTER" contentDisplay="CENTER" layoutX="240.0" layoutY="12.0" mnemonicParsing="false" onAction="#hideChangeUsername" prefHeight="25.0" prefWidth="70.0" styleClass="theme-buttons" text="Cancel" />
-                                                        <Label fx:id="usernameStatusLabel" alignment="CENTER" layoutX="90.0" layoutY="13.0" prefHeight="24.0" prefWidth="160.0" text=" " textAlignment="JUSTIFY" textFill="WHITE">
-                                                            <font>
-                                                                <Font name="HP Simplified Jpan Regular" size="12.0" />
-                                                            </font>
-                                                        </Label>
+                                                        <Button fx:id="saveUsernameButton" alignment="CENTER" contentDisplay="CENTER" layoutX="315.0" layoutY="2.0" mnemonicParsing="false" prefHeight="25.0" prefWidth="45.0" styleClass="theme-buttons" text="Save" />
+                                                        <Button fx:id="cancelUsernameButton" alignment="CENTER" contentDisplay="CENTER" layoutX="240.0" layoutY="2.0" mnemonicParsing="false" onAction="#hideChangeUsername" prefHeight="25.0" prefWidth="70.0" styleClass="theme-buttons" text="Cancel" />
                                                     </children>
                                                 </AnchorPane>
                                             </children>
                                         </VBox>
                                     </children>
                                 </AnchorPane>
+
+                                <!-- Username Status - Outside the form, always visible -->
+                                <Label fx:id="usernameStatusLabel" alignment="CENTER" layoutX="95.0" layoutY="34.0" prefHeight="20.0" prefWidth="200.0" text="" textAlignment="CENTER" textFill="WHITE">
+                                    <font>
+                                        <Font name="HP Simplified Jpan Regular" size="12.0" />
+                                    </font>
+                                </Label>
                             </children>
                         </AnchorPane>
 

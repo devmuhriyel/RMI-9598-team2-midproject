@@ -532,6 +532,20 @@ public class ServerXMLHandler {
                 }
                 break;
 
+            case "CHANGE_USERNAME":
+                String currentUsername = content[0];
+                String requestedNewUsername = content[1];
+                reply = changeUsername(currentUsername, requestedNewUsername);
+                break;
+
+            case "CHANGE_PASSWORD":
+                String userForPasswordChange = content[0];
+                String oldPasswordProvided = content[1];
+                String newPasswordRequested = content[2];
+                reply = changePassword(userForPasswordChange, oldPasswordProvided, newPasswordRequested);
+                break;
+
+
         }
         return reply;
     }
@@ -1916,10 +1930,16 @@ public class ServerXMLHandler {
 
             root.appendChild(userElement);
 
+            // FIXED: Use consistent transformer settings like other methods
+            removeEmptyTextNodes(doc);
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
             Transformer transformer = transformerFactory.newTransformer();
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+            transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+
             DOMSource source = new DOMSource(doc);
             StreamResult result = new StreamResult(file);
             transformer.transform(source, result);
@@ -1930,6 +1950,7 @@ public class ServerXMLHandler {
         }
         return false;
     }
+
     public static boolean deleteGroupFromXML(String filePath, String groupName, String owner) {
         try {
             File xmlFile = new File(filePath);
@@ -2236,6 +2257,184 @@ public class ServerXMLHandler {
             return false;
         }
     }
+
+    public synchronized String changeUsername(String oldUsername, String newUsername) {
+        try {
+            // Validate inputs
+            if (newUsername == null || newUsername.trim().isEmpty()) {
+                return "USERNAME_CHANGE_FAILED";
+            }
+
+            newUsername = newUsername.trim();
+
+            // Check if new username already exists
+            if (userExists(newUsername)) {
+                return "USERNAME_EXISTS";
+            }
+
+            File file = new File(FILE_PATH);
+            if (!file.exists()) {
+                return "USERNAME_CHANGE_FAILED";
+            }
+
+            // reads the content of the xml string
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+
+            NodeList users = doc.getElementsByTagName("user");
+            boolean userFound = false;
+
+            for (int i = 0; i < users.getLength(); i++) {
+                Node user = users.item(i);
+                if (user.getNodeType() == Node.ELEMENT_NODE) {
+                    Element userElement = (Element) user;
+                    String currentUsername = userElement.getElementsByTagName("username")
+                            .item(0).getTextContent().trim();
+
+                    if (currentUsername.equals(oldUsername)) {
+                        // Update username
+                        userElement.getElementsByTagName("username")
+                                .item(0).setTextContent(newUsername);
+                        userFound = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!userFound) {
+                return "USERNAME_CHANGE_FAILED";
+            }
+
+            // FIXED: Use consistent transformer settings
+            removeEmptyTextNodes(doc);
+            TransformerFactory tf = TransformerFactory.newInstance();
+            Transformer transformer = tf.newTransformer();
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+            transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+            transformer.transform(new DOMSource(doc), new StreamResult(file));
+
+            // Rename the user's account XML file
+            renameUserAccountFile(oldUsername, newUsername);
+
+            System.out.println("Username changed from " + oldUsername + " to " + newUsername);
+            return "USERNAME_CHANGED";
+
+        } catch (Exception e) {
+            System.err.println("Error changing username: " + e.getMessage());
+            e.printStackTrace();
+            return "USERNAME_CHANGE_FAILED";
+        }
+    }
+
+    public synchronized String changePassword(String username, String oldPassword, String newPassword) {
+        try {
+            // Validate inputs
+            if (newPassword == null || newPassword.trim().isEmpty()) {
+                return "PASSWORD_CHANGE_FAILED";
+            }
+
+            File file = new File(FILE_PATH);
+            if (!file.exists()) {
+                return "PASSWORD_CHANGE_FAILED";
+            }
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+
+            NodeList users = doc.getElementsByTagName("user");
+            boolean userFound = false;
+
+            for (int i = 0; i < users.getLength(); i++) {
+                Node user = users.item(i);
+                if (user.getNodeType() == Node.ELEMENT_NODE) {
+                    Element userElement = (Element) user;
+                    String currentUsername = userElement.getElementsByTagName("username")
+                            .item(0).getTextContent().trim();
+                    String currentPassword = userElement.getElementsByTagName("password")
+                            .item(0).getTextContent().trim();
+
+                    if (currentUsername.equals(username)) {
+                        // Verify old password
+                        if (!currentPassword.equals(oldPassword)) {
+                            return "INVALID_OLD_PASSWORD";
+                        }
+
+                        // Check if new password is same as old
+                        if (oldPassword.equals(newPassword)) {
+                            return "PASSWORD_CHANGE_FAILED";
+                        }
+
+                        // Update password
+                        userElement.getElementsByTagName("password")
+                                .item(0).setTextContent(newPassword);
+                        userFound = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!userFound) {
+                return "PASSWORD_CHANGE_FAILED";
+            }
+
+            // FIXED: Use consistent transformer settings
+            removeEmptyTextNodes(doc);
+            TransformerFactory tf = TransformerFactory.newInstance();
+            Transformer transformer = tf.newTransformer();
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+            transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+            transformer.transform(new DOMSource(doc), new StreamResult(file));
+
+            System.out.println("Password changed for user: " + username);
+            return "PASSWORD_CHANGED";
+
+        } catch (Exception e) {
+            System.err.println("Error changing password: " + e.getMessage());
+            e.printStackTrace();
+            return "PASSWORD_CHANGE_FAILED";
+        }
+    }
+
+    private void renameUserAccountFile(String oldUsername, String newUsername) {
+        try {
+            File oldFile = new File("src/main/resources/XMLFiles/" + oldUsername + "Account.xml");
+            File newFile = new File("src/main/resources/XMLFiles/" + newUsername + "Account.xml");
+
+            if (oldFile.exists()) {
+                boolean renamed = oldFile.renameTo(newFile);
+                if (renamed) {
+                    System.out.println("Account file renamed from " + oldUsername + "Account.xml to " + newUsername + "Account.xml");
+
+                    // Also rename user files directory if it exists
+                    File oldUserFilesDir = new File("src/main/resources/XMLFiles/userFiles/" + oldUsername);
+                    File newUserFilesDir = new File("src/main/resources/XMLFiles/userFiles/" + newUsername);
+
+                    if (oldUserFilesDir.exists()) {
+                        boolean dirRenamed = oldUserFilesDir.renameTo(newUserFilesDir);
+                        if (dirRenamed) {
+                            System.out.println("User files directory renamed from " + oldUsername + " to " + newUsername);
+                        }
+                    }
+                } else {
+                    System.err.println("Failed to rename account file");
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error renaming user account file: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+
+
     private static class GroupInfo {
         private String owner;
         private int memberCount;
@@ -2257,7 +2456,4 @@ public class ServerXMLHandler {
             this.memberCount++;
         }
     }
-
-
 }
-

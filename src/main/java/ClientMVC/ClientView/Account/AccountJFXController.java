@@ -65,11 +65,6 @@ public class AccountJFXController {
     private double xOffset = 0;
     private double yOffset = 0;
 
-    //=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    //=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    //=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    //=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
     @FXML
     private VBox requestList;
 
@@ -184,11 +179,6 @@ public class AccountJFXController {
         // Show message (you can use your existing status methods)
         // showFriendRequestDeclined(friendName);
     }
-
-    //=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    //=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    //=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    //=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
     @FXML
     public void initialize() {
@@ -467,6 +457,19 @@ public class AccountJFXController {
         updateStatus(passwordStatusLabel, "Password update failed!", Color.rgb(217, 27, 36), true);
     }
 
+    // All the status and UI methods stay the same:
+    public void showUsernameAlreadyExists() {
+        updateStatus(usernameStatusLabel, "Username already exists!", javafx.scene.paint.Color.rgb(217, 27, 36), true);
+    }
+
+    public void showUsernameSameAsCurrent() {
+        updateStatus(usernameStatusLabel, "New username must be different!", javafx.scene.paint.Color.rgb(217, 27, 36), true);
+    }
+
+    public void showInvalidOldPassword() {
+        updateStatus(passwordStatusLabel, "Current password is incorrect!", javafx.scene.paint.Color.rgb(217, 27, 36), true);
+    }
+
     // REUSABLE STATUS UPDATER FOR ANY LABELS
     private void updateStatus(Label label, String message, Color color, boolean shake) {
         if (label == null) return;
@@ -510,19 +513,6 @@ public class AccountJFXController {
 
     public void setLogoutAccountButtonListener(Runnable listener) {
         this.LogoutAccountButtonListener = listener;
-    }
-
-    // All the status and UI methods stay the same:
-    public void showUsernameAlreadyExists() {
-        updateStatus(usernameStatusLabel, "Username already exists!", javafx.scene.paint.Color.rgb(217, 27, 36), true);
-    }
-
-    public void showUsernameSameAsCurrent() {
-        updateStatus(usernameStatusLabel, "New username must be different from current!", javafx.scene.paint.Color.rgb(217, 27, 36), true);
-    }
-
-    public void showInvalidOldPassword() {
-        updateStatus(passwordStatusLabel, "Current password is incorrect!", javafx.scene.paint.Color.rgb(217, 27, 36), true);
     }
 
     // Field clearing methods
