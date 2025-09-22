@@ -220,16 +220,24 @@ public class ServerXMLHandler {
                 String groupSearchResults = searchGroupsData(groupKeyword);
                 reply = "SEARCH_GROUPS_RESULT![]!" + groupSearchResults; // Remove the ![]! format
                 break;
+
             case "CREATE_USER":
                 String newUsername = content[0];
                 String newUserPassword = content[1];
-                try {
-                    registerUser(newUsername, newUserPassword);
-                    reply = "USER_CREATED";
-                } catch (Exception e) {
-                    reply = "USER_CREATE_FAILED";
+
+                // First check if user already exists
+                if (userExists(newUsername)) {
+                    reply = "USER_EXISTS";
+                } else {
+                    try {
+                        registerUser(newUsername, newUserPassword);
+                        reply = "USER_CREATED";
+                    } catch (Exception e) {
+                        reply = "USER_CREATE_FAILED";
+                    }
                 }
                 break;
+
             case "CREATE_GROUP_ADMIN":
                 String newGroupName = content[0];
                 String groupCreator = content[1];
@@ -2226,7 +2234,7 @@ public class ServerXMLHandler {
                     String uname = userElement.getElementsByTagName("username")
                             .item(0).getTextContent()
                             .trim();
-                    if (uname.equalsIgnoreCase(username.trim())) {
+                    if (uname.equals(username.trim())) {
                         return true;
                     }
                 }

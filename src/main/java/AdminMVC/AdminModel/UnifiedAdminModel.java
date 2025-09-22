@@ -354,8 +354,23 @@ public class UnifiedAdminModel implements Runnable {
     }
 
     public void createNewUser(String username, String password) {
-        if (!adminXMLHandler.validateUsername(username) || !adminXMLHandler.validatePassword(password)) {
-            System.err.println("Invalid username or password format");
+        // Validate username format
+        if (!adminXMLHandler.validateUsername(username)) {
+            Platform.runLater(() -> {
+                if (operationResultListener != null) {
+                    operationResultListener.accept("Invalid username. Must be 3+ characters, no spaces, and cannot contain: #$%^?\"}|_/\\{}");
+                }
+            });
+            return;
+        }
+
+        // Validate password format
+        if (!adminXMLHandler.validatePassword(password)) {
+            Platform.runLater(() -> {
+                if (operationResultListener != null) {
+                    operationResultListener.accept("Invalid password. Must be 4+ characters, no spaces, and cannot contain: #$%^?\"}|_/\\{}");
+                }
+            });
             return;
         }
 
@@ -365,9 +380,19 @@ public class UnifiedAdminModel implements Runnable {
                 writeMSG.write(request);
                 writeMSG.newLine();
                 writeMSG.flush();
+            } else {
+                Platform.runLater(() -> {
+                    if (operationResultListener != null) {
+                        operationResultListener.accept("Not connected to server.");
+                    }
+                });
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            Platform.runLater(() -> {
+                if (operationResultListener != null) {
+                    operationResultListener.accept("Failed to create user: Connection error.");
+                }
+            });
         }
     }
 
@@ -614,6 +639,10 @@ public class UnifiedAdminModel implements Runnable {
 
             case "GROUP_DELETE_FAILED":
                 handleOperationResponse("Failed to delete group", finalMsg);
+                break;
+
+            case "USER_EXISTS":
+                handleOperationResponse("Username already exists. Please choose a different username.", finalMsg);
                 break;
 
             case "FORCE_LOGOUT":

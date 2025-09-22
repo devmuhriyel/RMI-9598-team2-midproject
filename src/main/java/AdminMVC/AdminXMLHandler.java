@@ -415,8 +415,34 @@ public class AdminXMLHandler {
      * Validates if username is properly formatted
      */
     public boolean validateUsername(String username) {
-        return username != null && !username.trim().isEmpty() &&
-                !username.contains("![]!") && username.length() >= 3;
+        if (username == null || username.trim().isEmpty()) {
+            return false;
+        }
+
+        // Check for minimum length
+        if (username.length() < 3) {
+            return false;
+        }
+
+        // Check for forbidden characters: #$%^?"}|_/\{}
+        String forbiddenChars = "#$%^?\"}|_/\\{}";
+        for (char c : forbiddenChars.toCharArray()) {
+            if (username.contains(String.valueOf(c))) {
+                return false;
+            }
+        }
+
+        // Check for spaces
+        if (username.contains(" ")) {
+            return false;
+        }
+
+        // Check for our internal delimiter
+        if (username.contains("![]!")) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -431,9 +457,36 @@ public class AdminXMLHandler {
      * Validates if password is properly formatted
      */
     public boolean validatePassword(String password) {
-        return password != null && !password.trim().isEmpty() &&
-                !password.contains("![]!") && password.length() >= 4;
+        if (password == null || password.trim().isEmpty()) {
+            return false;
+        }
+
+        // Check for minimum length
+        if (password.length() < 4) {
+            return false;
+        }
+
+        // Check for forbidden characters: #$%^?"}|_/\{}
+        String forbiddenChars = "#$%^?\"}|_/\\{}";
+        for (char c : forbiddenChars.toCharArray()) {
+            if (password.contains(String.valueOf(c))) {
+                return false;
+            }
+        }
+
+        // Check for spaces
+        if (password.contains(" ")) {
+            return false;
+        }
+
+        // Check for our internal delimiter
+        if (password.contains("![]!")) {
+            return false;
+        }
+
+        return true;
     }
+
     public String createGetAllUsersWithStatusRequest() {
         return "<Request><type>GET_ALL_USERS_WITH_STATUS</type><content></content></Request>";
     }
