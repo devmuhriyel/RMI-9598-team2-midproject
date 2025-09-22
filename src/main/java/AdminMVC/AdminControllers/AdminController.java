@@ -151,6 +151,13 @@ public class AdminController {
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
                 alert.setTitle("Operation Result");
                 alert.setHeaderText(null);
+
+                // Check if it's a username exists error
+                if (result.contains("Username already exists")) {
+                    alert.setAlertType(Alert.AlertType.ERROR);
+                    alert.setTitle("Error");
+                }
+
                 alert.setContentText(result);
                 alert.showAndWait();
             });

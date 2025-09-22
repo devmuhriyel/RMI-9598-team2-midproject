@@ -600,6 +600,10 @@ public class ClientThread implements Runnable {
                         sendMessage("<Response status=\"USERNAME_EXISTS\"><body>Username already exists. Please choose a different username.</body></Response>");
                         break;
 
+                    case "USER_EXISTS":
+                        sendMessage("<Response><reply>USER_EXISTS</reply><body>Username already exists. Please choose a different username.</body></Response>");
+                        break;
+
                     case "INVALID_OLD_PASSWORD":
                         sendMessage("<Response status=\"INVALID_OLD_PASSWORD\"><body>Current password is incorrect.</body></Response>");
                         break;
@@ -763,6 +767,10 @@ public class ClientThread implements Runnable {
 
             case "USER_CREATE_FAILED":
                 sendMessage("<Response><reply>USER_CREATE_FAILED</reply><body>Failed to create user</body></Response>");
+                break;
+
+            case "USER_EXISTS":
+                sendMessage("<Response><reply>USER_EXISTS</reply><body>Username already exists. Please choose a different username.</body></Response>");
                 break;
 
             case "GROUP_CREATED":

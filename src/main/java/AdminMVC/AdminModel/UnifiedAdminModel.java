@@ -603,6 +603,10 @@ public class UnifiedAdminModel implements Runnable {
                 handleOperationResponse("Failed to create user", finalMsg);
                 break;
 
+            case "USER_EXISTS":
+                handleOperationResponse("Username already exists. Please choose a different username.", finalMsg);
+                break;
+
             case "GROUP_CREATE_FAILED":
                 handleOperationResponse("Failed to create group", finalMsg);
                 break;
