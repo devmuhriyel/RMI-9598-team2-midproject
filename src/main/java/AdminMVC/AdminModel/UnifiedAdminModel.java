@@ -36,6 +36,7 @@ public class UnifiedAdminModel implements Runnable {
     private AdminXMLHandler adminXMLHandler;
 
     private Consumer<String> passwordResetListener;
+    private Consumer<String> verificationCodeValidListener;
     private Consumer<String> messageListener;
     private Consumer<String> loginResponseListener;
     private Consumer<String> dataUpdateListener;
@@ -506,6 +507,10 @@ public class UnifiedAdminModel implements Runnable {
                 handlePasswordResetResponse(finalMsg);
                 break;
 
+            case "VERIFICATION_CODE_VALID":
+                handleVerificationCodeValidResponse(finalMsg);
+                break;
+
             case "MEMBERS_ADDED_TO_GROUP":
                 handleOperationResponse("Members added to group successfully", finalMsg);
                 loadData(); // Refresh data
@@ -815,6 +820,22 @@ public class UnifiedAdminModel implements Runnable {
         }
     }
 
+    private void handleVerificationCodeValidResponse(String xmlResponse) {
+        try {
+            String body = adminXMLHandler.getResponseBody(xmlResponse);
+            if (body != null && !body.isEmpty()) {
+                String username = body.trim();
+                
+                if (verificationCodeValidListener != null) {
+                    Platform.runLater(() -> verificationCodeValidListener.accept(username));
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling verification code valid response: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
     private void handleActiveUsersResponse(String xmlResponse) {
         try {
             String body = adminXMLHandler.getResponseBody(xmlResponse);
@@ -964,13 +985,12 @@ public class UnifiedAdminModel implements Runnable {
     public void setCommunityMessagesUpdateListener(Consumer<String> listener) {
         this.communityMessagesUpdateListener = listener;
     }
-
-    public void setUserStatsListener(Consumer<String> listener) {
-        this.userStatsListener = listener;
-    }
-
     public void setPasswordResetListener(Consumer<String> listener) {
         this.passwordResetListener = listener;
+    }
+
+    public void setVerificationCodeValidListener(Consumer<String> listener) {
+        this.verificationCodeValidListener = listener;
     }
 
     public void setAdminUsername(String adminUsername) {

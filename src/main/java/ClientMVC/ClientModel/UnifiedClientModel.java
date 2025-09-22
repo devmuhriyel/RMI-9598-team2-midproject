@@ -33,6 +33,13 @@ public class UnifiedClientModel implements Runnable {
         this.username = username;
         this.xmlHandler = new UserXMLHandler();
     }
+    private Consumer<String> verificationCodeValidListener;
+
+    // Add this setter method to UnifiedAdminModel class
+    public void setVerificationCodeValidListener(Consumer<String> verificationCodeValidListener) {
+        this.verificationCodeValidListener = verificationCodeValidListener;
+    }
+
 
     @Override
     public void run() {
@@ -71,6 +78,7 @@ public class UnifiedClientModel implements Runnable {
                     return;
                 }
             }
+
 
             switch (reply) {
                 case "GET_CHAT_HISTORY":
@@ -132,8 +140,41 @@ public class UnifiedClientModel implements Runnable {
                         Platform.runLater(() -> accountUpdateListener.accept(xmlResponse));
                     }
                     break;
+                case "PASSWORD_RESET_COMPLETED":
+                    // Handle password reset completion from admin
+                    handlePasswordResetCompleted(xmlResponse);
+                    break;
+
+                case "PASSWORD_RESET_REQUESTED":
+                    // Server confirmed password reset request was received and user found
+                    handlePasswordResetRequested(xmlResponse);
+                    break;
+
+                case "PASSWORD_RESET_SUCCESS":
+                    // Password was successfully reset by admin
+                    handlePasswordResetSuccess(xmlResponse);
+                    break;
+
+                case "PASSWORD_RESET_FAILED":
+                    // Password reset failed
+                    handlePasswordResetFailed(xmlResponse);
+                    break;
+
+                case "PASSWORD_RESET_REJECTED":
+                    // Admin rejected the password reset request
+                    handlePasswordResetRejected(xmlResponse);
+                    break;
 
 
+                case "VERIFICATION_CODE_VALID":
+                    // User's verification code was valid - show password reset UI
+                    handleVerificationCodeValid(xmlResponse);
+                    break;
+
+                case "VERIFICATION_CODE_INVALID":
+                    // User's verification code was invalid
+                    handleVerificationCodeInvalid(xmlResponse);
+                    break;
                 default:
                     System.out.println("Unhandled response type: " + reply);
                     break;
@@ -143,6 +184,58 @@ public class UnifiedClientModel implements Runnable {
             e.printStackTrace();
         }
     }
+
+    /**
+     * Handle password reset request confirmation
+     */
+    private void handlePasswordResetRequested(String xmlResponse) {
+        try {
+            String body = xmlHandler.getResponseBody(xmlResponse);
+            if (body != null && !body.isEmpty()) {
+                String[] parts = body.split("!\\[]!");
+                if (parts.length >= 2) {
+                    String username = parts[0];
+                    String verificationCode = parts[1];
+
+                    Platform.runLater(() -> {
+                        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+                        alert.setTitle("Password Reset Request Confirmed");
+                        alert.setHeaderText("Request Received by Administrator");
+                        alert.setContentText("Your password reset request has been confirmed for: " + username + "\n\n" +
+                                "Your account was found and your verification code has been validated.\n\n" +
+                                "An administrator will now review your request and process your password reset.\n\n" +
+                                "Please wait for the administrator to complete the process.");
+                        alert.getDialogPane().setPrefSize(500, 250);
+                        alert.setResizable(true);
+                        alert.showAndWait();
+                    });
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling password reset requested response: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    /**
+     * Handle password reset rejected response
+     */
+    private void handlePasswordResetRejected(String xmlResponse) {
+        Platform.runLater(() -> {
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.WARNING);
+            alert.setTitle("Password Reset Rejected");
+            alert.setHeaderText("Your password reset request was rejected");
+            alert.setContentText("The administrator has rejected your password reset request.\n\n" +
+                    "This could be due to:\n" +
+                    "- Incorrect verification code\n" +
+                    "- Security concerns\n" +
+                    "- Account verification issues\n\n" +
+                    "Please contact the administrator directly for assistance.");
+            alert.getDialogPane().setPrefSize(500, 250);
+            alert.setResizable(true);
+            alert.showAndWait();
+        });
+    }
+
     /*
      * handleCommunityMessageResponse:
      * 1. Get the response body from the XML.
@@ -858,6 +951,36 @@ public class UnifiedClientModel implements Runnable {
         return UserXMLHandler.getSentRequests(this.username);
     }
 
+    // Method to request initial password reset (generates verification code)
+    public synchronized void requestPasswordReset(String username) {
+        try {
+            String xmlMessage = "<Request><type>REQUEST_PASSWORD_RESET</type><content>" + 
+                    username + "</content></Request>";
+            System.out.println("Sending initial password reset request: " + xmlMessage);
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+        } catch (IOException e) {
+            System.err.println("Error sending initial password reset request: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    // Method to request password reset with verification code
+    public synchronized void requestPasswordResetWithCode(String username, String verificationCode) {
+        try {
+            String xmlMessage = "<Request><type>REQUEST_PASSWORD_RESET_WITH_CODE</type><content>" + 
+                    username + "![]!" + verificationCode + "</content></Request>";
+            System.out.println("Sending password reset request with code: " + xmlMessage);
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+        } catch (IOException e) {
+            System.err.println("Error sending password reset request with code: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
 
     public void setUsername(String username) {
         this.username = username;
@@ -901,6 +1024,199 @@ public class UnifiedClientModel implements Runnable {
 
     public String getUsername() {
         return username;
+    }
+
+    private void handlePasswordResetCompleted(String xmlResponse) {
+        try {
+            String body = xmlHandler.getResponseBody(xmlResponse);
+            if (body != null && !body.isEmpty()) {
+                // Show notification to user about password reset
+                if (messageListener != null) {
+                    Platform.runLater(() -> {
+                        // Create a notification message for the user
+                        String notificationMessage = "<Response><reply>PASSWORD_RESET_NOTIFICATION</reply><body>" + body + "</body></Response>";
+                        messageListener.accept(notificationMessage);
+                    });
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling password reset completion: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void handleVerificationCodeValid(String xmlResponse) {
+        try {
+            String body = xmlHandler.getResponseBody(xmlResponse);
+            if (body != null && !body.isEmpty()) {
+                String username = body.trim();
+                // Show password change dialog to the client
+                Platform.runLater(() -> {
+                    showPasswordChangeDialog(username);
+                });
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling verification code valid: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Handle verification code invalid response
+     */
+    private void handleVerificationCodeInvalid(String xmlResponse) {
+        Platform.runLater(() -> {
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+            alert.setTitle("Invalid Verification Code");
+            alert.setHeaderText("Verification code is incorrect");
+            alert.setContentText("The verification code you provided does not match your account records.\n\n" +
+                    "Please ensure you entered your correct security verification code.\n\n" +
+                    "If you're unsure of your verification code, please contact an administrator for assistance.");
+            alert.getDialogPane().setPrefSize(450, 250);
+            alert.setResizable(true);
+            alert.showAndWait();
+        });
+    }
+
+    /**
+     * Handle password reset success response
+     */
+    private void handlePasswordResetSuccess(String xmlResponse) {
+        try {
+            String body = xmlHandler.getResponseBody(xmlResponse);
+            if (body != null && !body.isEmpty()) {
+                String[] parts = body.split("!\\[]!");
+                if (parts.length >= 2) {
+                    String username = parts[0];
+                    String newPassword = parts[1];
+
+                    Platform.runLater(() -> {
+                        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+                        alert.setTitle("Password Reset Successful");
+                        alert.setHeaderText("Your password has been reset!");
+                        alert.setContentText("Your password has been successfully changed by the administrator.\n\n" +
+                                "Username: " + username + "\n" +
+                                "New Password: " + newPassword + "\n\n" +
+                                "Please use your new password to log in.\n" +
+                                "For security, consider changing your password after logging in.");
+                        alert.getDialogPane().setPrefSize(500, 280);
+                        alert.setResizable(true);
+                        alert.showAndWait();
+                    });
+                } else {
+                    Platform.runLater(() -> {
+                        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+                        alert.setTitle("Password Reset Successful");
+                        alert.setHeaderText("Your password has been reset!");
+                        alert.setContentText("Your password has been successfully reset by the administrator.\n\n" +
+                                "Please contact the administrator for your new password.");
+                        alert.getDialogPane().setPrefSize(450, 200);
+                        alert.setResizable(true);
+                        alert.showAndWait();
+                    });
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling password reset success response: " + e.getMessage());
+            e.printStackTrace();
+            Platform.runLater(() -> {
+                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+                alert.setTitle("Password Reset Successful");
+                alert.setHeaderText("Your password has been reset!");
+                alert.setContentText("Your password has been successfully reset by the administrator.");
+                alert.getDialogPane().setPrefSize(400, 180);
+                alert.setResizable(true);
+                alert.showAndWait();
+            });
+        }
+    }
+
+
+    /**
+     * Handle password reset failed response
+     */
+    private void handlePasswordResetFailed(String xmlResponse) {
+        Platform.runLater(() -> {
+            try {
+                String body = xmlHandler.getResponseBody(xmlResponse);
+                String message = "Your password reset request failed.";
+
+                if (body != null && !body.isEmpty()) {
+                    if (body.contains("No verification code found")) {
+                        message = "Your account does not have a verification code set up.\n\n" +
+                                "Please contact an administrator to set up account recovery options.";
+                    } else {
+                        message = "Password reset failed: " + body + "\n\n" +
+                                "Please contact an administrator for assistance.";
+                    }
+                }
+
+                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+                alert.setTitle("Password Reset Failed");
+                alert.setHeaderText("Unable to reset your password");
+                alert.setContentText(message);
+                alert.getDialogPane().setPrefSize(450, 220);
+                alert.setResizable(true);
+                alert.showAndWait();
+            } catch (Exception e) {
+                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+                alert.setTitle("Password Reset Failed");
+                alert.setHeaderText("Unable to reset your password");
+                alert.setContentText("Your password reset request could not be processed.\nPlease contact an administrator.");
+                alert.getDialogPane().setPrefSize(400, 180);
+                alert.setResizable(true);
+                alert.showAndWait();
+            }
+        });
+    }
+
+    private void showPasswordChangeDialog(String username) {
+        javafx.scene.control.Alert confirmDialog = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.CONFIRMATION);
+        confirmDialog.setTitle("🔑 Password Reset");
+        confirmDialog.setHeaderText("Change Password for " + username);
+        confirmDialog.setContentText(username + " wants to change password.\n\nDo you want to proceed with changing the password?");
+        
+        javafx.scene.control.ButtonType changePasswordButton = new javafx.scene.control.ButtonType("Change Password");
+        javafx.scene.control.ButtonType cancelButton = new javafx.scene.control.ButtonType("Cancel", javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE);
+        confirmDialog.getButtonTypes().setAll(changePasswordButton, cancelButton);
+        
+        java.util.Optional<javafx.scene.control.ButtonType> confirmResult = confirmDialog.showAndWait();
+        
+        if (confirmResult.isPresent() && confirmResult.get() == changePasswordButton) {
+            // User confirmed, now show password input dialog
+            javafx.scene.control.TextInputDialog passwordDialog = new javafx.scene.control.TextInputDialog();
+            passwordDialog.setTitle("🔐 New Password");
+            passwordDialog.setHeaderText("Enter New Password for " + username);
+            passwordDialog.setContentText("New Password:");
+            
+            passwordDialog.showAndWait().ifPresent(newPassword -> {
+                if (!newPassword.trim().isEmpty()) {
+                    // Send the new password to server
+                    resetPasswordOnServer(username, newPassword.trim());
+                } else {
+                    javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.WARNING);
+                    alert.setTitle("⚠️ Invalid Input");
+                    alert.setHeaderText("Password cannot be empty");
+                    alert.setContentText("Please enter a valid password.");
+                    alert.showAndWait();
+                }
+            });
+        }
+    }
+
+    // Method to send new password to server after verification
+    public synchronized void resetPasswordOnServer(String username, String newPassword) {
+        try {
+            String xmlMessage = "<Request><type>RESET_PASSWORD_CLIENT</type><content>" + 
+                    username + "![]!" + newPassword + "</content></Request>";
+            System.out.println("Sending password reset to server: " + xmlMessage);
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+        } catch (IOException e) {
+            System.err.println("Error sending password reset to server: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
 }

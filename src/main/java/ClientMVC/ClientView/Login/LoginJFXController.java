@@ -21,8 +21,8 @@ public class LoginJFXController {
     private Hyperlink signupLink;
 
     private Runnable signupLinkListener;
-
     private Runnable loginButtonListener;
+    private Runnable forgotPasswordLinkListener;
 
     @FXML
     private void initialize() {
@@ -35,6 +35,12 @@ public class LoginJFXController {
         signupLink.setOnAction(e -> {
             if (signupLinkListener != null) {
                 signupLinkListener.run();
+            }
+        });
+
+        forgotPasswordLink.setOnAction(e -> {
+            if (forgotPasswordLinkListener != null) {
+                forgotPasswordLinkListener.run();
             }
         });
     }
@@ -57,5 +63,9 @@ public class LoginJFXController {
 
     public void setSignupLinkListener(Runnable listener) {
         this.signupLinkListener = listener;
+    }
+
+    public void setForgotPasswordLinkListener(Runnable listener) {
+        this.forgotPasswordLinkListener = listener;
     }
 }

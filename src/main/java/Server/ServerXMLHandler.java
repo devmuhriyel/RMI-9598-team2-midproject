@@ -18,7 +18,10 @@ public class ServerXMLHandler {
     private static final List<String> communityMessages = new ArrayList<>();
     private static final List<String> activeUsers = new ArrayList<>();
 
-    public void registerUser(String username, String password) throws Exception {
+    /**
+     * Registers a user account (missing from original code)
+     */
+    private void registerUser(String username, String password) throws Exception {
         File file = new File(FILE_PATH);
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
@@ -512,14 +515,90 @@ public class ServerXMLHandler {
 
             case "REQUEST_PASSWORD_RESET":
                 String resetUsername = content[0];
-                String verificationCode = generateVerificationCode(resetUsername);
+                System.out.println("[DEBUG] Processing password reset request for user: " + resetUsername);
 
-                if (verificationCode != null) {
-                    reply = "PASSWORD_RESET_REQUESTED![]!" + resetUsername + "![]!" + verificationCode;
+                // Get the existing verification code from Users.xml
+                String existingVerificationCode = getVerificationCodeForUser(resetUsername);
+
+                if (existingVerificationCode != null) {
+                    System.out.println("[DEBUG] Found verification code for user: " + resetUsername);
+                    reply = "PASSWORD_RESET_REQUESTED![]!" + resetUsername + "![]!" + existingVerificationCode;
+                    // Notify admin clients about the password reset request
+                    System.out.println("[DEBUG] Notifying admin clients about password reset request");
+                    notifyAdminClients(resetUsername, existingVerificationCode);
                 } else {
-                    reply = "PASSWORD_RESET_FAILED";
+                    System.out.println("[DEBUG] No verification code found for user: " + resetUsername);
+                    reply = "PASSWORD_RESET_FAILED![]!No verification code found for this user";
                 }
                 break;
+            case "REQUEST_PASSWORD_RESET_WITH_CODE":
+                String resetUsernameWithCode = content[0];
+                String providedVerificationCode = content[1];
+
+                System.out.println("[DEBUG] Processing password reset with code for user: " + resetUsernameWithCode);
+                System.out.println("[DEBUG] Provided verification code: " + providedVerificationCode);
+
+                // Validate the verification code
+                if (verifyResetCode(resetUsernameWithCode, providedVerificationCode)) {
+                    System.out.println("[DEBUG] Verification code is valid for user: " + resetUsernameWithCode);
+                    // Code is valid, notify admin to change password
+                    reply = "VERIFICATION_CODE_VALID![]!" + resetUsernameWithCode;
+                    System.out.println("[DEBUG] Calling notifyAdminForPasswordChange for user: " + resetUsernameWithCode);
+                    notifyAdminForPasswordChange(resetUsernameWithCode);
+                    System.out.println("[DEBUG] Admin notification sent successfully");
+                } else {
+                    System.out.println("[DEBUG] Verification code is invalid for user: " + resetUsernameWithCode);
+                    reply = "VERIFICATION_CODE_INVALID";
+                }
+                break;
+
+            case "ADMIN_VERIFY_AND_CHANGE_PASSWORD":
+                String adminResetUsername = content[0];
+                String adminVerificationCode = content[1];
+                String adminNewPassword = content[2];
+
+                System.out.println("[DEBUG] Admin attempting to verify and change password for user: " + adminResetUsername);
+                System.out.println("[DEBUG] Verification code provided: " + adminVerificationCode);
+
+                // Verify the verification code against Users.xml
+                if (verifyResetCode(adminResetUsername, adminVerificationCode)) {
+                    System.out.println("[DEBUG] Verification code is valid, proceeding with password change");
+
+                    // Change the password
+                    if (changeUserPassword(adminResetUsername, adminNewPassword)) {
+                        System.out.println("[DEBUG] Password successfully changed by admin for user: " + adminResetUsername);
+
+                        // Note: We do NOT remove the verification code as it's a permanent security question
+
+                        // Notify the client about successful password reset
+                        notifyClientOfPasswordReset(adminResetUsername, adminNewPassword);
+
+                        reply = "ADMIN_PASSWORD_RESET_SUCCESS![]!" + adminResetUsername + "![]!Password successfully changed";
+                    } else {
+                        System.out.println("[DEBUG] Failed to change password for user: " + adminResetUsername);
+                        reply = "ADMIN_PASSWORD_RESET_FAILED![]!" + adminResetUsername + "![]!Failed to change password";
+                    }
+                } else {
+                    System.out.println("[DEBUG] Invalid verification code for user: " + adminResetUsername);
+
+                    // Notify client that verification code is invalid
+                    notifyClientOfInvalidCode(adminResetUsername);
+
+                    reply = "ADMIN_PASSWORD_RESET_FAILED![]!" + adminResetUsername + "![]!Invalid verification code";
+                }
+                break;
+
+                case "REJECT_PASSWORD_RESET":
+                    String rejectedUser = content[0];
+                    System.out.println("[DEBUG] Admin rejected password reset for user: " + rejectedUser);
+
+                    // Notify client that their password reset was rejected
+                    notifyClientOfRejectedReset(rejectedUser);
+
+                    reply = "PASSWORD_RESET_REJECTED![]!" + rejectedUser + "![]!Password reset request rejected";
+                    break;
+
+
 
             case "VERIFY_RESET_CODE":
                 String verifyUsername = content[0];
@@ -548,6 +627,267 @@ public class ServerXMLHandler {
 
         }
         return reply;
+    }
+
+
+
+    /**
+     * Notify admin about password change request (after verification code validation)
+     */
+    private void notifyAdminForPasswordChange(String username) {
+        try {
+            Class<?> clientThreadClass = Class.forName("Server.ClientThread");
+            java.lang.reflect.Field clientsField = clientThreadClass.getDeclaredField("clients");
+            clientsField.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            java.util.ArrayList<Object> clients = (java.util.ArrayList<Object>) clientsField.get(null);
+
+            System.out.println("[DEBUG] Notifying admin about verified password change request for: " + username);
+
+            synchronized (clients) {
+                for (Object client : clients) {
+                    try {
+                        // Check if this is an admin client
+                        java.lang.reflect.Field isAdminField = client.getClass().getDeclaredField("isAdmin");
+                        isAdminField.setAccessible(true);
+                        Boolean isAdmin = (Boolean) isAdminField.get(client);
+
+                        if (isAdmin != null && isAdmin) {
+                            java.lang.reflect.Method sendMessageMethod = client.getClass().getDeclaredMethod("sendMessage", String.class);
+                            sendMessageMethod.setAccessible(true);
+
+                            String notification = "<Response><reply>VERIFICATION_CODE_VALID</reply><body>" +
+                                    username + "</body></Response>";
+
+                            sendMessageMethod.invoke(client, notification);
+                            System.out.println("[DEBUG] Notified admin about verified password change request");
+                        }
+                    } catch (Exception e) {
+                        System.err.println("[ERROR] Error notifying individual admin client about verification: " + e.getMessage());
+                        // Continue with other clients
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[ERROR] Error accessing clients list for verification notification: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Notify admin clients about password reset request
+     */
+    private void notifyAdminClients(String username, String verificationCode) {
+        try {
+            Class<?> clientThreadClass = Class.forName("Server.ClientThread");
+            java.lang.reflect.Field clientsField = clientThreadClass.getDeclaredField("clients");
+            clientsField.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            java.util.ArrayList<Object> clients = (java.util.ArrayList<Object>) clientsField.get(null);
+
+            System.out.println("[DEBUG] Notifying admin clients about password reset request for: " + username);
+
+            synchronized (clients) {
+                for (Object client : clients) {
+                    try {
+                        // Check if this is an admin client
+                        java.lang.reflect.Field isAdminField = client.getClass().getDeclaredField("isAdmin");
+                        isAdminField.setAccessible(true);
+                        Boolean isAdmin = (Boolean) isAdminField.get(client);
+
+                        if (isAdmin != null && isAdmin) {
+                            java.lang.reflect.Method sendMessageMethod = client.getClass().getDeclaredMethod("sendMessage", String.class);
+                            sendMessageMethod.setAccessible(true);
+
+                            String notification = "<Response><reply>PASSWORD_RESET_REQUESTED</reply><body>" +
+                                    username + "![]!" + verificationCode + "</body></Response>";
+
+                            sendMessageMethod.invoke(client, notification);
+                            System.out.println("[DEBUG] Notified admin client about password reset request");
+                        }
+                    } catch (Exception e) {
+                        System.err.println("[ERROR] Error notifying individual admin client: " + e.getMessage());
+                        // Continue with other clients
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[ERROR] Error accessing clients list for admin notification: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+
+    public String getVerificationCodeForUser(String username) {
+        try {
+            System.out.println("[DEBUG] Getting verification code for user: " + username);
+
+            File file = new File(FILE_PATH);
+            if (!file.exists()) {
+                System.out.println("[DEBUG] Users.xml file does not exist");
+                return null;
+            }
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+
+            NodeList users = doc.getElementsByTagName("user");
+            for (int i = 0; i < users.getLength(); i++) {
+                Element user = (Element) users.item(i);
+                String uname = user.getElementsByTagName("username").item(0).getTextContent();
+
+                if (uname.equals(username)) {
+                    NodeList codeNodes = user.getElementsByTagName("verificationCode");
+                    if (codeNodes.getLength() > 0) {
+                        String code = codeNodes.item(0).getTextContent().trim();
+                        System.out.println("[DEBUG] Found verification code for user: " + username);
+                        return code;
+                    } else {
+                        System.out.println("[DEBUG] No verification code found for user: " + username);
+                        return null;
+                    }
+                }
+            }
+
+            System.out.println("[DEBUG] User not found: " + username);
+            return null;
+        } catch (Exception e) {
+            System.err.println("[ERROR] Error getting verification code: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * Notify client that their password has been successfully reset
+     */
+    private void notifyClientOfPasswordReset(String username, String newPassword) {
+        try {
+            Class<?> clientThreadClass = Class.forName("Server.ClientThread");
+            java.lang.reflect.Field clientsField = clientThreadClass.getDeclaredField("clients");
+            clientsField.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            java.util.ArrayList<Object> clients = (java.util.ArrayList<Object>) clientsField.get(null);
+
+            System.out.println("[DEBUG] Notifying client about successful password reset: " + username);
+
+            synchronized (clients) {
+                for (Object client : clients) {
+                    try {
+                        // Get client name
+                        java.lang.reflect.Field nameField = client.getClass().getDeclaredField("name");
+                        nameField.setAccessible(true);
+                        String clientName = (String) nameField.get(client);
+
+                        // Check if this is the user whose password was reset
+                        if (username.equals(clientName)) {
+                            java.lang.reflect.Method sendMessageMethod = client.getClass().getDeclaredMethod("sendMessage", String.class);
+                            sendMessageMethod.setAccessible(true);
+
+                            String notification = "<Response><reply>PASSWORD_RESET_SUCCESS</reply><body>" +
+                                    username + "![]!" + newPassword + "</body></Response>";
+
+                            sendMessageMethod.invoke(client, notification);
+                            System.out.println("[DEBUG] Successfully notified client about password reset: " + username);
+                            break;
+                        }
+                    } catch (Exception e) {
+                        System.err.println("[ERROR] Error notifying individual client: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[ERROR] Error accessing clients list for password reset notification: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Notify client that their verification code is invalid
+     */
+    private void notifyClientOfInvalidCode(String username) {
+        try {
+            Class<?> clientThreadClass = Class.forName("Server.ClientThread");
+            java.lang.reflect.Field clientsField = clientThreadClass.getDeclaredField("clients");
+            clientsField.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            java.util.ArrayList<Object> clients = (java.util.ArrayList<Object>) clientsField.get(null);
+
+            System.out.println("[DEBUG] Notifying client about invalid verification code: " + username);
+
+            synchronized (clients) {
+                for (Object client : clients) {
+                    try {
+                        java.lang.reflect.Field nameField = client.getClass().getDeclaredField("name");
+                        nameField.setAccessible(true);
+                        String clientName = (String) nameField.get(client);
+
+                        if (username.equals(clientName)) {
+                            java.lang.reflect.Method sendMessageMethod = client.getClass().getDeclaredMethod("sendMessage", String.class);
+                            sendMessageMethod.setAccessible(true);
+
+                            String notification = "<Response><reply>VERIFICATION_CODE_INVALID</reply><body>" +
+                                    "Your verification code is invalid or does not match your account records.</body></Response>";
+
+                            sendMessageMethod.invoke(client, notification);
+                            System.out.println("[DEBUG] Successfully notified client about invalid verification code: " + username);
+                            break;
+                        }
+                    } catch (Exception e) {
+                        System.err.println("[ERROR] Error notifying client about invalid code: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[ERROR] Error accessing clients list for invalid code notification: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Notify client that their password reset request was rejected
+     */
+    private void notifyClientOfRejectedReset(String username) {
+        try {
+            Class<?> clientThreadClass = Class.forName("Server.ClientThread");
+            java.lang.reflect.Field clientsField = clientThreadClass.getDeclaredField("clients");
+            clientsField.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            java.util.ArrayList<Object> clients = (java.util.ArrayList<Object>) clientsField.get(null);
+
+            System.out.println("[DEBUG] Notifying client about rejected password reset: " + username);
+
+            synchronized (clients) {
+                for (Object client : clients) {
+                    try {
+                        java.lang.reflect.Field nameField = client.getClass().getDeclaredField("name");
+                        nameField.setAccessible(true);
+                        String clientName = (String) nameField.get(client);
+
+                        if (username.equals(clientName)) {
+                            java.lang.reflect.Method sendMessageMethod = client.getClass().getDeclaredMethod("sendMessage", String.class);
+                            sendMessageMethod.setAccessible(true);
+
+                            String notification = "<Response><reply>PASSWORD_RESET_REJECTED</reply><body>" +
+                                    "Your password reset request has been rejected by admin.</body></Response>";
+
+                            sendMessageMethod.invoke(client, notification);
+                            System.out.println("[DEBUG] Successfully notified client about rejected password reset: " + username);
+                            break;
+                        }
+                    } catch (Exception e) {
+                        System.err.println("[ERROR] Error notifying client about rejected reset: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[ERROR] Error accessing clients list for rejection notification: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     public synchronized boolean createGroupInUserAccounts(String groupName, String creator, String membersStr) {
@@ -2218,16 +2558,183 @@ public class ServerXMLHandler {
             root.appendChild(timestampElement);
 
             saveDocument(doc, file);
+            
+            // Also add verification code to Users.xml
+            addVerificationCodeToUsersXML(username, verificationCode);
+            
             return verificationCode;
         } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
     }
+
+    /**
+     * Add verification code to Users.xml file
+     */
+    private void addVerificationCodeToUsersXML(String username, String verificationCode) {
+        try {
+            File usersFile = new File(FILE_PATH); // FILE_PATH = "src/main/resources/XMLFiles/Users.xml"
+            if (!usersFile.exists()) {
+                System.err.println("Users.xml file does not exist");
+                return;
+            }
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(usersFile);
+            doc.getDocumentElement().normalize();
+
+            NodeList users = doc.getElementsByTagName("user");
+            for (int i = 0; i < users.getLength(); i++) {
+                Element user = (Element) users.item(i);
+                String uname = user.getElementsByTagName("username").item(0).getTextContent();
+
+                if (uname.equals(username)) {
+                    // Remove existing verification code if present
+                    NodeList existingCodes = user.getElementsByTagName("verificationCode");
+                    for (int j = existingCodes.getLength() - 1; j >= 0; j--) {
+                        user.removeChild(existingCodes.item(j));
+                    }
+
+                    // Add new verification code
+                    Element codeElement = doc.createElement("verificationCode");
+                    codeElement.appendChild(doc.createTextNode(verificationCode));
+                    user.appendChild(codeElement);
+
+                    // Add timestamp for expiration
+                    NodeList existingTimestamps = user.getElementsByTagName("verificationTimestamp");
+                    for (int j = existingTimestamps.getLength() - 1; j >= 0; j--) {
+                        user.removeChild(existingTimestamps.item(j));
+                    }
+
+                    Element timestampElement = doc.createElement("verificationTimestamp");
+                    timestampElement.appendChild(doc.createTextNode(String.valueOf(System.currentTimeMillis())));
+                    user.appendChild(timestampElement);
+
+                    // Save the updated Users.xml
+                    TransformerFactory tf = TransformerFactory.newInstance();
+                    Transformer transformer = tf.newTransformer();
+                    transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                    transformer.transform(new DOMSource(doc), new StreamResult(usersFile));
+                    
+                    System.out.println("Added verification code to Users.xml for user: " + username);
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error adding verification code to Users.xml: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Remove verification code from Users.xml file
+     */
+    public void removeVerificationCodeFromUsersXML(String username) {
+        try {
+            File usersFile = new File(FILE_PATH);
+            if (!usersFile.exists()) {
+                System.err.println("Users.xml file does not exist");
+                return;
+            }
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(usersFile);
+            doc.getDocumentElement().normalize();
+
+            NodeList users = doc.getElementsByTagName("user");
+            for (int i = 0; i < users.getLength(); i++) {
+                Element user = (Element) users.item(i);
+                String uname = user.getElementsByTagName("username").item(0).getTextContent();
+
+                if (uname.equals(username)) {
+                    // Remove verification code if present
+                    NodeList codeNodes = user.getElementsByTagName("verificationCode");
+                    for (int j = codeNodes.getLength() - 1; j >= 0; j--) {
+                        user.removeChild(codeNodes.item(j));
+                    }
+
+                    // Remove timestamp if present
+                    NodeList timestampNodes = user.getElementsByTagName("verificationTimestamp");
+                    for (int j = timestampNodes.getLength() - 1; j >= 0; j--) {
+                        user.removeChild(timestampNodes.item(j));
+                    }
+
+                    // Save the updated Users.xml
+                    TransformerFactory tf = TransformerFactory.newInstance();
+                    Transformer transformer = tf.newTransformer();
+                    transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                    transformer.transform(new DOMSource(doc), new StreamResult(usersFile));
+                    
+                    System.out.println("Removed verification code from Users.xml for user: " + username);
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error removing verification code from Users.xml: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Check if verification code is expired (valid for 10 minutes)
+     */
+    public boolean isVerificationCodeExpired(String username) {
+        try {
+            File usersFile = new File(FILE_PATH);
+            if (!usersFile.exists()) {
+                return true;
+            }
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(usersFile);
+            doc.getDocumentElement().normalize();
+
+            NodeList users = doc.getElementsByTagName("user");
+            for (int i = 0; i < users.getLength(); i++) {
+                Element user = (Element) users.item(i);
+                String uname = user.getElementsByTagName("username").item(0).getTextContent();
+
+                if (uname.equals(username)) {
+                    NodeList timestampNodes = user.getElementsByTagName("verificationTimestamp");
+                    if (timestampNodes.getLength() > 0) {
+                        String timestampStr = timestampNodes.item(0).getTextContent();
+                        long timestamp = Long.parseLong(timestampStr);
+                        long currentTime = System.currentTimeMillis();
+                        long tenMinutes = 10 * 60 * 1000; // 10 minutes in milliseconds
+                        
+                        return (currentTime - timestamp) > tenMinutes;
+                    } else {
+                        return true; // No timestamp means expired
+                    }
+                }
+            }
+            return true; // User not found means expired
+        } catch (Exception e) {
+            System.err.println("Error checking verification code expiration: " + e.getMessage());
+            e.printStackTrace();
+            return true; // Error means expired for safety
+        }
+    }
     public boolean verifyResetCode(String username, String providedCode) {
         try {
-            File file = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
+            System.out.println("[DEBUG] Verifying reset code for user: " + username);
+            System.out.println("[DEBUG] Provided code: " + providedCode);
+
+            // Check if verification code is expired first
+            if (isVerificationCodeExpired(username)) {
+                System.out.println("[DEBUG] Verification code expired for user: " + username);
+                removeVerificationCodeFromUsersXML(username); // Clean up expired code
+                return false;
+            }
+
+            // Check the Users.xml file for the verification code
+            File file = new File(FILE_PATH); // FILE_PATH = "src/main/resources/XMLFiles/Users.xml"
             if (!file.exists()) {
+                System.out.println("[DEBUG] Users.xml file does not exist: " + file.getAbsolutePath());
                 return false;
             }
 
@@ -2235,24 +2742,34 @@ public class ServerXMLHandler {
             DocumentBuilder builder = factory.newDocumentBuilder();
             Document doc = builder.parse(file);
 
-            NodeList codeNodes = doc.getElementsByTagName("verificationCode");
-            NodeList timestampNodes = doc.getElementsByTagName("verificationTimestamp");
+            NodeList users = doc.getElementsByTagName("user");
+            for (int i = 0; i < users.getLength(); i++) {
+                Element user = (Element) users.item(i);
+                String uname = user.getElementsByTagName("username").item(0).getTextContent();
 
-            if (codeNodes.getLength() == 0 || timestampNodes.getLength() == 0) {
-                return false;
+                if (uname.equals(username)) {
+                    System.out.println("[DEBUG] Found user: " + username);
+
+                    // Check if this user has a verification code
+                    NodeList codeNodes = user.getElementsByTagName("verificationCode");
+                    if (codeNodes.getLength() > 0) {
+                        String storedCode = codeNodes.item(0).getTextContent().trim();
+                        System.out.println("[DEBUG] Stored code: " + storedCode + ", Provided code: " + providedCode);
+
+                        boolean codeMatches = storedCode.equals(providedCode);
+                        System.out.println("[DEBUG] Code verification result: " + codeMatches);
+                        return codeMatches;
+                    } else {
+                        System.out.println("[DEBUG] No verification code found for user: " + username);
+                        return false;
+                    }
+                }
             }
 
-            String storedCode = codeNodes.item(0).getTextContent();
-            long timestamp = Long.parseLong(timestampNodes.item(0).getTextContent());
-            long currentTime = System.currentTimeMillis();
-
-            // Check if code is expired (10 minutes = 600,000 milliseconds)
-            if (currentTime - timestamp > 600000) {
-                return false;
-            }
-
-            return storedCode.equals(providedCode);
+            System.out.println("[DEBUG] User not found: " + username);
+            return false;
         } catch (Exception e) {
+            System.err.println("[ERROR] Error verifying reset code: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
