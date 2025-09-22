@@ -7,7 +7,7 @@
     <user>
         <username>bob</username>
         <password>pangetko23</password>
-        <verificationCode>123445</verificationCode>
+        <verification>123445</verification>
     </user>
     <user>
         <username>charlie</username>

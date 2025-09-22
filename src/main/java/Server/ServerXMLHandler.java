@@ -2577,6 +2577,7 @@ public class ServerXMLHandler {
         }
     }
 
+    
     /**
      * Add verification code to Users.xml file
      */
