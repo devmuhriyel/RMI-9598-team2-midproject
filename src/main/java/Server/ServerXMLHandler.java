@@ -221,13 +221,15 @@ public class ServerXMLHandler {
             case "CREATE_USER":
                 String newUsername = content[0];
                 String newUserPassword = content[1];
-                try {
-                    registerUser(newUsername, newUserPassword);
-                    reply = "USER_CREATED";
-                } catch (Exception e) {
-                    if (e.getMessage().equals("USERNAME_EXISTS")) {
-                        reply = "USER_EXISTS";
-                    } else {
+
+                // First check if user already exists
+                if (userExists(newUsername)) {
+                    reply = "USER_EXISTS";
+                } else {
+                    try {
+                        registerUser(newUsername, newUserPassword);
+                        reply = "USER_CREATED";
+                    } catch (Exception e) {
                         reply = "USER_CREATE_FAILED";
                     }
                 }
@@ -1892,7 +1894,7 @@ public class ServerXMLHandler {
                     String uname = userElement.getElementsByTagName("username")
                             .item(0).getTextContent()
                             .trim();
-                    if (uname.equalsIgnoreCase(username.trim())) {
+                    if (uname.equals(username.trim())) {
                         return true;
                     }
                 }

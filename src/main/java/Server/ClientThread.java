@@ -769,10 +769,6 @@ public class ClientThread implements Runnable {
                 sendMessage("<Response><reply>USER_CREATE_FAILED</reply><body>Failed to create user</body></Response>");
                 break;
 
-            case "USER_EXISTS":
-                sendMessage("<Response><reply>USER_EXISTS</reply><body>Username already exists. Please choose a different username.</body></Response>");
-                break;
-
             case "GROUP_CREATED":
                 sendMessage("<Response><reply>GROUP_CREATED</reply><body>Group created successfully</body></Response>");
                 break;
