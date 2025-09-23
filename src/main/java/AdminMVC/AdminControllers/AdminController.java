@@ -49,14 +49,9 @@ public class AdminController {
      */
 
     private void setupPasswordResetHandling() {
-        // Set up listener for password reset requests
-        model.setPasswordResetListener(this::handlePasswordResetRequest);
-
-        // Set up listener for verification code validation requests
+        // Set up listener for verification code validation requests only
+        // (The operation result listener is already set up in setupModelListeners())
         model.setVerificationCodeValidListener(this::handleVerificationCodeValidRequest);
-
-        // Set up operation result listener
-        model.setOperationResultListener(this::handleOperationResult);
     }
 
     /**
@@ -516,14 +511,43 @@ public class AdminController {
             });
         });
 
-        // Operation result listener
+        // COMBINED Operation result listener - handles both regular operations and password reset
         model.setOperationResultListener(result -> {
             Platform.runLater(() -> {
-                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                alert.setTitle("Operation Result");
-                alert.setHeaderText(null);
-                alert.setContentText(result);
-                alert.showAndWait();
+                // Handle password reset related results first
+                if (result.contains("ADMIN_PASSWORD_RESET_SUCCESS")) {
+                    System.out.println("[ADMIN] Password reset completed successfully");
+                    showAlert("Success", "Password reset completed successfully. User has been notified with new password.");
+                    if (currentPasswordResetRequest != null) {
+                        currentPasswordResetRequest = null;
+                    }
+                } else if (result.contains("ADMIN_PASSWORD_RESET_FAILED")) {
+                    if (result.contains("Invalid verification code")) {
+                        showAlert("Error", "Verification code does not match user's security code.");
+                    } else {
+                        showAlert("Error", "Password reset failed: " + result);
+                    }
+                } else if (result.contains("PASSWORD_RESET_REJECTED")) {
+                    showAlert("Success", "Password reset request rejected. User has been notified.");
+                    if (currentPasswordResetRequest != null) {
+                        currentPasswordResetRequest = null;
+                    }
+                } else {
+                    // Handle regular operation results (including user creation)
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                    alert.setTitle("Operation Result");
+                    alert.setHeaderText(null);
+
+                    // Check if it's an error message and change alert type
+                    if (result.contains("already exists") || result.contains("Failed") ||
+                            result.contains("Invalid") || result.contains("cannot contain")) {
+                        alert.setAlertType(Alert.AlertType.ERROR);
+                        alert.setTitle("Error");
+                    }
+
+                    alert.setContentText(result);
+                    alert.showAndWait();
+                }
             });
         });
 
