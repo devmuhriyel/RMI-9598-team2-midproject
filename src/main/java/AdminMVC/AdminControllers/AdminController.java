@@ -2,9 +2,13 @@ package AdminMVC.AdminControllers;
 
 import AdminMVC.AdminModel.UnifiedAdminModel;
 import AdminMVC.AdminView.Admin.AdminPageJFXController;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,20 +33,27 @@ public class AdminController {
         setupPasswordResetHandling();
         // Load initial data
         refreshData();
+        startAutoRefresh();
+    }
+
+    private void startAutoRefresh() {
+        Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(5), event -> {
+            model.requestAllUsersWithStatus();
+        }));
+        timeline.setCycleCount(Animation.INDEFINITE);
+        timeline.play();
     }
 
     /**
      * Set up password reset handling - call this in your initialize() method
      */
-    private void setupPasswordResetHandling() {
-        // Set up listener for password reset requests
-        model.setPasswordResetListener(this::handlePasswordResetRequest);
 
+    private void setupPasswordResetHandling() {
         // Set up listener for verification code validation requests
         model.setVerificationCodeValidListener(this::handleVerificationCodeValidRequest);
 
-        // Set up operation result listener
-        model.setOperationResultListener(this::handleOperationResult);
+        // Store the password reset request data
+        // (The operation result listener is already set up in setupModelListeners())
     }
 
     /**
@@ -425,11 +436,45 @@ public class AdminController {
         // Operation result listener
         model.setOperationResultListener(result -> {
             Platform.runLater(() -> {
-                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                alert.setTitle("Operation Result");
-                alert.setHeaderText(null);
-                alert.setContentText(result);
-                alert.showAndWait();
+                // Handle password reset related results first
+                if (result.contains("ADMIN_PASSWORD_RESET_SUCCESS")) {
+                    System.out.println("[ADMIN] Password reset completed successfully");
+                    showAlert("Success", "Password reset completed successfully. User has been notified with new password.");
+                    currentPasswordResetRequest = null;
+                } else if (result.contains("ADMIN_PASSWORD_RESET_FAILED")) {
+                    if (result.contains("Invalid verification code")) {
+                        System.out.println("[ADMIN] Password reset failed - invalid verification code");
+                        showAlert("Error", "Verification code does not match user's security code. User has been notified.");
+                    } else if (result.contains("Failed to change password")) {
+                        System.out.println("[ADMIN] Password reset failed - system error");
+                        showAlert("Error", "System error occurred while changing password. Please try again.");
+                    } else {
+                        System.out.println("[ADMIN] Password reset failed - unknown reason");
+                        showAlert("Error", "Password reset failed: " + result);
+                    }
+                } else if (result.contains("PASSWORD_RESET_REJECTED")) {
+                    System.out.println("[ADMIN] Password reset request rejected successfully");
+                    showAlert("Success", "Password reset request rejected. User has been notified.");
+                    currentPasswordResetRequest = null;
+                } else {
+                    // Handle regular operation results
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                    alert.setTitle("Operation Result");
+                    alert.setHeaderText(null);
+
+                    // Check if it's an error message and change alert type
+                    if (result.contains("already exists") || result.contains("Failed") ||
+                            result.contains("Invalid") || result.contains("cannot contain")) {
+                        alert.setAlertType(Alert.AlertType.ERROR);
+                        alert.setTitle("Error");
+                    }
+
+                    alert.setContentText(result);
+                    alert.showAndWait();
+                }
+
+                // Refresh admin data after any operation
+                model.refreshData();
             });
         });
 
