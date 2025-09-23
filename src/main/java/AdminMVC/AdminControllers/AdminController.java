@@ -2,9 +2,12 @@ package AdminMVC.AdminControllers;
 
 import AdminMVC.AdminModel.UnifiedAdminModel;
 import AdminMVC.AdminView.Admin.AdminPageJFXController;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -58,6 +61,20 @@ public class AdminController {
 
         // Notify UI layer to display password reset request
         notifyUIOfPasswordResetRequest(username);
+    }
+    private void notifyUIOfPasswordResetRequest(String username) {
+        System.out.println("[ADMIN UI] Displaying password reset request for user: " + username);
+
+        Platform.runLater(() -> {
+            Alert requestAlert = new Alert(Alert.AlertType.INFORMATION);
+            requestAlert.setTitle("Password Reset Request");
+            requestAlert.setHeaderText("New Password Reset Request");
+            requestAlert.setContentText("User '" + username + "' has submitted a password reset request.\n\n" +
+                    "The system is now validating their security verification code.\n\n" +
+                    "You will be notified when validation is complete.");
+
+            requestAlert.showAndWait();
+        });
     }
 
     /**
@@ -228,48 +245,114 @@ public class AdminController {
     /**
      * Notify UI layer of password reset request - to be implemented by UI
      */
-    private void notifyUIOfPasswordResetRequest(String username) {
-        // UI layer should implement this to show password reset request notification
-        System.out.println("[ADMIN UI] Should display password reset request for user: " + username);
-        // Example: Show dialog or update UI component to display the request
+    private void notifyUIOfVerificationSuccess(String username) {
+        System.out.println("[ADMIN UI] Displaying verification success for user: " + username);
+
+        Platform.runLater(() -> {
+            // Show confirmation that verification was successful
+            Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
+            confirmAlert.setTitle("Password Reset Request");
+            confirmAlert.setHeaderText("User Verification Successful");
+            confirmAlert.setContentText("User '" + username + "' has been verified successfully.\n\n" +
+                    "Their security verification code is correct.\n\n" +
+                    "Do you want to proceed with changing their password?");
+
+            confirmAlert.getButtonTypes().setAll(ButtonType.YES, ButtonType.NO);
+
+            Optional<ButtonType> result = confirmAlert.showAndWait();
+            if (result.isPresent() && result.get() == ButtonType.YES) {
+                showPasswordChangeDialog(username);
+            } else {
+                // Admin chose not to proceed, reject the request
+                processPasswordResetRejection(username);
+            }
+        });
+    }
+    private void showPasswordChangeDialog(String username) {
+        TextInputDialog passwordDialog = new TextInputDialog();
+        passwordDialog.setTitle("Change Password");
+        passwordDialog.setHeaderText("Set New Password for: " + username);
+        passwordDialog.setContentText("Enter new password:");
+
+        Optional<String> passwordResult = passwordDialog.showAndWait();
+        if (passwordResult.isPresent() && !passwordResult.get().trim().isEmpty()) {
+            String newPassword = passwordResult.get().trim();
+
+            if (newPassword.length() < 4) {
+                notifyUIOfError("Password must be at least 4 characters long");
+                return;
+            }
+
+            // Get the verification code from the pending request
+            String verificationCode = getStoredVerificationCode(username);
+            if (verificationCode != null) {
+                // Process the password reset with verification
+                processPasswordResetApproval(username, verificationCode, newPassword);
+            } else {
+                // Fallback: just change the password directly since verification already passed
+                processDirectPasswordChange(username, newPassword);
+            }
+        }
+    }
+    private String getStoredVerificationCode(String username) {
+        // Since the verification already passed, we know the code is correct
+        // You might want to store this temporarily or get it from the Users.xml
+        // For now, we'll use the direct password change since verification already passed
+        return null;
     }
 
     /**
      * Notify UI layer of verification success - to be implemented by UI
      */
-    private void notifyUIOfVerificationSuccess(String username) {
-        // UI layer should implement this to show verification success
-        System.out.println("[ADMIN UI] Should display verification success for user: " + username);
-        // Example: Show confirmation dialog or update status
-    }
 
     /**
      * Notify UI layer of processing status - to be implemented by UI
      */
     private void notifyUIOfProcessingStatus(String message) {
-        // UI layer should implement this to show processing status
         System.out.println("[ADMIN UI] Processing status: " + message);
-        // Example: Show progress indicator or status message
+
+        Platform.runLater(() -> {
+            Alert statusAlert = new Alert(Alert.AlertType.INFORMATION);
+            statusAlert.setTitle("Processing");
+            statusAlert.setHeaderText("Password Reset Processing");
+            statusAlert.setContentText(message);
+            statusAlert.show(); // Non-blocking
+
+            // Auto-close after 3 seconds
+            Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(3), e -> statusAlert.close()));
+            timeline.play();
+        });
     }
 
     /**
      * Notify UI layer of success - to be implemented by UI
      */
     private void notifyUIOfSuccess(String message) {
-        // UI layer should implement this to show success message
         System.out.println("[ADMIN UI] Success: " + message);
-        // Example: Show success dialog or notification
+
+        Platform.runLater(() -> {
+            Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+            successAlert.setTitle("Success");
+            successAlert.setHeaderText("Operation Successful");
+            successAlert.setContentText(message);
+            successAlert.showAndWait();
+        });
     }
 
     /**
      * Notify UI layer of error - to be implemented by UI
      */
     private void notifyUIOfError(String message) {
-        // UI layer should implement this to show error message
         System.out.println("[ADMIN UI] Error: " + message);
-        // Example: Show error dialog or alert
-    }
 
+        Platform.runLater(() -> {
+            Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+            errorAlert.setTitle("Error");
+            errorAlert.setHeaderText("Operation Failed");
+            errorAlert.setContentText(message);
+            errorAlert.showAndWait();
+        });
+    }
     // ========== UTILITY METHODS ==========
 
     /**

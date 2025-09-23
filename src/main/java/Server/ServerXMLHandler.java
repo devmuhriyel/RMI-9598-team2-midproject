@@ -13,144 +13,13 @@ import java.io.PrintWriter;
 import java.util.*;
 
 public class ServerXMLHandler {
+    //VARIABLES
     private static final String FILE_PATH = "src/main/resources/XMLFiles/Users.xml";
     private static final String ADMIN_FILE_PATH = "src/main/resources/XMLFiles/AdminCredentials.xml";
     private static final List<String> communityMessages = new ArrayList<>();
     private static final List<String> activeUsers = new ArrayList<>();
 
-    /**
-     * Registers a user account (missing from original code)
-     */
-    private void registerUser(String username, String password) throws Exception {
-        File file = new File(FILE_PATH);
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document doc;
-
-        if (file.exists()) {
-            doc = builder.parse(file);
-        } else {
-            doc = builder.newDocument();
-            Element root = doc.createElement("users");
-            doc.appendChild(root);
-        }
-
-        Element root = doc.getDocumentElement();
-        Element user = doc.createElement("user");
-
-        Element uname = doc.createElement("username");
-        uname.appendChild(doc.createTextNode(username));
-        user.appendChild(uname);
-
-        Element pass = doc.createElement("password");
-        pass.appendChild(doc.createTextNode(password));
-        user.appendChild(pass);
-
-        root.appendChild(user);
-
-        TransformerFactory tf = TransformerFactory.newInstance();
-        Transformer transformer = tf.newTransformer();
-        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-        transformer.transform(new DOMSource(doc), new StreamResult(file));
-        createUserAccountXML(username);
-    }
-
-    public static boolean validateUser(String username, String password) throws Exception {
-        File file = new File(FILE_PATH);
-
-        if (!file.exists()) return false;
-
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document doc = builder.parse(file);
-
-        NodeList users = doc.getElementsByTagName("user");
-        for (int i = 0; i < users.getLength(); i++) {
-            Node user = users.item(i);
-            if (user.getNodeType() == Node.ELEMENT_NODE) {
-                Element e = (Element) user;
-
-                String uname = e.getElementsByTagName("username").item(0).getTextContent();
-                String pass = e.getElementsByTagName("password").item(0).getTextContent();
-
-                if (uname.equals(username) && pass.equals(password)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-    public static boolean validateAdmin(String username, String password) {
-        try {
-            // Check AdminCredentials.xml
-            File adminFile = new File(ADMIN_FILE_PATH);
-            if (!adminFile.exists()) {
-                createDefaultAdminFile();
-            }
-
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document doc = builder.parse(adminFile);
-
-            NodeList admins = doc.getElementsByTagName("admin");
-            for (int i = 0; i < admins.getLength(); i++) {
-                Element admin = (Element) admins.item(i);
-                String adminUsername = admin.getElementsByTagName("username").item(0).getTextContent();
-                String adminPassword = admin.getElementsByTagName("password").item(0).getTextContent();
-
-                if (adminUsername.equals(username) && adminPassword.equals(password)) {
-                    System.out.println("Admin validated from AdminCredentials.xml: " + username);
-                    return true;
-                }
-            }
-
-            return false;
-
-        } catch (Exception e) {
-            System.err.println("Error validating admin credentials: " + e.getMessage());
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-
-    private static void createDefaultAdminFile() {
-        try {
-            File adminFile = new File(ADMIN_FILE_PATH);
-            adminFile.getParentFile().mkdirs();
-
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document doc = builder.newDocument();
-
-            Element root = doc.createElement("admins");
-            doc.appendChild(root);
-
-            Element admin = doc.createElement("admin");
-
-            Element username = doc.createElement("username");
-            username.appendChild(doc.createTextNode("admin"));
-            admin.appendChild(username);
-
-            Element password = doc.createElement("password");
-            password.appendChild(doc.createTextNode("admin123"));
-            admin.appendChild(password);
-
-            root.appendChild(admin);
-
-            TransformerFactory tf = TransformerFactory.newInstance();
-            Transformer transformer = tf.newTransformer();
-            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
-            transformer.transform(new DOMSource(doc), new StreamResult(adminFile));
-
-            System.out.println("Created default admin credentials file: " + ADMIN_FILE_PATH);
-        } catch (Exception e) {
-            System.err.println("Error creating default admin file: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
+    //REQUEST HANDLING METHOD
     public String readMessage(String xmlString) throws Exception {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
@@ -200,8 +69,10 @@ public class ServerXMLHandler {
                 String newPassword = content[1];
                 if (changeUserPassword(targetUser, newPassword)) {
                     reply = "PASSWORD_CHANGED";
+                    System.out.println("[DEBUG] Password change completed for user: " + targetUser);
                 } else {
                     reply = "PASSWORD_CHANGE_FAILED";
+                    System.out.println("[DEBUG] Password change failed for user: " + targetUser);
                 }
                 break;
             case "GET_USER_STATS":
@@ -521,42 +392,26 @@ public class ServerXMLHandler {
                 }
                 break;
 
-            case "REQUEST_PASSWORD_RESET":
-                String resetUsername = content[0];
-                System.out.println("[DEBUG] Processing password reset request for user: " + resetUsername);
-
-                // Get the existing verification code from Users.xml
-                String existingVerificationCode = getVerificationCodeForUser(resetUsername);
-
-                if (existingVerificationCode != null) {
-                    System.out.println("[DEBUG] Found verification code for user: " + resetUsername);
-                    reply = "PASSWORD_RESET_REQUESTED![]!" + resetUsername + "![]!" + existingVerificationCode;
-                    // Notify admin clients about the password reset request
-                    System.out.println("[DEBUG] Notifying admin clients about password reset request");
-                    notifyAdminClients(resetUsername, existingVerificationCode);
-                } else {
-                    System.out.println("[DEBUG] No verification code found for user: " + resetUsername);
-                    reply = "PASSWORD_RESET_FAILED![]!No verification code found for this user";
-                }
-                break;
             case "REQUEST_PASSWORD_RESET_WITH_CODE":
                 String resetUsernameWithCode = content[0];
                 String providedVerificationCode = content[1];
 
-                System.out.println("[DEBUG] Processing password reset with code for user: " + resetUsernameWithCode);
-                System.out.println("[DEBUG] Provided verification code: " + providedVerificationCode);
+                System.out.println("[DEBUG] Password reset request with verification code from: " + resetUsernameWithCode);
 
-                // Validate the verification code
+
                 if (verifyResetCode(resetUsernameWithCode, providedVerificationCode)) {
-                    System.out.println("[DEBUG] Verification code is valid for user: " + resetUsernameWithCode);
-                    // Code is valid, notify admin to change password
-                    reply = "VERIFICATION_CODE_VALID![]!" + resetUsernameWithCode;
-                    System.out.println("[DEBUG] Calling notifyAdminForPasswordChange for user: " + resetUsernameWithCode);
-                    notifyAdminForPasswordChange(resetUsernameWithCode);
-                    System.out.println("[DEBUG] Admin notification sent successfully");
+                    reply = "VERIFICATION_CODE_VALID";
                 } else {
-                    System.out.println("[DEBUG] Verification code is invalid for user: " + resetUsernameWithCode);
                     reply = "VERIFICATION_CODE_INVALID";
+                }
+                break;
+            case "RESET_PASSWORD_CLIENT":
+                String clientResetUsername = content[0];
+                String clientNewPassword = content[1];
+                if (changeUserPasswordDirectly(clientResetUsername, clientNewPassword)) {
+                    reply = "PASSWORD_RESET_SUCCESS![]!" + clientResetUsername + "![]!" + clientNewPassword + "![]!Your password has been successfully reset.";
+                } else {
+                    System.out.println("[DEBUG] Failed to reset password for user: " + clientResetUsername);
                 }
                 break;
 
@@ -564,23 +419,9 @@ public class ServerXMLHandler {
                 String adminResetUsername = content[0];
                 String adminVerificationCode = content[1];
                 String adminNewPassword = content[2];
-
-                System.out.println("[DEBUG] Admin attempting to verify and change password for user: " + adminResetUsername);
-                System.out.println("[DEBUG] Verification code provided: " + adminVerificationCode);
-
-                // Verify the verification code against Users.xml
                 if (verifyResetCode(adminResetUsername, adminVerificationCode)) {
-                    System.out.println("[DEBUG] Verification code is valid, proceeding with password change");
-
-                    // Change the password
                     if (changeUserPassword(adminResetUsername, adminNewPassword)) {
-                        System.out.println("[DEBUG] Password successfully changed by admin for user: " + adminResetUsername);
-
-                        // Note: We do NOT remove the verification code as it's a permanent security question
-
-                        // Notify the client about successful password reset
-                        notifyClientOfPasswordReset(adminResetUsername, adminNewPassword);
-
+                        System.out.println("[DEBUG] Password changed by admin for user: " + adminResetUsername);
                         reply = "ADMIN_PASSWORD_RESET_SUCCESS![]!" + adminResetUsername + "![]!Password successfully changed";
                     } else {
                         System.out.println("[DEBUG] Failed to change password for user: " + adminResetUsername);
@@ -596,15 +437,15 @@ public class ServerXMLHandler {
                 }
                 break;
 
-                case "REJECT_PASSWORD_RESET":
-                    String rejectedUser = content[0];
-                    System.out.println("[DEBUG] Admin rejected password reset for user: " + rejectedUser);
+            case "REJECT_PASSWORD_RESET":
+                String rejectedUser = content[0];
+                System.out.println("[DEBUG] Admin rejected password reset for user: " + rejectedUser);
 
-                    // Notify client that their password reset was rejected
-                    notifyClientOfRejectedReset(rejectedUser);
+                // Notify client that their password reset was rejected
+                notifyClientOfRejectedReset(rejectedUser);
 
-                    reply = "PASSWORD_RESET_REJECTED![]!" + rejectedUser + "![]!Password reset request rejected";
-                    break;
+                reply = "PASSWORD_RESET_REJECTED![]!" + rejectedUser + "![]!Password reset request rejected";
+                break;
 
 
 
@@ -637,184 +478,112 @@ public class ServerXMLHandler {
         return reply;
     }
 
+    //HELPER METHODS FOR SIGNING UP
+    private void registerUser(String username, String password) throws Exception {
+        File file = new File(FILE_PATH);
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document doc;
 
-
-    /**
-     * Notify admin about password change request (after verification code validation)
-     */
-    private void notifyAdminForPasswordChange(String username) {
-        try {
-            Class<?> clientThreadClass = Class.forName("Server.ClientThread");
-            java.lang.reflect.Field clientsField = clientThreadClass.getDeclaredField("clients");
-            clientsField.setAccessible(true);
-            @SuppressWarnings("unchecked")
-            java.util.ArrayList<Object> clients = (java.util.ArrayList<Object>) clientsField.get(null);
-
-            System.out.println("[DEBUG] Notifying admin about verified password change request for: " + username);
-
-            synchronized (clients) {
-                for (Object client : clients) {
-                    try {
-                        // Check if this is an admin client
-                        java.lang.reflect.Field isAdminField = client.getClass().getDeclaredField("isAdmin");
-                        isAdminField.setAccessible(true);
-                        Boolean isAdmin = (Boolean) isAdminField.get(client);
-
-                        if (isAdmin != null && isAdmin) {
-                            java.lang.reflect.Method sendMessageMethod = client.getClass().getDeclaredMethod("sendMessage", String.class);
-                            sendMessageMethod.setAccessible(true);
-
-                            String notification = "<Response><reply>VERIFICATION_CODE_VALID</reply><body>" +
-                                    username + "</body></Response>";
-
-                            sendMessageMethod.invoke(client, notification);
-                            System.out.println("[DEBUG] Notified admin about verified password change request");
-                        }
-                    } catch (Exception e) {
-                        System.err.println("[ERROR] Error notifying individual admin client about verification: " + e.getMessage());
-                        // Continue with other clients
-                    }
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("[ERROR] Error accessing clients list for verification notification: " + e.getMessage());
-            e.printStackTrace();
+        if (file.exists()) {
+            doc = builder.parse(file);
+        } else {
+            doc = builder.newDocument();
+            Element root = doc.createElement("users");
+            doc.appendChild(root);
         }
+
+        Element root = doc.getDocumentElement();
+        Element user = doc.createElement("user");
+
+        Element uname = doc.createElement("username");
+        uname.appendChild(doc.createTextNode(username));
+        user.appendChild(uname);
+
+        Element pass = doc.createElement("password");
+        pass.appendChild(doc.createTextNode(password));
+        user.appendChild(pass);
+
+        root.appendChild(user);
+
+        TransformerFactory tf = TransformerFactory.newInstance();
+        Transformer transformer = tf.newTransformer();
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        transformer.transform(new DOMSource(doc), new StreamResult(file));
+        createUserAccountXML(username);
     }
 
-    /**
-     * Notify admin clients about password reset request
-     */
-    private void notifyAdminClients(String username, String verificationCode) {
+    //HELPER METHOD FOR ADMIN LOGIN
+    public static boolean validateAdmin(String username, String password) {
         try {
-            Class<?> clientThreadClass = Class.forName("Server.ClientThread");
-            java.lang.reflect.Field clientsField = clientThreadClass.getDeclaredField("clients");
-            clientsField.setAccessible(true);
-            @SuppressWarnings("unchecked")
-            java.util.ArrayList<Object> clients = (java.util.ArrayList<Object>) clientsField.get(null);
-
-            System.out.println("[DEBUG] Notifying admin clients about password reset request for: " + username);
-
-            synchronized (clients) {
-                for (Object client : clients) {
-                    try {
-                        // Check if this is an admin client
-                        java.lang.reflect.Field isAdminField = client.getClass().getDeclaredField("isAdmin");
-                        isAdminField.setAccessible(true);
-                        Boolean isAdmin = (Boolean) isAdminField.get(client);
-
-                        if (isAdmin != null && isAdmin) {
-                            java.lang.reflect.Method sendMessageMethod = client.getClass().getDeclaredMethod("sendMessage", String.class);
-                            sendMessageMethod.setAccessible(true);
-
-                            String notification = "<Response><reply>PASSWORD_RESET_REQUESTED</reply><body>" +
-                                    username + "![]!" + verificationCode + "</body></Response>";
-
-                            sendMessageMethod.invoke(client, notification);
-                            System.out.println("[DEBUG] Notified admin client about password reset request");
-                        }
-                    } catch (Exception e) {
-                        System.err.println("[ERROR] Error notifying individual admin client: " + e.getMessage());
-                        // Continue with other clients
-                    }
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("[ERROR] Error accessing clients list for admin notification: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-
-    public String getVerificationCodeForUser(String username) {
-        try {
-            System.out.println("[DEBUG] Getting verification code for user: " + username);
-
-            File file = new File(FILE_PATH);
-            if (!file.exists()) {
-                System.out.println("[DEBUG] Users.xml file does not exist");
-                return null;
+            // Check AdminCredentials.xml
+            File adminFile = new File(ADMIN_FILE_PATH);
+            if (!adminFile.exists()) {
+                createDefaultAdminFile();
             }
 
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
-            Document doc = builder.parse(file);
+            Document doc = builder.parse(adminFile);
 
-            NodeList users = doc.getElementsByTagName("user");
-            for (int i = 0; i < users.getLength(); i++) {
-                Element user = (Element) users.item(i);
-                String uname = user.getElementsByTagName("username").item(0).getTextContent();
+            NodeList admins = doc.getElementsByTagName("admin");
+            for (int i = 0; i < admins.getLength(); i++) {
+                Element admin = (Element) admins.item(i);
+                String adminUsername = admin.getElementsByTagName("username").item(0).getTextContent();
+                String adminPassword = admin.getElementsByTagName("password").item(0).getTextContent();
 
-                if (uname.equals(username)) {
-                    NodeList codeNodes = user.getElementsByTagName("verificationCode");
-                    if (codeNodes.getLength() > 0) {
-                        String code = codeNodes.item(0).getTextContent().trim();
-                        System.out.println("[DEBUG] Found verification code for user: " + username);
-                        return code;
-                    } else {
-                        System.out.println("[DEBUG] No verification code found for user: " + username);
-                        return null;
-                    }
+                if (adminUsername.equals(username) && adminPassword.equals(password)) {
+                    System.out.println("Admin validated from AdminCredentials.xml: " + username);
+                    return true;
                 }
             }
 
-            System.out.println("[DEBUG] User not found: " + username);
-            return null;
+            return false;
+
         } catch (Exception e) {
-            System.err.println("[ERROR] Error getting verification code: " + e.getMessage());
+            System.err.println("Error validating admin credentials: " + e.getMessage());
             e.printStackTrace();
-            return null;
+            return false;
         }
     }
-
-    /**
-     * Notify client that their password has been successfully reset
-     */
-    private void notifyClientOfPasswordReset(String username, String newPassword) {
+    private static void createDefaultAdminFile() {
         try {
-            Class<?> clientThreadClass = Class.forName("Server.ClientThread");
-            java.lang.reflect.Field clientsField = clientThreadClass.getDeclaredField("clients");
-            clientsField.setAccessible(true);
-            @SuppressWarnings("unchecked")
-            java.util.ArrayList<Object> clients = (java.util.ArrayList<Object>) clientsField.get(null);
+            File adminFile = new File(ADMIN_FILE_PATH);
+            adminFile.getParentFile().mkdirs();
 
-            System.out.println("[DEBUG] Notifying client about successful password reset: " + username);
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.newDocument();
 
-            synchronized (clients) {
-                for (Object client : clients) {
-                    try {
-                        // Get client name
-                        java.lang.reflect.Field nameField = client.getClass().getDeclaredField("name");
-                        nameField.setAccessible(true);
-                        String clientName = (String) nameField.get(client);
+            Element root = doc.createElement("admins");
+            doc.appendChild(root);
 
-                        // Check if this is the user whose password was reset
-                        if (username.equals(clientName)) {
-                            java.lang.reflect.Method sendMessageMethod = client.getClass().getDeclaredMethod("sendMessage", String.class);
-                            sendMessageMethod.setAccessible(true);
+            Element admin = doc.createElement("admin");
 
-                            String notification = "<Response><reply>PASSWORD_RESET_SUCCESS</reply><body>" +
-                                    username + "![]!" + newPassword + "</body></Response>";
+            Element username = doc.createElement("username");
+            username.appendChild(doc.createTextNode("admin"));
+            admin.appendChild(username);
 
-                            sendMessageMethod.invoke(client, notification);
-                            System.out.println("[DEBUG] Successfully notified client about password reset: " + username);
-                            break;
-                        }
-                    } catch (Exception e) {
-                        System.err.println("[ERROR] Error notifying individual client: " + e.getMessage());
-                        e.printStackTrace();
-                    }
-                }
-            }
+            Element password = doc.createElement("password");
+            password.appendChild(doc.createTextNode("admin123"));
+            admin.appendChild(password);
+
+            root.appendChild(admin);
+
+            TransformerFactory tf = TransformerFactory.newInstance();
+            Transformer transformer = tf.newTransformer();
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+            transformer.transform(new DOMSource(doc), new StreamResult(adminFile));
+
+            System.out.println("Created default admin credentials file: " + ADMIN_FILE_PATH);
         } catch (Exception e) {
-            System.err.println("[ERROR] Error accessing clients list for password reset notification: " + e.getMessage());
+            System.err.println("Error creating default admin file: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    /**
-     * Notify client that their verification code is invalid
-     */
+    //HELPER METHODS FOR PASSWORD CHANGE
     private void notifyClientOfInvalidCode(String username) {
         try {
             Class<?> clientThreadClass = Class.forName("Server.ClientThread");
@@ -854,10 +623,6 @@ public class ServerXMLHandler {
             e.printStackTrace();
         }
     }
-
-    /**
-     * Notify client that their password reset request was rejected
-     */
     private void notifyClientOfRejectedReset(String username) {
         try {
             Class<?> clientThreadClass = Class.forName("Server.ClientThread");
@@ -898,12 +663,11 @@ public class ServerXMLHandler {
         }
     }
 
+    //HELPER METHODS FOR SENDING MESSAGES
     public synchronized boolean createGroupInUserAccounts(String groupName, String creator, String membersStr) {
         try {
-            // Build member list
             List<String> allMembers = new ArrayList<>();
             allMembers.add(creator);
-
             if (!membersStr.isEmpty()) {
                 String[] members = membersStr.split(",");
                 for (String member : members) {
@@ -913,8 +677,6 @@ public class ServerXMLHandler {
                     }
                 }
             }
-
-            // Create group in each member's account
             for (String member : allMembers) {
                 List<String> otherMembers = new ArrayList<>(allMembers);
                 otherMembers.remove(member);
@@ -927,14 +689,12 @@ public class ServerXMLHandler {
             return false;
         }
     }
-
     private void addGroupToUserAccount(String username, String groupName, List<String> otherMembers) {
         try {
             File file = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
             Document doc;
-
             if (file.exists()) {
                 doc = builder.parse(file);
             } else {
@@ -942,20 +702,16 @@ public class ServerXMLHandler {
                 Element root = doc.createElement("user");
                 doc.appendChild(root);
             }
-
             Element root = doc.getDocumentElement();
             Element groupElement = doc.createElement("group");
-
             Element groupNameElement = doc.createElement("groupname");
             groupNameElement.appendChild(doc.createTextNode(groupName));
             groupElement.appendChild(groupNameElement);
-
             for (String member : otherMembers) {
                 Element memberElement = doc.createElement("username");
                 memberElement.appendChild(doc.createTextNode(member));
                 groupElement.appendChild(memberElement);
             }
-
             Element chatHistory = doc.createElement("chathistory");
             groupElement.appendChild(chatHistory);
 
@@ -967,24 +723,20 @@ public class ServerXMLHandler {
             e.printStackTrace();
         }
     }
-
     private boolean storeFileData(String username, String sender, String fileName, String fileExtension, String base64Content) {
         try {
             if (username == null || username.trim().isEmpty()) {
                 System.err.println("Invalid username for file storage");
                 return false;
             }
-
             if (fileName == null || fileName.trim().isEmpty()) {
                 System.err.println("Invalid filename for file storage");
                 return false;
             }
-
             if (base64Content == null || base64Content.trim().isEmpty()) {
                 System.err.println("Invalid file content for file storage");
                 return false;
             }
-
             try {
                 byte[] testDecode = java.util.Base64.getDecoder().decode(base64Content);
                 if (testDecode.length == 0) {
@@ -995,7 +747,6 @@ public class ServerXMLHandler {
                 System.err.println("Invalid base64 content: " + e.getMessage());
                 return false;
             }
-
             File userDir = new File("src/main/resources/XMLFiles/userFiles/" + username.trim());
             if (!userDir.exists()) {
                 boolean created = userDir.mkdirs();
@@ -1009,11 +760,9 @@ public class ServerXMLHandler {
                     }
                 }
             }
-
             String timestamp = String.valueOf(System.currentTimeMillis());
             String uniqueFileName = timestamp + "_" + fileName.trim();
             File fileDataFile = new File(userDir, uniqueFileName);
-
             try (PrintWriter writer = new PrintWriter(fileDataFile, "UTF-8")) {
                 writer.println("SENDER:" + sender);
                 writer.println("ORIGINAL_NAME:" + fileName.trim());
@@ -1023,7 +772,6 @@ public class ServerXMLHandler {
                 writer.println("CONTENT:" + base64Content);
                 writer.flush();
             }
-
             if (fileDataFile.exists() && fileDataFile.length() > 0) {
                 System.out.println("Successfully stored file data for user " + username + ": " + uniqueFileName);
                 System.out.println("File path: " + fileDataFile.getAbsolutePath());
@@ -1054,6 +802,8 @@ public class ServerXMLHandler {
             return false;
         }
     }
+
+    //HELPER METHODS FOR ADMIN FUNCTIONS
     public String getAllUsersData() {
         try {
             File file = new File(FILE_PATH);
@@ -1116,6 +866,39 @@ public class ServerXMLHandler {
             e.printStackTrace();
             return "";
         }
+    }public String getUserStats(String username) {
+        try {
+            File accountFile = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
+            if (!accountFile.exists()) {
+                return "User account not found";
+            }
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(accountFile);
+
+            int friendCount = doc.getElementsByTagName("friend").getLength();
+            int groupCount = doc.getElementsByTagName("group").getLength();
+
+            int messagesSent = 0;
+            NodeList chatHistories = doc.getElementsByTagName("chathistory");
+            for (int i = 0; i < chatHistories.getLength(); i++) {
+                Element chatHistory = (Element) chatHistories.item(i);
+                NodeList chats = chatHistory.getElementsByTagName("chat");
+                for (int j = 0; j < chats.getLength(); j++) {
+                    Element chat = (Element) chats.item(j);
+                    String sender = chat.getElementsByTagName("sender").item(0).getTextContent();
+                    if (sender.equals(username)) {
+                        messagesSent++;
+                    }
+                }
+            }
+
+            return "Friends: " + friendCount + ", Groups: " + groupCount + ", Messages Sent: " + messagesSent;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Error retrieving stats";
+        }
     }
     public String searchUsersData(String keyword) {
         try {
@@ -1165,7 +948,7 @@ public class ServerXMLHandler {
             return "";
         }
     }
-    public boolean changeUserPassword(String username, String newPassword) {
+    public boolean changeUserPasswordDirectly(String username, String newPassword) {
         try {
             File file = new File(FILE_PATH);
             if (!file.exists()) return false;
@@ -1182,6 +965,43 @@ public class ServerXMLHandler {
                 if (uname.equals(username)) {
                     user.getElementsByTagName("password").item(0).setTextContent(newPassword);
 
+                    // Save the updated document
+                    removeEmptyTextNodes(doc);
+                    TransformerFactory tf = TransformerFactory.newInstance();
+                    Transformer transformer = tf.newTransformer();
+                    transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                    transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+                    transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+                    transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+                    transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+                    transformer.transform(new DOMSource(doc), new StreamResult(file));
+
+                    System.out.println("[DEBUG] Password changed directly for user: " + username);
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[ERROR] Error changing password directly: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+    public boolean changeUserPassword(String username, String newPassword) {
+        try {
+            File file = new File(FILE_PATH);
+            if (!file.exists()) return false;
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+
+            NodeList users = doc.getElementsByTagName("user");
+            for (int i = 0; i < users.getLength(); i++) {
+                Element user = (Element) users.item(i);
+                String uname = user.getElementsByTagName("username").item(0).getTextContent();
+
+                if (uname.equals(username)) {
+                    user.getElementsByTagName("password").item(0).setTextContent(newPassword);
                     TransformerFactory tf = TransformerFactory.newInstance();
                     Transformer transformer = tf.newTransformer();
                     transformer.setOutputProperty(OutputKeys.INDENT, "yes");
@@ -1194,40 +1014,7 @@ public class ServerXMLHandler {
         }
         return false;
     }
-    public String getUserStats(String username) {
-        try {
-            File accountFile = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
-            if (!accountFile.exists()) {
-                return "User account not found";
-            }
 
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document doc = builder.parse(accountFile);
-
-            int friendCount = doc.getElementsByTagName("friend").getLength();
-            int groupCount = doc.getElementsByTagName("group").getLength();
-
-            int messagesSent = 0;
-            NodeList chatHistories = doc.getElementsByTagName("chathistory");
-            for (int i = 0; i < chatHistories.getLength(); i++) {
-                Element chatHistory = (Element) chatHistories.item(i);
-                NodeList chats = chatHistory.getElementsByTagName("chat");
-                for (int j = 0; j < chats.getLength(); j++) {
-                    Element chat = (Element) chats.item(j);
-                    String sender = chat.getElementsByTagName("sender").item(0).getTextContent();
-                    if (sender.equals(username)) {
-                        messagesSent++;
-                    }
-                }
-            }
-
-            return "Friends: " + friendCount + ", Groups: " + groupCount + ", Messages Sent: " + messagesSent;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "Error retrieving stats";
-        }
-    }
     public static boolean deleteUserFromXML(String username) {
         try {
             File xmlFile = new File(FILE_PATH);
@@ -1322,7 +1109,7 @@ public class ServerXMLHandler {
                     java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "]";
             communityMessages.add(formattedMessage);
             if (communityMessages.size() > 100) {
-                communityMessages.remove(0);
+                communityMessages.removeFirst();
             }
         }
     }
@@ -1345,56 +1132,6 @@ public class ServerXMLHandler {
         saveDocument(doc, accountFile);
         System.out.println("Created account XML file for user: " + username);
     }
-
-    private Document loadDocument() throws Exception {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        return builder.parse(new File(FILE_PATH));
-    }
-
-    private void saveDocument(Document doc, File file) throws TransformerException {
-        // Remove empty text nodes to prevent extra whitespace
-        removeEmptyTextNodes(doc);
-
-        TransformerFactory tf = TransformerFactory.newInstance();
-        Transformer transformer = tf.newTransformer();
-        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
-        transformer.setOutputProperty(OutputKeys.METHOD, "xml");
-        transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
-
-        // Ensure clean formatting
-        DOMSource source = new DOMSource(doc);
-        StreamResult result = new StreamResult(file);
-        transformer.transform(source, result);
-    }
-    private void removeEmptyTextNodes(Document doc) {
-        NodeList list = doc.getChildNodes();
-        for (int i = 0; i < list.getLength(); i++) {
-            removeEmptyTextNodesRecursive(list.item(i));
-        }
-    }
-    private void removeEmptyTextNodesRecursive(Node node) {
-        NodeList list = node.getChildNodes();
-        List<Node> nodesToRemove = new ArrayList<>();
-
-        for (int i = 0; i < list.getLength(); i++) {
-            Node child = list.item(i);
-            if (child.getNodeType() == Node.TEXT_NODE) {
-                if (child.getTextContent().trim().isEmpty()) {
-                    nodesToRemove.add(child);
-                }
-            } else {
-                removeEmptyTextNodesRecursive(child);
-            }
-        }
-
-        for (Node nodeToRemove : nodesToRemove) {
-            node.removeChild(nodeToRemove);
-        }
-    }
-
     public synchronized boolean createGroup(String groupName, String creator) {
         try {
             Document doc = loadDocument();
@@ -1833,6 +1570,52 @@ public class ServerXMLHandler {
 
         System.out.println("Updated group XML for user: " + owner + " in group: " + groupName);
     }
+
+    private Document loadDocument() throws Exception {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        return builder.parse(new File(FILE_PATH));
+    }
+
+    private void saveDocument(Document doc, File file) throws TransformerException {
+        removeEmptyTextNodes(doc);
+        TransformerFactory tf = TransformerFactory.newInstance();
+        Transformer transformer = tf.newTransformer();
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+        transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+        transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+        DOMSource source = new DOMSource(doc);
+        StreamResult result = new StreamResult(file);
+        transformer.transform(source, result);
+    }
+    private void removeEmptyTextNodes(Document doc) {
+        NodeList list = doc.getChildNodes();
+        for (int i = 0; i < list.getLength(); i++) {
+            removeEmptyTextNodesRecursive(list.item(i));
+        }
+    }
+    private void removeEmptyTextNodesRecursive(Node node) {
+        NodeList list = node.getChildNodes();
+        List<Node> nodesToRemove = new ArrayList<>();
+
+        for (int i = 0; i < list.getLength(); i++) {
+            Node child = list.item(i);
+            if (child.getNodeType() == Node.TEXT_NODE) {
+                if (child.getTextContent().trim().isEmpty()) {
+                    nodesToRemove.add(child);
+                }
+            } else {
+                removeEmptyTextNodesRecursive(child);
+            }
+        }
+
+        for (Node nodeToRemove : nodesToRemove) {
+            node.removeChild(nodeToRemove);
+        }
+    }
+
     public void updateXMLs(String owner, String sender, String receiver, String msg) throws IOException, SAXException, ParserConfigurationException, TransformerException {
         File file = new File("src/main/resources/XMLFiles/" + owner + "Account.xml");
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -1892,24 +1675,6 @@ public class ServerXMLHandler {
         chatHistory.appendChild(chat);
 
         saveDocument(doc, file);
-    }
-
-    public String getSender(String xmlString) throws ParserConfigurationException, IOException, SAXException {
-        DocumentBuilderFactory stringFactory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder stringBuilder = stringFactory.newDocumentBuilder();
-        Document stringDoc = stringBuilder.parse(new ByteArrayInputStream(xmlString.getBytes("UTF-8")));
-        stringDoc.getDocumentElement().normalize();
-        String[] contentTag = stringDoc.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
-        return contentTag[0];
-    }
-
-    public String getReceiver(String xmlString) throws ParserConfigurationException, IOException, SAXException {
-        DocumentBuilderFactory stringFactory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder stringBuilder = stringFactory.newDocumentBuilder();
-        Document stringDoc = stringBuilder.parse(new ByteArrayInputStream(xmlString.getBytes("UTF-8")));
-        stringDoc.getDocumentElement().normalize();
-        String[] contentTag = stringDoc.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
-        return contentTag[1];
     }
     public synchronized boolean addFriendRequest(String fromUser, String toUser) {
         try {
@@ -2402,7 +2167,6 @@ public class ServerXMLHandler {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
 
-            // Collect all groups with their owners and member counts
             for (File userFile : userFiles) {
                 try {
                     Document doc = builder.parse(userFile);
@@ -2637,111 +2401,12 @@ public class ServerXMLHandler {
         }
     }
 
-    /**
-     * Remove verification code from Users.xml file
-     */
-    public void removeVerificationCodeFromUsersXML(String username) {
-        try {
-            File usersFile = new File(FILE_PATH);
-            if (!usersFile.exists()) {
-                System.err.println("Users.xml file does not exist");
-                return;
-            }
-
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document doc = builder.parse(usersFile);
-            doc.getDocumentElement().normalize();
-
-            NodeList users = doc.getElementsByTagName("user");
-            for (int i = 0; i < users.getLength(); i++) {
-                Element user = (Element) users.item(i);
-                String uname = user.getElementsByTagName("username").item(0).getTextContent();
-
-                if (uname.equals(username)) {
-                    // Remove verification code if present
-                    NodeList codeNodes = user.getElementsByTagName("verificationCode");
-                    for (int j = codeNodes.getLength() - 1; j >= 0; j--) {
-                        user.removeChild(codeNodes.item(j));
-                    }
-
-                    // Remove timestamp if present
-                    NodeList timestampNodes = user.getElementsByTagName("verificationTimestamp");
-                    for (int j = timestampNodes.getLength() - 1; j >= 0; j--) {
-                        user.removeChild(timestampNodes.item(j));
-                    }
-
-                    // Save the updated Users.xml
-                    TransformerFactory tf = TransformerFactory.newInstance();
-                    Transformer transformer = tf.newTransformer();
-                    transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-                    transformer.transform(new DOMSource(doc), new StreamResult(usersFile));
-                    
-                    System.out.println("Removed verification code from Users.xml for user: " + username);
-                    break;
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Error removing verification code from Users.xml: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Check if verification code is expired (valid for 10 minutes)
-     */
-    public boolean isVerificationCodeExpired(String username) {
-        try {
-            File usersFile = new File(FILE_PATH);
-            if (!usersFile.exists()) {
-                return true;
-            }
-
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document doc = builder.parse(usersFile);
-            doc.getDocumentElement().normalize();
-
-            NodeList users = doc.getElementsByTagName("user");
-            for (int i = 0; i < users.getLength(); i++) {
-                Element user = (Element) users.item(i);
-                String uname = user.getElementsByTagName("username").item(0).getTextContent();
-
-                if (uname.equals(username)) {
-                    NodeList timestampNodes = user.getElementsByTagName("verificationTimestamp");
-                    if (timestampNodes.getLength() > 0) {
-                        String timestampStr = timestampNodes.item(0).getTextContent();
-                        long timestamp = Long.parseLong(timestampStr);
-                        long currentTime = System.currentTimeMillis();
-                        long tenMinutes = 10 * 60 * 1000; // 10 minutes in milliseconds
-                        
-                        return (currentTime - timestamp) > tenMinutes;
-                    } else {
-                        return true; // No timestamp means expired
-                    }
-                }
-            }
-            return true; // User not found means expired
-        } catch (Exception e) {
-            System.err.println("Error checking verification code expiration: " + e.getMessage());
-            e.printStackTrace();
-            return true; // Error means expired for safety
-        }
-    }
     public boolean verifyResetCode(String username, String providedCode) {
         try {
             System.out.println("[DEBUG] Verifying reset code for user: " + username);
             System.out.println("[DEBUG] Provided code: " + providedCode);
 
-            // Check if verification code is expired first
-            if (isVerificationCodeExpired(username)) {
-                System.out.println("[DEBUG] Verification code expired for user: " + username);
-                removeVerificationCodeFromUsersXML(username); // Clean up expired code
-                return false;
-            }
-
-            // Check the Users.xml file for the verification code
-            File file = new File(FILE_PATH); // FILE_PATH = "src/main/resources/XMLFiles/Users.xml"
+            File file = new File(FILE_PATH);
             if (!file.exists()) {
                 System.out.println("[DEBUG] Users.xml file does not exist: " + file.getAbsolutePath());
                 return false;
@@ -2759,8 +2424,8 @@ public class ServerXMLHandler {
                 if (uname.equals(username)) {
                     System.out.println("[DEBUG] Found user: " + username);
 
-                    // Check if this user has a verification code
-                    NodeList codeNodes = user.getElementsByTagName("verificationCode");
+                    // Look for 'verification' element (permanent security code)
+                    NodeList codeNodes = user.getElementsByTagName("verification");
                     if (codeNodes.getLength() > 0) {
                         String storedCode = codeNodes.item(0).getTextContent().trim();
                         System.out.println("[DEBUG] Stored code: " + storedCode + ", Provided code: " + providedCode);

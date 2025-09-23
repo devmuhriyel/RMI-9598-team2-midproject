@@ -2,41 +2,43 @@
 <users>
     <user>
         <username>alice</username>
-        <password>password123</password>
+        <password>superman</password>
+        <verification>freebird</verification>
     </user>
     <user>
         <username>bob</username>
-        <password>pangetko23</password>
+        <password>qwerty456</password>
         <verification>123445</verification>
     </user>
     <user>
         <username>charlie</username>
         <password>abc123</password>
+        <verification>greatbird</verification>
     </user>
     <user>
         <username>rea</username>
         <password>benjamin</password>
+        <verification>superidol</verification>
     </user>
     <user>
         <username>steven</username>
         <password>baguio</password>
+        <verification>bomboclat</verification>
     </user>
     <user>
         <username>joshua</username>
         <password>123</password>
-    </user>
-    <user>
-        <username>admin</username>
-        <password>admin123</password>
-        <role>admin</role>
+        <verification>312</verification>
     </user>
     <user>
         <username>gian</username>
         <password>montserrat</password>
+        <verification>hoho bonjour</verification>
     </user>
     <user>
         <username>Carl</username>
         <password>rahhh</password>
+        <verification>oui oui baguette</verification>
     </user>
     <user>
         <username>325436eg?+!$)</username>

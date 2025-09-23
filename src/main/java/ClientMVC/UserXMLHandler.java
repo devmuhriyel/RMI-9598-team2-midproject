@@ -4,6 +4,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.SAXParseException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -15,106 +17,19 @@ import javax.xml.transform.stream.StreamResult;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 
 public class UserXMLHandler {
-
-    /*
-     * readMessage:
-     * 1. Parse the incoming XML string and extract <type> and <content>.
-     * 2. Depending on the type:
-     *    - LOGIN: Check username/password in Users.xml → return LOGIN_SUCCESS or LOGIN_FAILED.
-     *    - REGISTER: Add a new user (username + password) to Users.xml → return REGISTER_SUCCESS.
-     *    - SEND_MESSAGE: (reserved for sending message handling).
-     *    - RECEIVE_REQUEST: (reserved for request handling).
-     * 3. Return the reply string based on the operation result.
-     */
-    public String readMessage(String xmlString) throws Exception {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document doc = builder.parse(new ByteArrayInputStream(xmlString.getBytes("UTF-8")));
-        doc.getDocumentElement().normalize();
-        String type = doc.getElementsByTagName("type").item(0).getTextContent();
-        String reply = "";
-        String[] content = doc.getElementsByTagName("content").item(0).getTextContent().split("!\\[]!");
-
-        switch (type) {
-            case "LOGIN":
-                String username = content[0];
-                String password = content[1];
-                boolean found = false;
-                File userAccounts = new File("src/main/resources/XMLFiles/Users.xml");
-                DocumentBuilderFactory loginFactory = DocumentBuilderFactory.newInstance();
-                DocumentBuilder loginBuilder = loginFactory.newDocumentBuilder();
-                Document loginDoc = loginBuilder.parse(userAccounts);
-                NodeList users = loginDoc.getElementsByTagName("user");
-                for (int i = 0; i < users.getLength(); i++) {
-                    Node user = users.item(i);
-                    if (user.getNodeType() == Node.ELEMENT_NODE) {
-                        Element e = (Element) user;
-                        String uname = e.getElementsByTagName("username").item(0).getTextContent();
-                        String pass = e.getElementsByTagName("password").item(0).getTextContent();
-                        if (uname.equals(username) && pass.equals(password)) {
-                            reply = "LOGIN_SUCCESS";
-                            found = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (!found) {
-                    reply = "LOGIN_FAILED";
-                }
-
-                break;
-            case "REGISTER":
-                File file = new File("src/main/resources/XMLFiles/Users.xml");
-                DocumentBuilderFactory registerFactory = DocumentBuilderFactory.newInstance();
-                DocumentBuilder registerBuilder = registerFactory.newDocumentBuilder();
-                Document registerDoc;
-                if (file.exists()) {
-                    registerDoc = registerBuilder.parse(file);
-                } else {
-                    registerDoc = registerBuilder.newDocument();
-                    Element root = registerDoc.createElement("users");
-                    registerDoc.appendChild(root);
-                }
-
-                Element root = registerDoc.getDocumentElement();
-                Element user = registerDoc.createElement("user");
-                Element uname = registerDoc.createElement("username");
-                uname.appendChild(registerDoc.createTextNode(content[0]));
-                user.appendChild(uname);
-                Element pass = registerDoc.createElement("password");
-                pass.appendChild(registerDoc.createTextNode(content[1]));
-                user.appendChild(pass);
-                root.appendChild(user);
-                TransformerFactory tf = TransformerFactory.newInstance();
-                Transformer transformer = tf.newTransformer();
-                transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-                transformer.transform(new DOMSource(registerDoc), new StreamResult(file));
-
-                reply = "REGISTER_SUCCESS";
-                break;
-
-            case "SEND_MESSAGE":
-                break;
-
-            case "RECEIVE_REQUEST":
-                break;
-        }
-        return reply;
-    }
-
     /*
      * getReply:
      * 1. Clean and validate the XML string (remove BOM, check format, ensure balanced XML).
      * 2. Use DocumentBuilder with an error handler to parse the XML safely.
      * 3. Look for <reply> tag and return its text content if found.
      * 4. If not found, check for "status" attribute in the root element and return it.
-     * 5. If neither exists or an error occurs, return null (and log errors for debugging).
+     * 5. If neither exists nor an error occurs, return null (and log errors for debugging).
      */
     public String getReply(String xmlString) {
         try {
@@ -132,26 +47,22 @@ public class UserXMLHandler {
             }
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
-            builder.setErrorHandler(new org.xml.sax.ErrorHandler() {
+            builder.setErrorHandler(new ErrorHandler() {
                 @Override
-                public void warning(org.xml.sax.SAXParseException exception) {
+                public void warning(SAXParseException exception) {
                     System.out.println("XML Warning: " + exception.getMessage());
                 }
-
                 @Override
-                public void error(org.xml.sax.SAXParseException exception) {
+                public void error(SAXParseException exception) {
                     System.out.println("XML Error: " + exception.getMessage());
                 }
-
                 @Override
-                public void fatalError(org.xml.sax.SAXParseException exception) {
+                public void fatalError(SAXParseException exception) {
                     System.out.println("XML Fatal Error: " + exception.getMessage());
                 }
             });
-
-            Document doc = builder.parse(new ByteArrayInputStream(xmlString.getBytes("UTF-8")));
+            Document doc = builder.parse(new ByteArrayInputStream(xmlString.getBytes(StandardCharsets.UTF_8)));
             doc.getDocumentElement().normalize();
-
             Element root = doc.getDocumentElement();
             NodeList replyNodes = doc.getElementsByTagName("reply");
             if (replyNodes.getLength() > 0) {
@@ -185,7 +96,6 @@ public class UserXMLHandler {
                 closeTags++;
             }
         }
-
         return openTags == closeTags;
     }
 
@@ -203,25 +113,21 @@ public class UserXMLHandler {
         if (xmlString.startsWith("\uFEFF")) {
             xmlString = xmlString.substring(1);
         }
-
         if (!xmlString.startsWith("<") || !xmlString.endsWith(">")) {
             System.out.println("Not valid XML format: " + xmlString.substring(0, Math.min(100, xmlString.length())));
             return null;
         }
-
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
             Document doc = builder.parse(new ByteArrayInputStream(xmlString.getBytes("UTF-8")));
             doc.getDocumentElement().normalize();
-
             NodeList bodyNodes = doc.getElementsByTagName("body");
             if (bodyNodes.getLength() > 0) {
                 String bodyContent = bodyNodes.item(0).getTextContent();
                 System.out.println("Extracted body content length: " + bodyContent.length());
                 return bodyContent;
             }
-
             System.out.println("No <body> tag found in XML");
             return null;
         } catch (Exception e) {

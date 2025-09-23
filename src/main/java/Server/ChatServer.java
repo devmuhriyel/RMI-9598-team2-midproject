@@ -4,14 +4,12 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 
 public class ChatServer {
 
     private final ServerSocket serverSocket;
-    private boolean running = true;
 
     public ChatServer(ServerSocket serverSckt) {
         this.serverSocket = serverSckt;
@@ -49,7 +47,6 @@ public class ChatServer {
      * - Returns: true if valid, false otherwise.
      */
     public void stop() {
-        running = false;
         try {
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();
@@ -57,6 +54,43 @@ public class ChatServer {
             System.out.println("Server stopped.");
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+    /*
+     * main():
+     * -------
+     * Purpose:
+     *   - Entry point of the server program.
+     * How it works:
+     *   1. Ask the user for a valid IP address.
+     *   2. Bind the server socket to that IP and port 1234.
+     *   3. Start the ChatServer in a separate thread so it runs in the background.
+     *   4. Provide a command loop where typing "exit" stops the server.
+     *   5. Ensure resources like the scanner are closed properly.
+     */
+    public static void main(String[] args) throws IOException {
+        Scanner scanner = new Scanner(System.in);
+        String ipAddress = getValidIPAddress(scanner);
+        try {
+            InetAddress bindAddress = InetAddress.getByName(ipAddress);
+            ServerSocket serverSocket = new ServerSocket(1234, 50, bindAddress);
+            System.out.println("Server started on IP: " + ipAddress + " Port: 1234");
+            System.out.println("Type 'exit' to stop the server.");
+            ChatServer chatServer = new ChatServer(serverSocket);
+            Thread serverThread = new Thread(chatServer::start);
+            serverThread.start();
+            while (true) {
+                String command = scanner.nextLine();
+                if (command.equalsIgnoreCase("exit")) {
+                    chatServer.stop();
+                    break;
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error starting server on IP " + ipAddress + ": " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            scanner.close();
         }
     }
 
@@ -80,8 +114,10 @@ public class ChatServer {
      *   2. Trim the input and check with isValidIPAddress().
      *   3. If valid, also test using InetAddress.getByName() for extra validation.
      *   4. If everything is fine → return the IP address.
-     *   5. Otherwise → show error and ask again until a correct IP is provided.
+     *   5. Otherwise, show error and ask again until a correct IP is provided.
      */
+
+    //HELPER METHODS FOR CHAT SERVER
     private static String getValidIPAddress(Scanner scanner) {
         String ipAddress;
         while (true) {
@@ -89,62 +125,11 @@ public class ChatServer {
             ipAddress = scanner.nextLine().trim();
 
             if (isValidIPAddress(ipAddress)) {
-                try {
-                    // Additional validation by trying to create InetAddress
-                    InetAddress.getByName(ipAddress);
-                    System.out.println("Valid IP address: " + ipAddress);
-                    return ipAddress;
-                } catch (UnknownHostException e) {
-                    System.out.println("Error: Invalid IP address format. Please try again.");
-                }
+                System.out.println("Valid IP address: " + ipAddress);
+                return ipAddress;
             } else {
                 System.out.println("Error: Invalid IP address format. Please enter a valid IPv4 address (e.g., 192.168.1.1)");
             }
-        }
-    }
-    /*
-     * main():
-     * -------
-     * Purpose:
-     *   - Entry point of the server program.
-     * How it works:
-     *   1. Ask the user for a valid IP address.
-     *   2. Bind the server socket to that IP and port 1234.
-     *   3. Start the ChatServer in a separate thread so it runs in the background.
-     *   4. Provide a command loop where typing "exit" stops the server.
-     *   5. Ensure resources like the scanner are closed properly.
-     */
-    public static void main(String[] args) throws IOException {
-        Scanner scanner = new Scanner(System.in);
-
-        String ipAddress = getValidIPAddress(scanner);
-
-        try {
-            InetAddress bindAddress = InetAddress.getByName(ipAddress);
-            ServerSocket serverSocket = new ServerSocket(1234, 50, bindAddress);
-
-            System.out.println("Server started on IP: " + ipAddress + " Port: 1234");
-            System.out.println("Type 'exit' to stop the server.");
-
-            ChatServer chatServer = new ChatServer(serverSocket);
-
-            // Start server in a separate thread so we can still accept commands
-            Thread serverThread = new Thread(() -> chatServer.start());
-            serverThread.start();
-
-            // Command loop
-            while (true) {
-                String command = scanner.nextLine();
-                if (command.equalsIgnoreCase("exit")) {
-                    chatServer.stop();
-                    break;
-                }
-            }
-        } catch (IOException e) {
-            System.err.println("Error starting server on IP " + ipAddress + ": " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            scanner.close();
         }
     }
 }

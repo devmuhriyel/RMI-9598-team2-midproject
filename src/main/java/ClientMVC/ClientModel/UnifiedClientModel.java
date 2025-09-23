@@ -17,14 +17,32 @@ public class UnifiedClientModel implements Runnable {
     private String username;
     private UserXMLHandler xmlHandler;
 
+    // Callback interfaces
+    public interface PasswordResetNotificationCallback {
+        void onPasswordResetNotification(String username, String newPassword);
+
+        // Add overloaded method with message parameter
+        default void onPasswordResetNotification(String username, String newPassword, String message) {
+            // Default implementation calls the two-parameter version
+            onPasswordResetNotification(username, newPassword);
+        }
+    }
+
+    public interface GeneralNotificationCallback {
+        void onGeneralNotification(String type, String message);
+    }
+
+    // Callback instances
     private Consumer<String> messageListener;
     private Consumer<String> chatHistoryListener;
     private Consumer<String> forceLogoutListener;
     private Consumer<String> communityMessageListener;
     private Consumer<String> fileReceivedListener;
     private Consumer<String> accountUpdateListener;
-
-
+    private Consumer<String> fileStatusListener;
+    private Consumer<String> verificationCodeValidListener;
+    private PasswordResetNotificationCallback passwordResetNotificationCallback;
+    private GeneralNotificationCallback generalNotificationCallback;
 
     public UnifiedClientModel(Socket socket, String username) throws IOException {
         this.socket = socket;
@@ -33,13 +51,6 @@ public class UnifiedClientModel implements Runnable {
         this.username = username;
         this.xmlHandler = new UserXMLHandler();
     }
-    private Consumer<String> verificationCodeValidListener;
-
-    // Add this setter method to UnifiedAdminModel class
-    public void setVerificationCodeValidListener(Consumer<String> verificationCodeValidListener) {
-        this.verificationCodeValidListener = verificationCodeValidListener;
-    }
-
 
     @Override
     public void run() {
@@ -58,19 +69,10 @@ public class UnifiedClientModel implements Runnable {
         }
     }
 
-    /*
-     * handleXMLResponse:
-     * 1. Get the reply from the XML, or fallback to status if reply is null.
-     * 2. Check the reply type using switch.
-     * 3. Call the correct handler based on reply (chat, group, file, login, etc.).
-     * 4. Handle unknown replies with a default case.
-     * 5. Catch errors and print them if something goes wrong.
-     */
     private void handleXMLResponse(String xmlResponse) {
         try {
             String reply = xmlHandler.getReply(xmlResponse);
             if (reply == null) {
-                // Check for status attribute as fallback
                 UserXMLHandler.ServerResponse response = xmlHandler.parseServerResponse(xmlResponse);
                 if (response != null && response.getStatus() != null) {
                     reply = response.getStatus();
@@ -78,7 +80,6 @@ public class UnifiedClientModel implements Runnable {
                     return;
                 }
             }
-
 
             switch (reply) {
                 case "GET_CHAT_HISTORY":
@@ -97,7 +98,6 @@ public class UnifiedClientModel implements Runnable {
                     handleCommunityMessageResponse(xmlResponse);
                     break;
 
-                // File transfer response handling
                 case "FILE_SENT":
                     handleFileTransferSuccess(xmlResponse);
                     break;
@@ -140,41 +140,43 @@ public class UnifiedClientModel implements Runnable {
                         Platform.runLater(() -> accountUpdateListener.accept(xmlResponse));
                     }
                     break;
-                case "PASSWORD_RESET_COMPLETED":
-                    // Handle password reset completion from admin
-                    handlePasswordResetCompleted(xmlResponse);
+
+                // NEW PASSWORD RESET NOTIFICATION HANDLING
+                case "PASSWORD_RESET_NOTIFICATION":
+                    handlePasswordResetNotificationForRequester(xmlResponse);
+                    break;
+
+                case "VERIFICATION_CODE_VALID":
+                    if (verificationCodeValidListener != null) {
+                        Platform.runLater(() -> verificationCodeValidListener.accept(xmlResponse));
+                    }
+                    if (messageListener != null) {
+                        Platform.runLater(() -> messageListener.accept(xmlResponse));
+                    }
+                    break;
+
+                case "VERIFICATION_CODE_INVALID":
+                    if (messageListener != null) {
+                        Platform.runLater(() -> messageListener.accept(xmlResponse));
+                    }
                     break;
 
                 case "PASSWORD_RESET_REQUESTED":
-                    // Server confirmed password reset request was received and user found
                     handlePasswordResetRequested(xmlResponse);
                     break;
 
                 case "PASSWORD_RESET_SUCCESS":
-                    // Password was successfully reset by admin
                     handlePasswordResetSuccess(xmlResponse);
                     break;
 
                 case "PASSWORD_RESET_FAILED":
-                    // Password reset failed
                     handlePasswordResetFailed(xmlResponse);
                     break;
 
                 case "PASSWORD_RESET_REJECTED":
-                    // Admin rejected the password reset request
                     handlePasswordResetRejected(xmlResponse);
                     break;
 
-
-                case "VERIFICATION_CODE_VALID":
-                    // User's verification code was valid - show password reset UI
-                    handleVerificationCodeValid(xmlResponse);
-                    break;
-
-                case "VERIFICATION_CODE_INVALID":
-                    // User's verification code was invalid
-                    handleVerificationCodeInvalid(xmlResponse);
-                    break;
                 default:
                     System.out.println("Unhandled response type: " + reply);
                     break;
@@ -185,9 +187,38 @@ public class UnifiedClientModel implements Runnable {
         }
     }
 
-    /**
-     * Handle password reset request confirmation
-     */
+    // NEW METHOD FOR PASSWORD RESET NOTIFICATION
+    private void handlePasswordResetNotificationForRequester(String xmlResponse) {
+        try {
+            String body = xmlHandler.getResponseBody(xmlResponse);
+            if (body != null && !body.isEmpty()) {
+                String[] parts = body.split("!\\[]!");
+
+                if (parts.length >= 2) {
+                    String username = parts[0];
+                    String newPassword = parts[1];
+
+                    System.out.println("[DEBUG] Received password reset notification for: " + username);
+
+                    // Use callback to show UI with new password
+                    if (passwordResetNotificationCallback != null) {
+                        Platform.runLater(() -> {
+                            passwordResetNotificationCallback.onPasswordResetNotification(username, newPassword);
+                        });
+                    } else {
+                        System.err.println("[ERROR] No password reset notification callback set");
+                    }
+
+                } else {
+                    System.err.println("[ERROR] Invalid password reset notification format: " + body);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling password reset notification: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
     private void handlePasswordResetRequested(String xmlResponse) {
         try {
             String body = xmlHandler.getResponseBody(xmlResponse);
@@ -197,18 +228,13 @@ public class UnifiedClientModel implements Runnable {
                     String username = parts[0];
                     String verificationCode = parts[1];
 
-                    Platform.runLater(() -> {
-                        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
-                        alert.setTitle("Password Reset Request Confirmed");
-                        alert.setHeaderText("Request Received by Administrator");
-                        alert.setContentText("Your password reset request has been confirmed for: " + username + "\n\n" +
-                                "Your account was found and your verification code has been validated.\n\n" +
-                                "An administrator will now review your request and process your password reset.\n\n" +
-                                "Please wait for the administrator to complete the process.");
-                        alert.getDialogPane().setPrefSize(500, 250);
-                        alert.setResizable(true);
-                        alert.showAndWait();
-                    });
+                    System.out.println("[DEBUG] Password reset request confirmed for: " + username);
+
+                    if (generalNotificationCallback != null) {
+                        String message = "Password reset request confirmed for: " + username +
+                                ". Your verification code has been validated. An administrator will review your request.";
+                        Platform.runLater(() -> generalNotificationCallback.onGeneralNotification("PASSWORD_RESET_REQUESTED", message));
+                    }
                 }
             }
         } catch (Exception e) {
@@ -216,35 +242,94 @@ public class UnifiedClientModel implements Runnable {
             e.printStackTrace();
         }
     }
-    /**
-     * Handle password reset rejected response
-     */
+
     private void handlePasswordResetRejected(String xmlResponse) {
-        Platform.runLater(() -> {
-            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.WARNING);
-            alert.setTitle("Password Reset Rejected");
-            alert.setHeaderText("Your password reset request was rejected");
-            alert.setContentText("The administrator has rejected your password reset request.\n\n" +
-                    "This could be due to:\n" +
-                    "- Incorrect verification code\n" +
-                    "- Security concerns\n" +
-                    "- Account verification issues\n\n" +
-                    "Please contact the administrator directly for assistance.");
-            alert.getDialogPane().setPrefSize(500, 250);
-            alert.setResizable(true);
-            alert.showAndWait();
-        });
+        System.out.println("[DEBUG] Password reset request was rejected");
+
+        if (generalNotificationCallback != null) {
+            String message = "Your password reset request was rejected by the administrator. " +
+                    "This could be due to incorrect verification code or security concerns. " +
+                    "Please contact the administrator directly for assistance.";
+            Platform.runLater(() -> generalNotificationCallback.onGeneralNotification("PASSWORD_RESET_REJECTED", message));
+        }
     }
 
-    /*
-     * handleCommunityMessageResponse:
-     * 1. Get the response body from the XML.
-     * 2. Check if the body is not empty.
-     * 3. Split the body into sender and message parts.
-     * 4. If valid, format the message as "sender: message".
-     * 5. Pass it to the communityMessageListener on the UI thread.
-     * 6. Catch and print any errors if something goes wrong.
-     */
+    private void handlePasswordResetSuccess(String xmlResponse) {
+        try {
+            String body = xmlHandler.getResponseBody(xmlResponse);
+            if (body != null && !body.isEmpty()) {
+                String[] parts = body.split("!\\[]!");
+
+                if (parts.length >= 3) {
+                    String username = parts[0];
+                    String newPassword = parts[1];
+                    String message = parts[2];
+
+                    System.out.println("[DEBUG] Password reset notification received for user: " + username);
+
+                    if (passwordResetNotificationCallback != null) {
+                        Platform.runLater(() -> passwordResetNotificationCallback.onPasswordResetNotification(username, newPassword, message));
+                    }
+
+                } else if (parts.length == 2) {
+                    String username = parts[0];
+                    String newPassword = parts[1];
+                    String defaultMessage = "Your password has been successfully reset by an administrator.";
+
+                    System.out.println("[DEBUG] Password reset notification received for user: " + username);
+
+                    if (passwordResetNotificationCallback != null) {
+                        Platform.runLater(() -> passwordResetNotificationCallback.onPasswordResetNotification(username, newPassword, defaultMessage));
+                    }
+                } else {
+                    System.out.println("[DEBUG] Password reset notification with unexpected format: " + body);
+
+                    if (generalNotificationCallback != null) {
+                        Platform.runLater(() -> generalNotificationCallback.onGeneralNotification("PASSWORD_RESET_SUCCESS", body));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling password reset success response: " + e.getMessage());
+            e.printStackTrace();
+
+            if (generalNotificationCallback != null) {
+                Platform.runLater(() -> generalNotificationCallback.onGeneralNotification("PASSWORD_RESET_ERROR",
+                        "Error processing password reset notification"));
+            }
+        }
+    }
+
+
+    private void handlePasswordResetFailed(String xmlResponse) {
+        try {
+            String body = xmlHandler.getResponseBody(xmlResponse);
+            String message;
+
+            if (body != null && !body.isEmpty()) {
+                if (body.contains("No verification code found")) {
+                    message = "Your account does not have a verification code set up. " +
+                            "Please contact an administrator to set up account recovery options.";
+                } else {
+                    message = "Password reset failed: " + body + ". Please contact an administrator for assistance.";
+                }
+            } else {
+                message = "Your password reset request failed.";
+            }
+
+            System.out.println("[DEBUG] Password reset failed: " + message);
+
+            if (generalNotificationCallback != null) {
+                Platform.runLater(() -> generalNotificationCallback.onGeneralNotification("PASSWORD_RESET_FAILED", message));
+            }
+        } catch (Exception e) {
+            if (generalNotificationCallback != null) {
+                Platform.runLater(() -> generalNotificationCallback.onGeneralNotification("PASSWORD_RESET_FAILED",
+                        "Your password reset request could not be processed. Please contact an administrator."));
+            }
+        }
+    }
+
     private void handleCommunityMessageResponse(String xmlResponse) {
         try {
             String body = xmlHandler.getResponseBody(xmlResponse);
@@ -264,17 +349,7 @@ public class UnifiedClientModel implements Runnable {
             e.printStackTrace();
         }
     }
-    /*
-     * handleChatHistoryResponse:
-     * 1. Get the response body from the XML.
-     * 2. Check if the body is not empty.
-     * 3. If the body is valid Base64 → save the updated account XML.
-     * 4. If chatHistoryListener exists:
-     *    - If it's a new message → extract the latest message and send it.
-     *    - If no latest message found → send "MESSAGE_RECEIVED".
-     *    - If not a new message → always send "MESSAGE_RECEIVED".
-     * 5. Catch and print errors if something goes wrong.
-     */
+
     private void handleChatHistoryResponse(String xmlResponse, boolean isNewMessage) {
         try {
             String body = xmlHandler.getResponseBody(xmlResponse);
@@ -302,17 +377,6 @@ public class UnifiedClientModel implements Runnable {
         }
     }
 
-    /*
-     * handleNewMessageResponse:
-     * 1. Print debug info about the response and body length.
-     * 2. Get the response body from the XML.
-     * 3. Check if the body is not empty.
-     * 4. If body is valid Base64 → save it to account XML.
-     * 5. Extract the latest message; if it’s a file message, handle it separately.
-     * 6. If chatHistoryListener exists → notify with "MESSAGE_RECEIVED".
-     * 7. If listener is missing or body is invalid → log an error.
-     * 8. Catch and print errors if something goes wrong.
-     */
     private void handleNewMessageResponse(String xmlResponse) {
         try {
             System.out.println("handleNewMessageResponse called");
@@ -349,13 +413,7 @@ public class UnifiedClientModel implements Runnable {
             e.printStackTrace();
         }
     }
-    /*
-     * handleFileTransferSuccess:
-     * 1. Get the response body from the XML.
-     * 2. Print a success message with the body.
-     * 3. If fileStatusListener exists → notify with "SUCCESS: body".
-     * 4. Catch and print any errors if something goes wrong.
-     */
+
     private void handleFileTransferSuccess(String xmlResponse) {
         try {
             String body = xmlHandler.getResponseBody(xmlResponse);
@@ -368,14 +426,7 @@ public class UnifiedClientModel implements Runnable {
             System.err.println("Error handling file transfer success: " + e.getMessage());
         }
     }
-    /*
-     * handleFileTransferFailure:
-     * 1. Get the response body from the XML.
-     * 2. Print a failure message with the body.
-     * 3. Use body as error message if available, otherwise use "Unknown error occurred".
-     * 4. If fileStatusListener exists → notify with "FAILURE: errorMessage".
-     * 5. Catch and print errors, and notify listener about processing error if needed.
-     */
+
     private void handleFileTransferFailure(String xmlResponse) {
         try {
             String body = xmlHandler.getResponseBody(xmlResponse);
@@ -406,13 +457,7 @@ public class UnifiedClientModel implements Runnable {
             System.err.println("Error handling group file transfer success: " + e.getMessage());
         }
     }
-    /*
-     * handleGroupFileTransferSuccess:
-     * 1. Get the response body from the XML.
-     * 2. Print a success message with the body.
-     * 3. If fileStatusListener exists → notify with "SUCCESS: body".
-     * 4. Catch and print any errors.
-     */
+
     private void handleGroupFileTransferFailure(String xmlResponse) {
         try {
             String body = xmlHandler.getResponseBody(xmlResponse);
@@ -425,23 +470,7 @@ public class UnifiedClientModel implements Runnable {
             System.err.println("Error handling group file transfer failure: " + e.getMessage());
         }
     }
-    private Consumer<String> fileStatusListener;
 
-    public void setFileStatusListener(Consumer<String> fileStatusListener) {
-        this.fileStatusListener = fileStatusListener;
-    }
-
-    /*
-     * handleGroupFileTransferFailure:
-     * 1. Get the response body from the XML.
-     * 2. Print a failure message with the body.
-     * 3. If fileStatusListener exists → notify with "FAILURE: body".
-     * 4. Catch and print any errors.
-     *
-     * fileStatusListener:
-     * - A listener (callback) to receive file transfer status messages.
-     * - Can be set using setFileStatusListener().
-     */
     private void handleNewGroupMessageResponse(String xmlResponse) {
         try {
             String body = xmlHandler.getResponseBody(xmlResponse);
@@ -479,15 +508,7 @@ public class UnifiedClientModel implements Runnable {
             }
         }
     }
-    /*
-     * extractLatestMessageFromBase64:
-     * 1. Decode the Base64 string into XML content.
-     * 2. Parse the XML and find all <chat> nodes.
-     * 3. Get the last <chat> element (latest message).
-     * 4. Extract sender and message text.
-     * 5. Return "sender: message" format.
-     * 6. If an error occurs → print it and return null.
-     */
+
     private String extractLatestMessageFromBase64(String base64Content) {
         try {
             byte[] decodedXML = Base64.getDecoder().decode(base64Content);
@@ -523,15 +544,8 @@ public class UnifiedClientModel implements Runnable {
             return false;
         }
     }
-    /*
-     * sendFile:
-     * 1. Check if the file exists, is valid, and not empty.
-     * 2. Validate file size (must be <= 10MB).
-     * 3. Read file content and encode it into Base64.
-     * 4. Build an XML request with file details (name, extension, content).
-     * 5. Send the XML message to the server.
-     * 6. Notify listener of success or failure.
-     */
+
+    // FILE TRANSFER METHODS
     public synchronized boolean sendFile(String filePath, String receiver) {
         try {
             File file = new File(filePath);
@@ -567,20 +581,9 @@ public class UnifiedClientModel implements Runnable {
             String fileName = file.getName();
             String fileExtension = getFileExtension(fileName);
 
-            System.out.println("File encoded successfully:");
-            System.out.println("- Original size: " + fileSize + " bytes");
-            System.out.println("- Encoded size: " + encodedContent.length() + " characters");
-
-            // Build the file message with proper delimiters
             String fileMessage = "FILE_TRANSFER![]!" + fileName + "![]!" + fileExtension + "![]!" + encodedContent;
             String xmlMessage = "<Request><type>SEND_FILE</type><content>" +
                     username + "![]!" + receiver + "![]!" + fileMessage + "</content></Request>";
-            System.out.println("Full XML message structure:");
-            System.out.println("- Username: " + username);
-            System.out.println("- Receiver: " + receiver);
-            System.out.println("- File message starts with: " + fileMessage.substring(0, Math.min(50, fileMessage.length())));
-            System.out.println("- Total XML length: " + xmlMessage.length());
-            System.out.println("Sending file message (length: " + xmlMessage.length() + ")");
 
             writeMSG.write(xmlMessage);
             writeMSG.newLine();
@@ -598,15 +601,7 @@ public class UnifiedClientModel implements Runnable {
             return false;
         }
     }
-    /*
-     * sendGroupFile:
-     * 1. Check if the user has access to the group.
-     * 2. Validate the file (must exist, be valid, and <= 10MB).
-     * 3. Read and encode file content into Base64.
-     * 4. Build an XML request with group details, file info, and encoded content.
-     * 5. Send the XML message to the server.
-     * 6. Return true if sent successfully, otherwise false.
-     */
+
     public synchronized boolean sendGroupFile(String filePath, String groupName) {
         try {
             if (!canAccessGroup(groupName)) {
@@ -632,7 +627,7 @@ public class UnifiedClientModel implements Runnable {
             String fileMessage = "FILE_TRANSFER![]!" + fileName + "![]!" + fileExtension + "![]!" + encodedContent;
             String xmlMessage = "<Request><type>SEND_GROUP_FILE</type><content>" +
                     username + "![]!" + groupName + "![]!" + fileMessage + "</content></Request>";
-            System.out.println("Sending file to group: " + fileName + " (" + fileSize + " bytes)");
+
             writeMSG.write(xmlMessage);
             writeMSG.newLine();
             writeMSG.flush();
@@ -645,17 +640,9 @@ public class UnifiedClientModel implements Runnable {
             return false;
         }
     }
-    /*
-     * saveReceivedFile:
-     * 1. Locate the user's storage directory.
-     * 2. Search for the file matching the given fileName.
-     * 3. If found → read metadata and extract Base64 content.
-     * 4. Decode and save the file to the downloads folder.
-     * 5. Return true if saved successfully, otherwise false.
-     */
+
     public boolean saveReceivedFile(String fileName) {
         try {
-            // First, check if file exists in server storage for this user
             String userFilesPath = "src/main/resources/XMLFiles/userFiles/" + username;
             File userDir = new File(userFilesPath);
 
@@ -667,12 +654,11 @@ public class UnifiedClientModel implements Runnable {
             File[] files = userDir.listFiles();
             if (files != null) {
                 for (File file : files) {
-                    // Check if the file matches the requested filename
                     if (file.getName().contains(fileName)) {
                         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
                             reader.readLine(); // SENDER line
                             String originalNameLine = reader.readLine(); // ORIGINAL_NAME line
-                            String extensionLine = reader.readLine(); // EXTENSION line
+                            reader.readLine(); // EXTENSION line
                             reader.readLine(); // TIMESTAMP line
                             reader.readLine(); // SIZE line
                             String contentLine = reader.readLine(); // CONTENT line
@@ -700,7 +686,6 @@ public class UnifiedClientModel implements Runnable {
 
     private boolean saveFileToDownloads(String fileName, String base64Content) {
         try {
-            // Create Downloads/ChatApp directory
             String downloadsPath = System.getProperty("user.home") + "/Downloads/ChatApp";
             File downloadsDir = new File(downloadsPath);
             if (!downloadsDir.exists()) {
@@ -711,7 +696,6 @@ public class UnifiedClientModel implements Runnable {
                 }
             }
 
-            // Handle duplicate filenames
             File outputFile = new File(downloadsDir, fileName);
             int counter = 1;
             String baseName = fileName;
@@ -727,7 +711,6 @@ public class UnifiedClientModel implements Runnable {
                 counter++;
             }
 
-            // Decode and save file
             byte[] fileContent = Base64.getDecoder().decode(base64Content);
             Files.write(outputFile.toPath(), fileContent);
 
@@ -741,10 +724,8 @@ public class UnifiedClientModel implements Runnable {
         }
     }
 
-
     public boolean openFile(String fileName) {
         try {
-            // First, try to find the file in Downloads
             String downloadsPath = System.getProperty("user.home") + "/Downloads/ChatApp";
             File downloadsDir = new File(downloadsPath);
 
@@ -759,12 +740,10 @@ public class UnifiedClientModel implements Runnable {
                 }
             }
 
-            // If not found in Downloads, try to download it first
             System.out.println("File not found in downloads, attempting to retrieve from server storage...");
             boolean downloaded = saveReceivedFile(fileName);
 
             if (downloaded) {
-                // Try to open the newly downloaded file
                 if (downloadsDir.exists()) {
                     File[] files = downloadsDir.listFiles();
                     if (files != null) {
@@ -786,6 +765,7 @@ public class UnifiedClientModel implements Runnable {
             return false;
         }
     }
+
     private boolean openFileWithSystem(File file) {
         try {
             if (java.awt.Desktop.isDesktopSupported()) {
@@ -810,6 +790,7 @@ public class UnifiedClientModel implements Runnable {
         return (lastDot > 0) ? fileName.substring(lastDot) : "";
     }
 
+    // MESSAGING METHODS
     public synchronized void sendMessage(String message, String receiver) {
         try {
             String xmlMessage = "<Request><type>SEND_MESSAGE</type><content>" +
@@ -928,7 +909,21 @@ public class UnifiedClientModel implements Runnable {
         }
     }
 
-    // Method to change password
+    public synchronized void changePasswordDirect(String newPassword) {
+        try {
+            String xmlMessage = "<Request><type>CHANGE_PASSWORD</type><content>" +
+                    username + "![]!dummy![]!" + newPassword + "</content></Request>";
+            System.out.println("Sending direct password change request: " + xmlMessage);
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+        } catch (IOException e) {
+            System.err.println("Error sending direct password change request: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+
     public synchronized void changePassword(String oldPassword, String newPassword) {
         try {
             String xmlMessage = "<Request><type>CHANGE_PASSWORD</type><content>" +
@@ -947,29 +942,10 @@ public class UnifiedClientModel implements Runnable {
         System.out.println("UnifiedClientModel: Adding friend " + friendUsername);
         UserXMLHandler.addFriendRequest(this.username, friendUsername);
     }
-    public List<String> getSentRequests() {
-        return UserXMLHandler.getSentRequests(this.username);
-    }
 
-    // Method to request initial password reset (generates verification code)
-    public synchronized void requestPasswordReset(String username) {
-        try {
-            String xmlMessage = "<Request><type>REQUEST_PASSWORD_RESET</type><content>" + 
-                    username + "</content></Request>";
-            System.out.println("Sending initial password reset request: " + xmlMessage);
-            writeMSG.write(xmlMessage);
-            writeMSG.newLine();
-            writeMSG.flush();
-        } catch (IOException e) {
-            System.err.println("Error sending initial password reset request: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    // Method to request password reset with verification code
     public synchronized void requestPasswordResetWithCode(String username, String verificationCode) {
         try {
-            String xmlMessage = "<Request><type>REQUEST_PASSWORD_RESET_WITH_CODE</type><content>" + 
+            String xmlMessage = "<Request><type>REQUEST_PASSWORD_RESET_WITH_CODE</type><content>" +
                     username + "![]!" + verificationCode + "</content></Request>";
             System.out.println("Sending password reset request with code: " + xmlMessage);
             writeMSG.write(xmlMessage);
@@ -981,6 +957,33 @@ public class UnifiedClientModel implements Runnable {
         }
     }
 
+    public synchronized void resetPasswordOnServer(String username, String newPassword) {
+        try {
+            // Since this is a password reset via verification code, we need to send a direct password change
+            String xmlMessage = "<Request><type>RESET_PASSWORD_CLIENT</type><content>" +
+                    username + "![]!" + newPassword + "</content></Request>";
+            System.out.println("Sending password reset to server: " + xmlMessage);
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+        } catch (IOException e) {
+            System.err.println("Error sending password reset to server: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    // SETTERS FOR CALLBACKS
+    public void setPasswordResetNotificationCallback(PasswordResetNotificationCallback callback) {
+        this.passwordResetNotificationCallback = callback;
+    }
+
+    public void setGeneralNotificationCallback(GeneralNotificationCallback callback) {
+        this.generalNotificationCallback = callback;
+    }
+
+    public void setVerificationCodeValidListener(Consumer<String> verificationCodeValidListener) {
+        this.verificationCodeValidListener = verificationCodeValidListener;
+    }
 
     public void setUsername(String username) {
         this.username = username;
@@ -1010,7 +1013,11 @@ public class UnifiedClientModel implements Runnable {
         this.accountUpdateListener = accountUpdateListener;
     }
 
+    public void setFileStatusListener(Consumer<String> fileStatusListener) {
+        this.fileStatusListener = fileStatusListener;
+    }
 
+    // GETTERS
     public List<String> getFriends() {
         return xmlHandler.getFriends(username);
     }
@@ -1018,6 +1025,7 @@ public class UnifiedClientModel implements Runnable {
     public List<String> getGroups() {
         return xmlHandler.getUserGroups(username);
     }
+
     public List<String> getAllUsers() {
         return xmlHandler.getAllUsers();
     }
@@ -1025,198 +1033,4 @@ public class UnifiedClientModel implements Runnable {
     public String getUsername() {
         return username;
     }
-
-    private void handlePasswordResetCompleted(String xmlResponse) {
-        try {
-            String body = xmlHandler.getResponseBody(xmlResponse);
-            if (body != null && !body.isEmpty()) {
-                // Show notification to user about password reset
-                if (messageListener != null) {
-                    Platform.runLater(() -> {
-                        // Create a notification message for the user
-                        String notificationMessage = "<Response><reply>PASSWORD_RESET_NOTIFICATION</reply><body>" + body + "</body></Response>";
-                        messageListener.accept(notificationMessage);
-                    });
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Error handling password reset completion: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    private void handleVerificationCodeValid(String xmlResponse) {
-        try {
-            String body = xmlHandler.getResponseBody(xmlResponse);
-            if (body != null && !body.isEmpty()) {
-                String username = body.trim();
-                // Show password change dialog to the client
-                Platform.runLater(() -> {
-                    showPasswordChangeDialog(username);
-                });
-            }
-        } catch (Exception e) {
-            System.err.println("Error handling verification code valid: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Handle verification code invalid response
-     */
-    private void handleVerificationCodeInvalid(String xmlResponse) {
-        Platform.runLater(() -> {
-            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
-            alert.setTitle("Invalid Verification Code");
-            alert.setHeaderText("Verification code is incorrect");
-            alert.setContentText("The verification code you provided does not match your account records.\n\n" +
-                    "Please ensure you entered your correct security verification code.\n\n" +
-                    "If you're unsure of your verification code, please contact an administrator for assistance.");
-            alert.getDialogPane().setPrefSize(450, 250);
-            alert.setResizable(true);
-            alert.showAndWait();
-        });
-    }
-
-    /**
-     * Handle password reset success response
-     */
-    private void handlePasswordResetSuccess(String xmlResponse) {
-        try {
-            String body = xmlHandler.getResponseBody(xmlResponse);
-            if (body != null && !body.isEmpty()) {
-                String[] parts = body.split("!\\[]!");
-                if (parts.length >= 2) {
-                    String username = parts[0];
-                    String newPassword = parts[1];
-
-                    Platform.runLater(() -> {
-                        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
-                        alert.setTitle("Password Reset Successful");
-                        alert.setHeaderText("Your password has been reset!");
-                        alert.setContentText("Your password has been successfully changed by the administrator.\n\n" +
-                                "Username: " + username + "\n" +
-                                "New Password: " + newPassword + "\n\n" +
-                                "Please use your new password to log in.\n" +
-                                "For security, consider changing your password after logging in.");
-                        alert.getDialogPane().setPrefSize(500, 280);
-                        alert.setResizable(true);
-                        alert.showAndWait();
-                    });
-                } else {
-                    Platform.runLater(() -> {
-                        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
-                        alert.setTitle("Password Reset Successful");
-                        alert.setHeaderText("Your password has been reset!");
-                        alert.setContentText("Your password has been successfully reset by the administrator.\n\n" +
-                                "Please contact the administrator for your new password.");
-                        alert.getDialogPane().setPrefSize(450, 200);
-                        alert.setResizable(true);
-                        alert.showAndWait();
-                    });
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Error handling password reset success response: " + e.getMessage());
-            e.printStackTrace();
-            Platform.runLater(() -> {
-                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
-                alert.setTitle("Password Reset Successful");
-                alert.setHeaderText("Your password has been reset!");
-                alert.setContentText("Your password has been successfully reset by the administrator.");
-                alert.getDialogPane().setPrefSize(400, 180);
-                alert.setResizable(true);
-                alert.showAndWait();
-            });
-        }
-    }
-
-
-    /**
-     * Handle password reset failed response
-     */
-    private void handlePasswordResetFailed(String xmlResponse) {
-        Platform.runLater(() -> {
-            try {
-                String body = xmlHandler.getResponseBody(xmlResponse);
-                String message = "Your password reset request failed.";
-
-                if (body != null && !body.isEmpty()) {
-                    if (body.contains("No verification code found")) {
-                        message = "Your account does not have a verification code set up.\n\n" +
-                                "Please contact an administrator to set up account recovery options.";
-                    } else {
-                        message = "Password reset failed: " + body + "\n\n" +
-                                "Please contact an administrator for assistance.";
-                    }
-                }
-
-                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
-                alert.setTitle("Password Reset Failed");
-                alert.setHeaderText("Unable to reset your password");
-                alert.setContentText(message);
-                alert.getDialogPane().setPrefSize(450, 220);
-                alert.setResizable(true);
-                alert.showAndWait();
-            } catch (Exception e) {
-                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
-                alert.setTitle("Password Reset Failed");
-                alert.setHeaderText("Unable to reset your password");
-                alert.setContentText("Your password reset request could not be processed.\nPlease contact an administrator.");
-                alert.getDialogPane().setPrefSize(400, 180);
-                alert.setResizable(true);
-                alert.showAndWait();
-            }
-        });
-    }
-
-    private void showPasswordChangeDialog(String username) {
-        javafx.scene.control.Alert confirmDialog = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.CONFIRMATION);
-        confirmDialog.setTitle("🔑 Password Reset");
-        confirmDialog.setHeaderText("Change Password for " + username);
-        confirmDialog.setContentText(username + " wants to change password.\n\nDo you want to proceed with changing the password?");
-        
-        javafx.scene.control.ButtonType changePasswordButton = new javafx.scene.control.ButtonType("Change Password");
-        javafx.scene.control.ButtonType cancelButton = new javafx.scene.control.ButtonType("Cancel", javafx.scene.control.ButtonBar.ButtonData.CANCEL_CLOSE);
-        confirmDialog.getButtonTypes().setAll(changePasswordButton, cancelButton);
-        
-        java.util.Optional<javafx.scene.control.ButtonType> confirmResult = confirmDialog.showAndWait();
-        
-        if (confirmResult.isPresent() && confirmResult.get() == changePasswordButton) {
-            // User confirmed, now show password input dialog
-            javafx.scene.control.TextInputDialog passwordDialog = new javafx.scene.control.TextInputDialog();
-            passwordDialog.setTitle("🔐 New Password");
-            passwordDialog.setHeaderText("Enter New Password for " + username);
-            passwordDialog.setContentText("New Password:");
-            
-            passwordDialog.showAndWait().ifPresent(newPassword -> {
-                if (!newPassword.trim().isEmpty()) {
-                    // Send the new password to server
-                    resetPasswordOnServer(username, newPassword.trim());
-                } else {
-                    javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.WARNING);
-                    alert.setTitle("⚠️ Invalid Input");
-                    alert.setHeaderText("Password cannot be empty");
-                    alert.setContentText("Please enter a valid password.");
-                    alert.showAndWait();
-                }
-            });
-        }
-    }
-
-    // Method to send new password to server after verification
-    public synchronized void resetPasswordOnServer(String username, String newPassword) {
-        try {
-            String xmlMessage = "<Request><type>RESET_PASSWORD_CLIENT</type><content>" + 
-                    username + "![]!" + newPassword + "</content></Request>";
-            System.out.println("Sending password reset to server: " + xmlMessage);
-            writeMSG.write(xmlMessage);
-            writeMSG.newLine();
-            writeMSG.flush();
-        } catch (IOException e) {
-            System.err.println("Error sending password reset to server: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
 }
