@@ -2,6 +2,7 @@ package AdminMVC.AdminControllers;
 
 import AdminMVC.AdminModel.UnifiedAdminModel;
 import AdminMVC.AdminView.Admin.AdminPageJFXController;
+import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -32,11 +33,21 @@ public class AdminController {
         setupPasswordResetHandling();
         // Load initial data
         refreshData();
+        startAutoRefresh();
+    }
+
+    private void startAutoRefresh() {
+        Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(5), event -> {
+            model.requestAllUsersWithStatus();
+        }));
+        timeline.setCycleCount(Animation.INDEFINITE);
+        timeline.play();
     }
 
     /**
      * Set up password reset handling - call this in your initialize() method
      */
+
     private void setupPasswordResetHandling() {
         // Set up listener for password reset requests
         model.setPasswordResetListener(this::handlePasswordResetRequest);
