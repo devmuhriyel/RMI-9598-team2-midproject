@@ -7,6 +7,7 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
@@ -359,6 +360,7 @@ public class AdminController {
             errorAlert.showAndWait();
         });
     }
+
     // ========== UTILITY METHODS ==========
 
     /**
@@ -507,6 +509,16 @@ public class AdminController {
                     case "GROUPS_UPDATED":
                         ui.setGroups(model.getAllGroups());
                         break;
+                }
+            });
+        });
+
+        // Set up community messages update listener
+        model.setCommunityMessagesUpdateListener(updateType -> {
+            Platform.runLater(() -> {
+                if ("COMMUNITY_MESSAGES_UPDATED".equals(updateType)) {
+                    System.out.println("Community messages updated in admin panel");
+                    // Messages will be auto-refreshed in the dialog/view
                 }
             });
         });
@@ -801,8 +813,113 @@ public class AdminController {
     }
 
     private void showCommunityMessages() {
+        // Request community messages from server
         model.requestCommunityMessages();
-        // The model listener will handle displaying the results
+
+        // Create and show community chat dialog
+        Platform.runLater(() -> {
+            Dialog<String> communityDialog = new Dialog<>();
+            communityDialog.setTitle("Community Chat");
+            communityDialog.setHeaderText("Community Chat - Admin View");
+            communityDialog.setResizable(true);
+
+            // Create UI components
+            TextArea messagesArea = new TextArea();
+            messagesArea.setEditable(false);
+            messagesArea.setPrefRowCount(15);
+            messagesArea.setPrefColumnCount(50);
+            messagesArea.setWrapText(true);
+
+            TextField messageField = new TextField();
+            messageField.setPromptText("Type your message here...");
+            messageField.setPrefWidth(400);
+
+            Button sendButton = new Button("Send");
+            Button refreshButton = new Button("Refresh");
+
+            // Layout
+            VBox content = new VBox(10);
+            HBox messageInputBox = new HBox(10, messageField, sendButton, refreshButton);
+            content.getChildren().addAll(
+                    new Label("Community Messages:"),
+                    messagesArea,
+                    new Label("Send Message:"),
+                    messageInputBox
+            );
+
+            communityDialog.getDialogPane().setContent(content);
+            communityDialog.getDialogPane().getButtonTypes().addAll(ButtonType.CLOSE);
+
+            // Load initial messages
+            loadCommunityMessages(messagesArea);
+
+            // Send button action
+            sendButton.setOnAction(event -> {
+                String messageText = messageField.getText().trim();
+                if (!messageText.isEmpty()) {
+                    sendCommunityMessage(messageText);
+                    messageField.clear();
+                    // Refresh messages after sending
+                    Timeline refreshTimeline = new Timeline(new KeyFrame(Duration.millis(500),
+                            e -> loadCommunityMessages(messagesArea)));
+                    refreshTimeline.play();
+                }
+            });
+
+            // Enter key to send
+            messageField.setOnKeyPressed(event -> {
+                if (event.getCode() == javafx.scene.input.KeyCode.ENTER) {
+                    sendButton.fire();
+                }
+            });
+
+            // Refresh button action
+            refreshButton.setOnAction(event -> {
+                model.requestCommunityMessages();
+                loadCommunityMessages(messagesArea);
+            });
+
+            // Set up automatic refresh every 3 seconds
+            Timeline autoRefresh = new Timeline(new KeyFrame(Duration.seconds(3),
+                    event -> loadCommunityMessages(messagesArea)));
+            autoRefresh.setCycleCount(Timeline.INDEFINITE);
+            autoRefresh.play();
+
+            // Stop auto-refresh when dialog is closed
+            communityDialog.setOnCloseRequest(event -> autoRefresh.stop());
+
+            // Show dialog
+            communityDialog.showAndWait();
+        });
+    }
+
+    private void loadCommunityMessages(TextArea messagesArea) {
+        // Get community messages from the model
+        if (model.getCommunityMessages() != null && !model.getCommunityMessages().isEmpty()) {
+            Platform.runLater(() -> {
+                StringBuilder messageText = new StringBuilder();
+                for (String message : model.getCommunityMessages()) {
+                    messageText.append(message).append("\n");
+                }
+                messagesArea.setText(messageText.toString());
+                // Auto-scroll to bottom
+                messagesArea.setScrollTop(Double.MAX_VALUE);
+            });
+        }
+    }
+
+    private void sendCommunityMessage(String message) {
+        try {
+            if (model.isConnected() && model.getAdminUsername() != null) {
+                String request = "<Request><type>SEND_COMMUNITY_MESSAGE</type><content>" +
+                        model.getAdminUsername() + "![]!" + message + "</content></Request>";
+                model.sendAdminCommand(request);
+                System.out.println("Admin sent community message: " + message);
+            }
+        } catch (Exception e) {
+            System.err.println("Error sending community message: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     private String generateVerificationCode() {

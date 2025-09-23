@@ -20,6 +20,11 @@ public class AdminXMLHandler {
                 username + "![]!" + verificationCode + "![]!" + newPassword + "</content></Request>";
     }
 
+    public String createSendCommunityMessageRequest(String sender, String message) {
+        return "<Request><type>SEND_COMMUNITY_MESSAGE</type><content>" +
+                sender + "![]!" + message + "</content></Request>";
+    }
+
     /**
      * Creates a request to reject a password reset request
      */
@@ -562,6 +567,20 @@ public class AdminXMLHandler {
         return validateUsername(username) && validatePassword(newPassword);
     }
 
+    public boolean validateCommunityMessage(String message) {
+        return message != null && !message.trim().isEmpty() &&
+                !message.contains("![]!") && message.length() <= 1000; // Max 1000 characters
+    }
+
+    public boolean isCommunityMessageNotification(String xmlString) {
+        String reply = getReply(xmlString);
+        return "COMMUNITY_MESSAGE".equals(reply);
+    }
+
+    public boolean validateAdminCommunityAccess(String adminUsername) {
+        return adminUsername != null && !adminUsername.trim().isEmpty() &&
+                !adminUsername.contains("![]!") && adminUsername.length() >= 3;
+    }
 
     /**
      * Validates group creation input including members
@@ -580,6 +599,48 @@ public class AdminXMLHandler {
         }
 
         return true;
+    }
+
+    public CommunityMessageNotification parseCommunityMessageNotification(String xmlString) {
+        try {
+            String body = getResponseBody(xmlString);
+            if (body != null && !body.isEmpty()) {
+                String[] parts = body.split("!\\[]!", 2);
+                if (parts.length >= 2) {
+                    return new CommunityMessageNotification(parts[0], parts[1]);
+                }
+            }
+            return null;
+        } catch (Exception e) {
+            System.err.println("Error parsing community message notification: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+    public static class CommunityMessageNotification {
+        private final String sender;
+        private final String message;
+
+        public CommunityMessageNotification(String sender, String message) {
+            this.sender = sender;
+            this.message = message;
+        }
+
+        public String getSender() {
+            return sender;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        @Override
+        public String toString() {
+            return "CommunityMessageNotification{" +
+                    "sender='" + sender + '\'' +
+                    ", message='" + message + '\'' +
+                    '}';
+        }
     }
 
 

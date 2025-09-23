@@ -1,9 +1,12 @@
 package AdminMVC.AdminModel;
 
 import AdminMVC.AdminXMLHandler;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.util.Duration;
 
 import java.io.*;
 import java.net.Socket;
@@ -281,6 +284,7 @@ public class UnifiedAdminModel implements Runnable {
         }
     }
 
+
     public void deleteUser(String username) {
         if (!adminXMLHandler.validateUsername(username)) {
             System.err.println("Invalid username format: " + username);
@@ -396,6 +400,16 @@ public class UnifiedAdminModel implements Runnable {
         }
     }
 
+    public void startCommunityMessageAutoRefresh() {
+        Timeline communityRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(5), event -> {
+            if (isConnected()) {
+                requestCommunityMessages();
+            }
+        }));
+        communityRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
+        communityRefreshTimeline.play();
+    }
+
     public void createNewGroup(String groupName, String creator) {
         if (!adminXMLHandler.validateGroupName(groupName) || !adminXMLHandler.validateUsername(creator)) {
             System.err.println("Invalid group name or creator format");
@@ -446,6 +460,21 @@ public class UnifiedAdminModel implements Runnable {
                 writeMSG.write(request);
                 writeMSG.newLine();
                 writeMSG.flush();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void sendCommunityMessage(String message) {
+        try {
+            if (writeMSG != null && isConnected() && adminUsername != null) {
+                String request = "<Request><type>SEND_COMMUNITY_MESSAGE</type><content>" +
+                        adminUsername + "![]!" + message + "</content></Request>";
+                writeMSG.write(request);
+                writeMSG.newLine();
+                writeMSG.flush();
+                System.out.println("Admin community message sent: " + message);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -590,6 +619,16 @@ public class UnifiedAdminModel implements Runnable {
 
             case "COMMUNITY_MESSAGES":
                 handleCommunityMessagesResponse(finalMsg);
+                break;
+
+            case "COMMUNITY_MESSAGE":
+                handleNewCommunityMessage(finalMsg);
+                break;
+
+            case "SEND_COMMUNITY_MESSAGE":
+                handleOperationResponse("Community message sent successfully", finalMsg);
+                // Refresh community messages after sending
+                requestCommunityMessages();
                 break;
 
             case "USER_DELETED":
@@ -905,10 +944,47 @@ public class UnifiedAdminModel implements Runnable {
                     if (communityMessagesUpdateListener != null) {
                         communityMessagesUpdateListener.accept("COMMUNITY_MESSAGES_UPDATED");
                     }
+
+                    System.out.println("Loaded " + communityMessages.size() + " community messages for admin");
                 });
             }
         } catch (Exception e) {
             System.err.println("Error handling community messages response: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void handleNewCommunityMessage(String xmlResponse) {
+        try {
+            String body = adminXMLHandler.getResponseBody(xmlResponse);
+            if (body != null && !body.isEmpty()) {
+                String[] parts = body.split("!\\[]!", 2);
+                if (parts.length == 2) {
+                    String sender = parts[0];
+                    String message = parts[1];
+
+                    Platform.runLater(() -> {
+                        String formattedMessage = sender + ": " + message + " [" +
+                                java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "]";
+
+                        // Add to community messages list
+                        communityMessages.add(formattedMessage);
+
+                        // Keep only last 100 messages to prevent memory issues
+                        if (communityMessages.size() > 100) {
+                            communityMessages.remove(0);
+                        }
+
+                        if (communityMessagesUpdateListener != null) {
+                            communityMessagesUpdateListener.accept("NEW_COMMUNITY_MESSAGE");
+                        }
+
+                        System.out.println("New community message received: " + formattedMessage);
+                    });
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling new community message: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -1056,6 +1132,7 @@ public class UnifiedAdminModel implements Runnable {
             writeMSG.close();
         }
     }
+
 
     // Utility methods
     public void refreshData() {
