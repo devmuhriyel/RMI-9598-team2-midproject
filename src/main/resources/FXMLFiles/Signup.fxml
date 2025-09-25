@@ -10,7 +10,11 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<VBox fx:id="root" alignment="CENTER" spacing="15.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/24.0.1" fx:controller="ClientMVC.ClientView.Signup.SignupJFXController">
+<VBox fx:id="root" alignment="CENTER" spacing="15.0"
+      xmlns:fx="http://javafx.com/fxml/1"
+      xmlns="http://javafx.com/javafx/24.0.1"
+      fx:controller="ClientMVC.ClientView.Signup.SignupJFXController">
+
     <padding>
         <Insets bottom="30" left="30" right="30" top="30" />
     </padding>
@@ -42,6 +46,9 @@
     <!-- Confirm Password Field -->
     <PasswordField fx:id="confirmPasswordField" maxWidth="300" promptText="Confirm Password" />
 
+    <!-- Verification Code Field -->
+    <TextField fx:id="verificationField" maxWidth="300" promptText="Verification Code" />
+
     <!-- Sign Up Button -->
     <Button fx:id="signupButton"
             maxWidth="300"
@@ -50,6 +57,5 @@
 
     <!-- Message Label -->
     <Label fx:id="messageLabel" textFill="red" />
-
 
 </VBox>

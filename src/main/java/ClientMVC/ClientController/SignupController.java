@@ -31,10 +31,11 @@ public class SignupController {
 
                 String username = fxController.getUsername();
                 String password = fxController.getPassword();
+                String verification = fxController.getVerificationCode();
 
                 // Send signup request through unified model
                 String xmlMessage = "<Request><type>REGISTER</type><content>" +
-                        username + "![]!" + password + "</content></Request>";
+                        username + "![]!" + password + "![]!" + verification + "</content></Request>";
                 model.sendRawMessage(xmlMessage);
             }
         });
@@ -61,10 +62,8 @@ public class SignupController {
     private boolean validateInput() {
         String username = fxController.getUsername();
         String password = fxController.getPassword();
-        String firstName = fxController.getFirstName();
-        String lastName = fxController.getLastName();
-        String email = fxController.getEmail();
-        boolean termsAccepted = fxController.isTermsAccepted();
+        String confirmPassword = fxController.getConfirmPassword();
+        String verification = fxController.getVerificationCode();
 
         // Basic validation
         if (username == null || username.trim().isEmpty()) {
@@ -77,29 +76,18 @@ public class SignupController {
             return false;
         }
 
-        if (firstName == null || firstName.trim().isEmpty()) {
-            fxController.showAlert("First name is required");
+        if (confirmPassword == null || confirmPassword.trim().isEmpty()) {
+            fxController.showAlert("Please confirm your password");
             return false;
         }
 
-        if (lastName == null || lastName.trim().isEmpty()) {
-            fxController.showAlert("Last name is required");
+        if (!password.equals(confirmPassword)) {
+            fxController.showAlert("Passwords do not match");
             return false;
         }
 
-        if (email == null || email.trim().isEmpty()) {
-            fxController.showAlert("Email is required");
-            return false;
-        }
-
-        if (!termsAccepted) {
-            fxController.showAlert("You must accept the terms and conditions");
-            return false;
-        }
-
-        // Basic email validation
-        if (!email.contains("@") || !email.contains(".")) {
-            fxController.showAlert("Please enter a valid email address");
+        if (verification == null || verification.trim().isEmpty()) {
+            fxController.showAlert("Verification is required");
             return false;
         }
 

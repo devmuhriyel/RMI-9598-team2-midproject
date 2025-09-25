@@ -12,25 +12,20 @@ public class SignupJFXController {
     private TextField usernameField;
 
     @FXML
-    private TextField firstNameField;
-
-    @FXML
-    private TextField lastNameField;
-
-    @FXML
-    private TextField emailField;
-
-    @FXML
     private PasswordField passwordField;
 
     @FXML
     private Button signupButton;
 
     @FXML
-    private CheckBox termsCheckbox;
+    private TextField verificationField;
 
     private Runnable signInListener;
+
     private Runnable signupButtonListener;
+
+    @FXML
+    private PasswordField confirmPasswordField;
 
     @FXML
     private void initialize() {
@@ -47,6 +42,10 @@ public class SignupJFXController {
         });
     }
 
+    public String getVerificationCode() {
+        return verificationField.getText();
+    }
+
     public void setSignupButtonListener(Runnable listener) {
         this.signupButtonListener = listener;
     }
@@ -59,24 +58,12 @@ public class SignupJFXController {
         return usernameField.getText();
     }
 
-    public String getFirstName() {
-        return firstNameField.getText();
-    }
-
-    public String getLastName() {
-        return lastNameField.getText();
-    }
-
-    public String getEmail() {
-        return emailField.getText();
-    }
-
     public String getPassword() {
         return passwordField.getText();
     }
 
-    public boolean isTermsAccepted() {
-        return termsCheckbox.isSelected();
+    public String getConfirmPassword() {
+        return confirmPasswordField.getText();
     }
 
     public void showAlert(String message) {
