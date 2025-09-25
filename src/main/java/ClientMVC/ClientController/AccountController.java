@@ -5,7 +5,11 @@ import ClientMVC.ClientView.Account.AccountView;
 import ClientMVC.ClientView.Account.AccountJFXController;
 import ClientMVC.ClientView.Home.HomeView;
 import ClientMVC.ClientView.Login.LoginView;
+import javafx.application.Platform;
 import javafx.stage.Stage;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Controller for Account Management functionality.
@@ -37,6 +41,16 @@ public class AccountController {
     private void initialize() {
         // Set the current username in the display
         accountJFXController.updateDisplayedUsername(model.getUsername());
+        setupFriendRequestHandling();
+        accountJFXController.setSentRequestButtonListener(() -> {
+            model.getFriendRequests();
+        });
+        accountJFXController.setAcceptRequestListener(friendName -> {
+            model.acceptFriendRequest(friendName);
+        });
+        accountJFXController.setDeclineRequestListener(friendName -> {
+            model.declineFriendRequest(friendName);
+        });
 
         // Handle back button - return to home view
         accountJFXController.setBackButtonListener(() -> {
@@ -158,6 +172,9 @@ public class AccountController {
                 model.setUsername(newUsername);
                 // Update the display
                 accountJFXController.updateDisplayedUsername(newUsername);
+
+                // The account XML should already be updated by UnifiedClientModel
+                System.out.println("Username successfully changed to: " + newUsername);
             }
 
             // Show success message and clean up UI
@@ -169,6 +186,41 @@ public class AccountController {
             // Still show success and hide form even if extraction fails
             accountJFXController.showUsernameUpdated();
             accountJFXController.hideChangeUsername();
+        }
+    }
+    private void setupFriendRequestHandling() {
+        model.setFriendRequestListener(response -> {
+            Platform.runLater(() -> {
+                switch (response) {
+                    case "REQUEST_ACCEPTED":
+                        System.out.println("Friend request was accepted");
+                        // Optionally refresh data or show message
+                        break;
+                    case "REQUEST_DECLINED":
+                        System.out.println("Friend request was declined");
+                        break;
+                    default:
+                        if (response.startsWith("REQUESTS_RECEIVED:")) {
+                            String requestData = response.substring("REQUESTS_RECEIVED:".length());
+                            handleIncomingFriendRequests(requestData);
+                        }
+                        break;
+                }
+            });
+        });
+    }
+    private void handleIncomingFriendRequests(String requestData) {
+        if (requestData != null && !requestData.isEmpty()) {
+            String[] requests = requestData.split(",");
+            List<String> requestList = new ArrayList<>();
+            for (String request : requests) {
+                if (!request.trim().isEmpty()) {
+                    requestList.add(request.trim());
+                }
+            }
+            accountJFXController.renderRequestList(requestList);
+        } else {
+            accountJFXController.renderRequestList(new ArrayList<>());
         }
     }
 

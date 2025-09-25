@@ -15,6 +15,7 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 public class AccountJFXController {
 
@@ -67,6 +68,8 @@ public class AccountJFXController {
     private Runnable LogoutAccountButtonListener;
     private Runnable usernameChangeListener;
     private Runnable passwordChangeListener;
+    private Consumer<String> acceptRequestListener;
+    private Consumer<String> declineRequestListener;
 
     // Top Section for Draggable
     private double xOffset = 0;
@@ -165,26 +168,26 @@ public class AccountJFXController {
     private void handleAcceptRequest(String friendName, AnchorPane requestFrame) {
         System.out.println("Accepting friend request from: " + friendName);
 
-        // TODO: Send accept request to server
-
-        // Remove the request frame from UI
+        // Remove from UI immediately for better UX
         requestList.getChildren().remove(requestFrame);
 
-        // Show success message (you can use your existing status methods)
-        // showFriendRequestAccepted(friendName);
+        // Notify controller (you'll need to add this callback)
+        if (acceptRequestListener != null) {
+            acceptRequestListener.accept(friendName);
+        }
     }
 
     // Handle decline request
     private void handleDeclineRequest(String friendName, AnchorPane requestFrame) {
         System.out.println("Declining friend request from: " + friendName);
 
-        // TODO: Send decline request to server
-
-        // Remove the request frame from UI
+        // Remove from UI immediately
         requestList.getChildren().remove(requestFrame);
 
-        // Show message (you can use your existing status methods)
-        // showFriendRequestDeclined(friendName);
+        // Notify controller (you'll need to add this callback)
+        if (declineRequestListener != null) {
+            declineRequestListener.accept(friendName);
+        }
     }
 
     @FXML
@@ -618,7 +621,13 @@ public class AccountJFXController {
     }
 
 
+    public void setAcceptRequestListener(Consumer<String> listener) {
+        this.acceptRequestListener = listener;
+    }
 
+    public void setDeclineRequestListener(Consumer<String> listener) {
+        this.declineRequestListener = listener;
+    }
     public void setSentRequestButtonListener(Runnable listener) {
         sentRequestButton.setOnAction(e -> listener.run());
     }

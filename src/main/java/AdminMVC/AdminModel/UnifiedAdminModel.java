@@ -732,19 +732,12 @@ public class UnifiedAdminModel implements Runnable {
             if (body != null && !body.trim().isEmpty()) {
                 username = body.trim();
             } else {
-                // Fallback to admin username if no body content
                 username = adminUsername != null ? adminUsername : "";
             }
-
-            System.out.println("[DEBUG] Admin verification code valid for: " + username);
-
             if (verificationCodeValidListener != null) {
                 Platform.runLater(() -> verificationCodeValidListener.accept(username));
-            } else {
-                System.err.println("[ERROR] No verificationCodeValidListener set for admin");
             }
         } catch (Exception e) {
-            System.err.println("Error handling admin verification code valid response: " + e.getMessage());
             e.printStackTrace();
         }
     }

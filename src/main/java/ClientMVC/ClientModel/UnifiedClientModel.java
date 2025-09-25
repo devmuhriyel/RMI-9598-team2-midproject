@@ -16,6 +16,8 @@ public class UnifiedClientModel implements Runnable {
     private final BufferedWriter writeMSG;
     private String username;
     private UserXMLHandler xmlHandler;
+    private Consumer<String> friendRequestListener;
+
 
     // Callback interfaces
     public interface PasswordResetNotificationCallback {
@@ -131,6 +133,14 @@ public class UnifiedClientModel implements Runnable {
                     break;
 
                 case "USERNAME_CHANGED":
+                    if (reply.equals("USERNAME_CHANGED")) {
+                        handleUsernameChangeWithData(xmlResponse);
+                    }
+
+                    if (accountUpdateListener != null) {
+                        Platform.runLater(() -> accountUpdateListener.accept(xmlResponse));
+                    }
+                    break;
                 case "USERNAME_CHANGE_FAILED":
                 case "USERNAME_EXISTS":
                 case "PASSWORD_CHANGED":
@@ -180,9 +190,72 @@ public class UnifiedClientModel implements Runnable {
                 default:
                     System.out.println("Unhandled response type: " + reply);
                     break;
+                case "FRIEND_REQUEST_SENT":
+                    if (friendRequestListener != null) {
+                        Platform.runLater(() -> friendRequestListener.accept("REQUEST_SENT"));
+                    }
+                    break;
+                case "FRIEND_REQUEST_FAILED":
+                    if (friendRequestListener != null) {
+                        Platform.runLater(() -> friendRequestListener.accept("REQUEST_FAILED"));
+                    }
+                    break;
+                case "FRIEND_REQUESTS":
+                    handleFriendRequestsResponse(xmlResponse);
+                    break;
+                case "FRIEND_REQUEST_ACCEPTED":
+                    if (friendRequestListener != null) {
+                        Platform.runLater(() -> friendRequestListener.accept("REQUEST_ACCEPTED"));
+                    }
+                    // Refresh friends list since we have a new friend
+                    if (chatHistoryListener != null) {
+                        Platform.runLater(() -> chatHistoryListener.accept("FRIENDS_UPDATED"));
+                    }
+                    break;
+                case "FRIEND_REQUEST_DECLINED":
+                    if (friendRequestListener != null) {
+                        Platform.runLater(() -> friendRequestListener.accept("REQUEST_DECLINED"));
+                    }
+                    break;
             }
         } catch (Exception e) {
             System.err.println("Error handling XML response: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    private void handleFriendRequestsResponse(String xmlResponse) {
+        try {
+            String body = xmlHandler.getResponseBody(xmlResponse);
+            if (body != null && friendRequestListener != null) {
+                Platform.runLater(() -> friendRequestListener.accept("REQUESTS_RECEIVED:" + body));
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling friend requests response: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void handleUsernameChangeWithData(String xmlResponse) {
+        try {
+            String body = xmlHandler.getResponseBody(xmlResponse);
+            if (body != null && body.contains("![]!")) {
+                String[] parts = body.split("!\\[]!");
+                if (parts.length >= 2) {
+                    String newUsername = parts[0].replace("Username successfully changed to ", "").trim();
+                    String base64AccountXML = parts[1];
+
+                    // Update the username
+                    this.username = newUsername;
+
+                    // Save the updated account XML
+                    if (isValidBase64(base64AccountXML)) {
+                        xmlHandler.saveUpdatedAccountXML(newUsername, base64AccountXML);
+                        System.out.println("Updated account XML saved for new username: " + newUsername);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling username change with data: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -939,8 +1012,57 @@ public class UnifiedClientModel implements Runnable {
     }
 
     public void addFriend(String friendUsername) {
-        System.out.println("UnifiedClientModel: Adding friend " + friendUsername);
-        UserXMLHandler.addFriendRequest(this.username, friendUsername);
+        try {
+            String xmlMessage = "<Request><type>ADD_FRIEND_REQUEST</type><content>" +
+                    username + "![]!" + friendUsername + "</content></Request>";
+            System.out.println("Sending friend request: " + xmlMessage);
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+        } catch (IOException e) {
+            System.err.println("Error sending friend request: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    public void getFriendRequests() {
+        try {
+            String xmlMessage = "<Request><type>GET_FRIEND_REQUESTS</type><content>" +
+                    username + "</content></Request>";
+            System.out.println("Requesting friend requests: " + xmlMessage);
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+        } catch (IOException e) {
+            System.err.println("Error getting friend requests: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    public void acceptFriendRequest(String requestingUser) {
+        try {
+            String xmlMessage = "<Request><type>ACCEPT_FRIEND_REQUEST</type><content>" +
+                    username + "![]!" + requestingUser + "</content></Request>";
+            System.out.println("Accepting friend request: " + xmlMessage);
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+        } catch (IOException e) {
+            System.err.println("Error accepting friend request: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public void declineFriendRequest(String requestingUser) {
+        try {
+            String xmlMessage = "<Request><type>DECLINE_FRIEND_REQUEST</type><content>" +
+                    username + "![]!" + requestingUser + "</content></Request>";
+            System.out.println("Declining friend request: " + xmlMessage);
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+        } catch (IOException e) {
+            System.err.println("Error declining friend request: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     public synchronized void requestPasswordResetWithCode(String username, String verificationCode) {
@@ -1022,6 +1144,9 @@ public class UnifiedClientModel implements Runnable {
 
     public void setFileStatusListener(Consumer<String> fileStatusListener) {
         this.fileStatusListener = fileStatusListener;
+    }
+    public void setFriendRequestListener(Consumer<String> friendRequestListener) {
+        this.friendRequestListener = friendRequestListener;
     }
 
     // GETTERS

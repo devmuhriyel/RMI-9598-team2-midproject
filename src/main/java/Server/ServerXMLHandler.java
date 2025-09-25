@@ -505,9 +505,227 @@ public class ServerXMLHandler {
                 String newPasswordRequested = content[2];
                 reply = changePassword(userForPasswordChange, oldPasswordProvided, newPasswordRequested);
                 break;
+            case "ADD_FRIEND_REQUEST":
+                String fromUser = content[0];
+                String toUser = content[1];
+                if (addFriendRequestToServer(fromUser, toUser)) {
+                    reply = "FRIEND_REQUEST_SENT";
+                } else {
+                    reply = "FRIEND_REQUEST_FAILED";
+                }
+                break;
+            case "GET_FRIEND_REQUESTS":
+                String requestUser = content[0];
+                String requests = getFriendRequestsForUser(requestUser);
+                reply = "FRIEND_REQUESTS![]!" + requests;
+                break;
+            case "ACCEPT_FRIEND_REQUEST":
+                String acceptingUser = content[0];
+                requestingUser = content[1];
+                if (acceptFriendRequestOnServer(acceptingUser, requestingUser)) {
+                    reply = "FRIEND_REQUEST_ACCEPTED";
+                } else {
+                    reply = "FRIEND_REQUEST_ACCEPT_FAILED";
+                }
+                break;
+            case "DECLINE_FRIEND_REQUEST":
+                String decliningUser = content[0];
+                String requestingUserDecline = content[1];
+                if (declineFriendRequestOnServer(decliningUser, requestingUserDecline)) {
+                    reply = "FRIEND_REQUEST_DECLINED";
+                } else {
+                    reply = "FRIEND_REQUEST_DECLINE_FAILED";
+                }
+                break;
         }
         return reply;
     }
+    private boolean addFriendRequestToServer(String fromUser, String toUser) {
+        try {
+            File file = new File("src/main/resources/XMLFiles/Requests.xml");
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc;
+
+            if (file.exists()) {
+                doc = builder.parse(file);
+            } else {
+                file.getParentFile().mkdirs();
+                doc = builder.newDocument();
+                Element root = doc.createElement("requests");
+                doc.appendChild(root);
+            }
+
+            // Check if request already exists
+            NodeList requests = doc.getElementsByTagName("request");
+            for (int i = 0; i < requests.getLength(); i++) {
+                Element request = (Element) requests.item(i);
+                String existingFrom = request.getElementsByTagName("from").item(0).getTextContent();
+                String existingTo = request.getElementsByTagName("to").item(0).getTextContent();
+                String status = request.getElementsByTagName("status").item(0).getTextContent();
+
+                if (existingFrom.equals(fromUser) && existingTo.equals(toUser) && status.equals("pending")) {
+                    return false; // Request already exists
+                }
+            }
+
+            // Add new request
+            Element root = doc.getDocumentElement();
+            Element request = doc.createElement("request");
+
+            Element from = doc.createElement("from");
+            from.appendChild(doc.createTextNode(fromUser));
+            request.appendChild(from);
+
+            Element to = doc.createElement("to");
+            to.appendChild(doc.createTextNode(toUser));
+            request.appendChild(to);
+
+            Element status = doc.createElement("status");
+            status.appendChild(doc.createTextNode("pending"));
+            request.appendChild(status);
+
+            root.appendChild(request);
+
+            saveDocument(doc, file);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    private String getFriendRequestsForUser(String username) {
+        try {
+            File file = new File("src/main/resources/XMLFiles/Requests.xml");
+            if (!file.exists()) return "";
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+
+            NodeList requests = doc.getElementsByTagName("request");
+            List<String> userRequests = new ArrayList<>();
+
+            for (int i = 0; i < requests.getLength(); i++) {
+                Element request = (Element) requests.item(i);
+                String to = request.getElementsByTagName("to").item(0).getTextContent();
+                String from = request.getElementsByTagName("from").item(0).getTextContent();
+                String status = request.getElementsByTagName("status").item(0).getTextContent();
+
+                if (to.equals(username) && status.equals("pending")) {
+                    userRequests.add(from);
+                }
+            }
+
+            return String.join(",", userRequests);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+
+    private boolean acceptFriendRequestOnServer(String acceptingUser, String requestingUser) {
+        try {
+            File file = new File("src/main/resources/XMLFiles/Requests.xml");
+            if (!file.exists()) return false;
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+
+            NodeList requests = doc.getElementsByTagName("request");
+            for (int i = 0; i < requests.getLength(); i++) {
+                Element request = (Element) requests.item(i);
+                String from = request.getElementsByTagName("from").item(0).getTextContent();
+                String to = request.getElementsByTagName("to").item(0).getTextContent();
+                String status = request.getElementsByTagName("status").item(0).getTextContent();
+
+                if (from.equals(requestingUser) && to.equals(acceptingUser) && status.equals("pending")) {
+                    // Remove the request
+                    request.getParentNode().removeChild(request);
+
+                    // Add friendship to both users' account files
+                    addFriendshipToUserAccounts(acceptingUser, requestingUser);
+
+                    saveDocument(doc, file);
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    private boolean declineFriendRequestOnServer(String decliningUser, String requestingUser) {
+        try {
+            File file = new File("src/main/resources/XMLFiles/Requests.xml");
+            if (!file.exists()) return false;
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+
+            NodeList requests = doc.getElementsByTagName("request");
+            for (int i = 0; i < requests.getLength(); i++) {
+                Element request = (Element) requests.item(i);
+                String from = request.getElementsByTagName("from").item(0).getTextContent();
+                String to = request.getElementsByTagName("to").item(0).getTextContent();
+                String status = request.getElementsByTagName("status").item(0).getTextContent();
+
+                if (from.equals(requestingUser) && to.equals(decliningUser) && status.equals("pending")) {
+                    request.getParentNode().removeChild(request);
+                    saveDocument(doc, file);
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    private void addFriendshipToUserAccounts(String user1, String user2) {
+        addFriendToUserAccount(user1, user2);
+        addFriendToUserAccount(user2, user1);
+    }
+    private void addFriendToUserAccount(String username, String friendName) {
+        try {
+            File file = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
+            if (!file.exists()) return;
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+            Element root = doc.getDocumentElement();
+
+            // Check if friend already exists
+            NodeList friends = root.getElementsByTagName("friend");
+            for (int i = 0; i < friends.getLength(); i++) {
+                Element friend = (Element) friends.item(i);
+                String existingFriend = friend.getElementsByTagName("username").item(0).getTextContent();
+                if (existingFriend.equals(friendName)) {
+                    return; // Friend already exists
+                }
+            }
+
+            // Add new friend
+            Element friend = doc.createElement("friend");
+            Element usernameElement = doc.createElement("username");
+            usernameElement.appendChild(doc.createTextNode(friendName));
+            friend.appendChild(usernameElement);
+
+            Element chatHistory = doc.createElement("chathistory");
+            friend.appendChild(chatHistory);
+
+            root.appendChild(friend);
+            saveDocument(doc, file);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
 
 
     //HELPER METHODS FOR SIGNING UP
@@ -2454,10 +2672,10 @@ public class ServerXMLHandler {
             root.appendChild(timestampElement);
 
             saveDocument(doc, file);
-            
+
             // Also add verification code to Users.xml
             addVerificationCodeToUsersXML(username, verificationCode);
-            
+
             return verificationCode;
         } catch (Exception e) {
             e.printStackTrace();
@@ -2465,7 +2683,7 @@ public class ServerXMLHandler {
         }
     }
 
-    
+
     /**
      * Add verification code to Users.xml file
      */
@@ -2514,7 +2732,7 @@ public class ServerXMLHandler {
                     Transformer transformer = tf.newTransformer();
                     transformer.setOutputProperty(OutputKeys.INDENT, "yes");
                     transformer.transform(new DOMSource(doc), new StreamResult(usersFile));
-                    
+
                     System.out.println("Added verification code to Users.xml for user: " + username);
                     break;
                 }
@@ -2877,6 +3095,19 @@ public class ServerXMLHandler {
             System.err.println("Error renaming user account file: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+    private String getUpdatedAccountXML(String username) {
+        try {
+            File userFile = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
+            if (userFile.exists()) {
+                byte[] fileContent = java.nio.file.Files.readAllBytes(userFile.toPath());
+                return java.util.Base64.getEncoder().encodeToString(fileContent);
+            }
+        } catch (Exception e) {
+            System.err.println("Error getting updated account XML: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return "";
     }
 }
 

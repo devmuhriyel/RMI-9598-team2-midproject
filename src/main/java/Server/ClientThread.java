@@ -277,27 +277,27 @@ public class ClientThread implements Runnable {
 
                     //FORGOT PASSWORD CASES
                     case "PASSWORD_RESET_SUCCESS":
-                            resetParts = reply.split("!\\[]!");
-                            if (resetParts.length >= 4) {
-                                String resetUsername = resetParts[1];
-                                String newPassword = resetParts[2];
-                                String message = resetParts[3];
-                                sendMessage("<Response><reply>PASSWORD_RESET_SUCCESS</reply><body>" +
-                                        resetUsername + "![]!" + newPassword + "![]!" + message + "</body></Response>");
-                                removePasswordResetRequester(resetUsername);
-                                this.name = null;
-                                this.isPasswordResetRequester = false;
+                        resetParts = reply.split("!\\[]!");
+                        if (resetParts.length >= 4) {
+                            String resetUsername = resetParts[1];
+                            String newPassword = resetParts[2];
+                            String message = resetParts[3];
+                            sendMessage("<Response><reply>PASSWORD_RESET_SUCCESS</reply><body>" +
+                                    resetUsername + "![]!" + newPassword + "![]!" + message + "</body></Response>");
+                            removePasswordResetRequester(resetUsername);
+                            this.name = null;
+                            this.isPasswordResetRequester = false;
                         }
                         break;
                     case "PASSWORD_RESET_FAILED":
-                            resetParts = reply.split("!\\[]!");
-                            if (resetParts.length >= 3) {
-                                String resetUsername = resetParts[1];
-                                String errorMessage = resetParts[2];
-                                sendMessage("<Response><reply>PASSWORD_RESET_FAILED</reply><body>" + errorMessage + "</body></Response>");
-                                removePasswordResetRequester(resetUsername);
-                                this.name = null;
-                                this.isPasswordResetRequester = false;
+                        resetParts = reply.split("!\\[]!");
+                        if (resetParts.length >= 3) {
+                            String resetUsername = resetParts[1];
+                            String errorMessage = resetParts[2];
+                            sendMessage("<Response><reply>PASSWORD_RESET_FAILED</reply><body>" + errorMessage + "</body></Response>");
+                            removePasswordResetRequester(resetUsername);
+                            this.name = null;
+                            this.isPasswordResetRequester = false;
                         }
                         break;
                     case "VERIFICATION_CODE_INVALID":
@@ -357,6 +357,23 @@ public class ClientThread implements Runnable {
                         } else {
                             sendMessage("<Response><reply>REQUEST_DECLINE_FAILED</reply><body>Failed to decline request</body></Response>");
                         }
+                        break;
+                    case "FRIEND_REQUEST_SENT":
+                        sendMessage("<Response><reply>FRIEND_REQUEST_SENT</reply><body>Friend request sent successfully</body></Response>");
+                        break;
+                    case "FRIEND_REQUEST_FAILED":
+                        sendMessage("<Response><reply>FRIEND_REQUEST_FAILED</reply><body>Failed to send friend request</body></Response>");
+                        break;
+                    case "FRIEND_REQUESTS":
+                        String[] requestParts = reply.split("!\\[]!", 2);
+                        String requestData = requestParts.length > 1 ? requestParts[1] : "";
+                        sendMessage("<Response><reply>FRIEND_REQUESTS</reply><body>" + requestData + "</body></Response>");
+                        break;
+                    case "FRIEND_REQUEST_ACCEPTED":
+                        sendMessage("<Response><reply>FRIEND_REQUEST_ACCEPTED</reply><body>Friend request accepted</body></Response>");
+                        break;
+                    case "FRIEND_REQUEST_DECLINED":
+                        sendMessage("<Response><reply>FRIEND_REQUEST_DECLINED</reply><body>Friend request declined</body></Response>");
                         break;
                     case "CREATE_GROUP":
                         createGroupContent = extractContent(xmlMsg);
@@ -482,8 +499,8 @@ public class ClientThread implements Runnable {
                                         System.err.println("Account file not found for: " + client.name);
                                     }
                                 } catch (Exception e) {
-                                        System.err.println("Error sending file update to " + client.name + ": " + e.getMessage());
-                                        e.printStackTrace();
+                                    System.err.println("Error sending file update to " + client.name + ": " + e.getMessage());
+                                    e.printStackTrace();
                                 }
                             }
                         }
@@ -550,10 +567,18 @@ public class ClientThread implements Runnable {
                         }
                         break;
                     case "USERNAME_CHANGED":
-                        String[] usernameChangeContent = extractContent(xmlMsg);
-                        newUsername = usernameChangeContent[1];
-                        this.name = newUsername;
-                        sendMessage("<Response status=\"USERNAME_CHANGED\"><body>Username successfully changed to " + newUsername + "</body></Response>");
+                        parts = reply.split("!\\[]!");
+                        if (parts.length >= 3) {
+                            String changedUsername = parts[1];
+                            String updatedAccountXML = parts[2];
+
+                            this.name = changedUsername;
+
+                            // Send success response with updated XML data
+                            sendMessage("<Response status=\"USERNAME_CHANGED\"><body>Username successfully changed to " + changedUsername + "![]!" + updatedAccountXML + "</body></Response>");
+                        } else {
+                            sendMessage("<Response status=\"USERNAME_CHANGED\"><body>Username successfully changed</body></Response>");
+                        }
                         break;
                     case "USERNAME_CHANGE_FAILED":
                         sendMessage("<Response status=\"USERNAME_CHANGE_FAILED\"><body>Failed to change username. Please try again.</body></Response>");

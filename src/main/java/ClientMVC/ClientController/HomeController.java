@@ -101,12 +101,36 @@ public class HomeController {
                 // Handle logout UI updates
             });
         });
+        model.setFriendRequestListener(response -> {
+            Platform.runLater(() -> {
+                switch (response) {
+                    case "REQUEST_SENT":
+                        System.out.println("Friend request sent successfully");
+                        // Optionally show confirmation message
+                        break;
+                    case "REQUEST_FAILED":
+                        System.out.println("Failed to send friend request");
+                        // Show error message
+                        break;
+                    case "FRIENDS_UPDATED":
+                        refreshUserData(); // Refresh when friends list changes
+                        break;
+                    default:
+                        if (response.startsWith("REQUESTS_RECEIVED:")) {
+                            // Handle incoming friend requests if needed in home view
+                            String requestData = response.substring("REQUESTS_RECEIVED:".length());
+                            System.out.println("Received friend requests: " + requestData);
+                        }
+                        break;
+                }
+            });
+        });
     }
     private void addFriend(String username) {
-        System.out.println("HomeController: Adding friend " + username);
-            model.addFriend(username);
-        refreshUserData();
+        model.addFriend(username);
     }
+
+
 
 
     public void refreshUserData() {
