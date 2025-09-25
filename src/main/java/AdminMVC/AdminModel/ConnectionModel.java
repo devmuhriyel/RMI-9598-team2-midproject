@@ -36,43 +36,31 @@ public class ConnectionModel {
     public ConnectionResult connect(String ip, String portText) {
         connectionLock.lock();
         try {
-            // Reset state before new attempt
             this.connected = false;
             if (this.socket != null && !this.socket.isClosed()) {
                 try {
                     this.socket.close();
                 } catch (IOException e) {
-                    // Ignore close errors
                 }
             }
             this.socket = null;
-
-            // Validate empty fields
             if (ip == null || ip.trim().isEmpty()) {
                 return new ConnectionResult(ConnectionStatus.EMPTY_FIELDS, "IP address cannot be empty");
             }
             if (portText == null || portText.trim().isEmpty()) {
                 return new ConnectionResult(ConnectionStatus.EMPTY_FIELDS, "Port cannot be empty");
             }
-
-            // Clean inputs
             ip = ip.trim();
             portText = portText.trim();
-
-            // Validate port format
             int port;
             try {
                 port = Integer.parseInt(portText);
             } catch (NumberFormatException e) {
                 return new ConnectionResult(ConnectionStatus.INVALID_PORT_FORMAT, "Port must be a valid number");
             }
-
-            // Validate port range
             if (port < 1 || port > 65535) {
                 return new ConnectionResult(ConnectionStatus.INVALID_PORT_RANGE, "Port must be between 1 and 65535");
             }
-
-            // Validate IP format
             String ipv4Pattern = "^(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)" +
                     "(\\.(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)){3}$";
 
@@ -106,7 +94,5 @@ public class ConnectionModel {
         }
     }
 
-    public boolean isConnected() { return connected; }
-    public String getIp() { return ip; }
     public int getPort() { return port; }
 }

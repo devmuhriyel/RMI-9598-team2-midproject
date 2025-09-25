@@ -17,29 +17,21 @@ public class SignupController {
         this.model = model;
         this.view = view;
         this.fxController = fxController;
-
-        // Listen for signup responses from the model
         model.setMessageListener(this::handleSignupResponse);
 
         initialize();
     }
 
     private void initialize() {
-        // Signup button
         fxController.setSignupButtonListener(() -> {
             if (validateInput()) {
                 fxController.getSignupButton().setDisable(true);
-
                 String username = fxController.getUsername();
                 String password = fxController.getPassword();
                 String verification = fxController.getVerificationCode();
-
-                // Use model.signup instead of building XML here
                 model.signup(username, password, verification);
             }
         });
-
-        // Switch to Login link
         fxController.setSignInListener(() -> {
             Platform.runLater(() -> {
                 try {
@@ -60,37 +52,30 @@ public class SignupController {
         String password = fxController.getPassword();
         String confirmPassword = fxController.getConfirmPassword();
         String verification = fxController.getVerificationCode();
-
         if (username == null || username.trim().isEmpty()) {
             fxController.showAlert("Username is required");
             return false;
         }
-
         if (password == null || password.trim().isEmpty()) {
             fxController.showAlert("Password is required");
             return false;
         }
-
         if (confirmPassword == null || confirmPassword.trim().isEmpty()) {
             fxController.showAlert("Please confirm your password");
             return false;
         }
-
         if (!password.equals(confirmPassword)) {
             fxController.showAlert("Passwords do not match");
             return false;
         }
-
         if (verification == null || verification.trim().isEmpty()) {
             fxController.showAlert("Verification code is required");
             return false;
         }
-
         if (password.length() < 6) {
             fxController.showAlert("Password must be at least 6 characters long");
             return false;
         }
-
         return true;
     }
 

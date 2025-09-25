@@ -592,6 +592,10 @@ public class ClientThread implements Runnable {
                     case "INVALID_OLD_PASSWORD":
                         sendMessage("<Response status=\"INVALID_OLD_PASSWORD\"><body>Current password is incorrect.</body></Response>");
                         break;
+
+                        //to validate
+
+
                 }
             }
         } catch (Exception e) {

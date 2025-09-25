@@ -11,53 +11,42 @@ import java.util.function.Consumer;
 
 public class AdminPageJFXController {
 
-    // Users Table
     @FXML private TableView<Map<String, String>> usersTable;
     @FXML private TableColumn<Map<String, String>, String> usernameCol;
     @FXML private TableColumn<Map<String, String>, String> passwordCol;
-    @FXML private TableColumn<Map<String, String>, String> statusCol; // Add status column
+    @FXML private TableColumn<Map<String, String>, String> statusCol;
 
-    // Groups Table
     @FXML private TableView<Map<String, String>> groupsTable;
     @FXML private TableColumn<Map<String, String>, String> groupOwnerCol;
     @FXML private TableColumn<Map<String, String>, String> groupNameCol;
-    @FXML private TableColumn<Map<String, String>, String> memberCountCol; // Add member count column
+    @FXML private TableColumn<Map<String, String>, String> memberCountCol;
 
-    // Search Components
     @FXML private TextField searchField;
     @FXML private Button searchButton;
 
-    // Action Buttons (matching FXML fx:id names)
-    @FXML private Button AddButton;        // Add User (original FXML name)
-    @FXML private Button ActiveButton;     // Active Users (original FXML name)
-    @FXML private Button CreateButton;     // Create Group (original FXML name)
-    @FXML private Button CommunityButton;  // Community Messages (original FXML name)
-    @FXML private Button refreshButton;    // Refresh
+    @FXML private Button AddButton;
+    @FXML private Button ActiveButton;
+    @FXML private Button CreateButton;
+    @FXML private Button CommunityButton;
+    @FXML private Button refreshButton;
 
-    // User Management Buttons
-    @FXML private Button editButton;       // Edit User
-    @FXML private Button deleteButton;     // Delete User
+    @FXML private Button editButton;
+    @FXML private Button deleteButton;
 
-    // Group Management Buttons
-    @FXML private Button editGroupButton;   // Edit Group
-    @FXML private Button deleteGroupButton; // Delete Group
+    @FXML private Button editGroupButton;
+    @FXML private Button deleteGroupButton;
 
-    // Original data for search filtering
     private List<Map<String, String>> originalUsers = Collections.emptyList();
     private List<Map<String, String>> originalGroups = Collections.emptyList();
-    private List<String> passwordResetRequests = new ArrayList<>();
+    private final List<String> passwordResetRequests = new ArrayList<>();
 
-    // Display mode tracking
     private boolean showingActiveUsersOnly = false;
 
-    // Search listener
     private Consumer<String> searchListener;
 
     @FXML
     private void initialize() {
-        // Users Table setup
         if (usersTable != null && usernameCol != null && passwordCol != null && statusCol != null) {
-            // Custom cell value factories for Map<String, String>
             usernameCol.setCellValueFactory(cellData -> {
                 Map<String, String> user = cellData.getValue();
                 return new javafx.beans.property.SimpleStringProperty(user.get("username"));
@@ -72,8 +61,6 @@ public class AdminPageJFXController {
                 Map<String, String> user = cellData.getValue();
                 return new javafx.beans.property.SimpleStringProperty(user.get("status"));
             });
-
-            // Style status column cells based on online status
             statusCol.setCellFactory(column -> new TableCell<Map<String, String>, String>() {
                 @Override
                 protected void updateItem(String item, boolean empty) {
@@ -93,26 +80,20 @@ public class AdminPageJFXController {
             });
         }
 
-        // Groups Table setup
         if (groupsTable != null && groupOwnerCol != null && groupNameCol != null && memberCountCol != null) {
-            // Custom cell value factories for Map<String, String>
             groupOwnerCol.setCellValueFactory(cellData -> {
                 Map<String, String> group = cellData.getValue();
                 return new javafx.beans.property.SimpleStringProperty(group.get("username")); // owner
             });
-
             groupNameCol.setCellValueFactory(cellData -> {
                 Map<String, String> group = cellData.getValue();
                 return new javafx.beans.property.SimpleStringProperty(group.get("groupName"));
             });
-
             memberCountCol.setCellValueFactory(cellData -> {
                 Map<String, String> group = cellData.getValue();
                 return new javafx.beans.property.SimpleStringProperty(group.get("memberCount"));
             });
         }
-
-        // Search field listener
         if (searchField != null) {
             searchField.textProperty().addListener((observable, oldValue, newValue) -> {
                 if (searchListener != null) {
@@ -122,7 +103,6 @@ public class AdminPageJFXController {
         }
     }
 
-    // --- Search Methods ---
     public void setSearchListener(Consumer<String> listener) {
         this.searchListener = listener;
     }
@@ -145,7 +125,6 @@ public class AdminPageJFXController {
         if (groups == null) {
             originalGroups = Collections.emptyList();
         } else {
-            // Remove duplicates - keep only unique group names
             List<Map<String, String>> uniqueGroups = new ArrayList<>();
             List<String> seenGroupNames = new ArrayList<>();
 
@@ -187,20 +166,8 @@ public class AdminPageJFXController {
         }
     }
 
-    // --- Password Reset Methods ---
-    public void addPasswordResetRequest(String username, String verificationCode) {
-        String request = username + ":" + verificationCode;
-        if (!passwordResetRequests.contains(request)) {
-            passwordResetRequests.add(request);
-        }
-    }
-
     public void removePasswordResetRequest(String username) {
         passwordResetRequests.removeIf(request -> request.startsWith(username + ":"));
-    }
-
-    public List<String> getPasswordResetRequests() {
-        return new ArrayList<>(passwordResetRequests);
     }
 
     public String getVerificationCodeForUser(String username) {
@@ -213,22 +180,13 @@ public class AdminPageJFXController {
         return null;
     }
 
-    // --- Display Mode Methods ---
+
     public boolean isShowingActiveUsersOnly() {
         return showingActiveUsersOnly;
     }
 
     public void setShowingActiveUsersOnly(boolean activeOnly) {
         this.showingActiveUsersOnly = activeOnly;
-    }
-
-    // --- Getters for Controller ---
-    public TableView<Map<String, String>> getUsersTable() {
-        return usersTable;
-    }
-
-    public TableView<Map<String, String>> getGroupsTable() {
-        return groupsTable;
     }
 
     public TextField getSearchField() {
@@ -239,7 +197,7 @@ public class AdminPageJFXController {
         return searchButton;
     }
 
-    // Action Button Getters (matching FXML names)
+
     public Button getAddButton() {
         return AddButton;
     }
@@ -260,7 +218,6 @@ public class AdminPageJFXController {
         return refreshButton;
     }
 
-    // User Management Button Getters
     public Button getEditButton() {
         return editButton;
     }
@@ -269,7 +226,6 @@ public class AdminPageJFXController {
         return deleteButton;
     }
 
-    // Group Management Button Getters
     public Button getEditGroupButton() {
         return editGroupButton;
     }
@@ -278,7 +234,6 @@ public class AdminPageJFXController {
         return deleteGroupButton;
     }
 
-    // Selection Methods
     public Map<String, String> getSelectedUser() {
         return usersTable != null ? usersTable.getSelectionModel().getSelectedItem() : null;
     }
@@ -287,23 +242,6 @@ public class AdminPageJFXController {
         return groupsTable != null ? groupsTable.getSelectionModel().getSelectedItem() : null;
     }
 
-    // Utility Methods
-    public void clearSelection() {
-        if (usersTable != null) {
-            usersTable.getSelectionModel().clearSelection();
-        }
-        if (groupsTable != null) {
-            groupsTable.getSelectionModel().clearSelection();
-        }
-    }
-
-    public void clearSearch() {
-        if (searchField != null) {
-            searchField.clear();
-        }
-    }
-
-    // Method to show notification for password reset requests
     public void showPasswordResetNotification(String username) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Password Reset Request");

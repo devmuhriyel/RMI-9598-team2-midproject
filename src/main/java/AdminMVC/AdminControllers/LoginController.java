@@ -23,10 +23,7 @@ public class LoginController {
         model.setLoginResponseListener(this::handleLoginResponse);
         model.setVerificationCodeValidListener(this::handleVerificationCodeValid);
         model.setPasswordResetListener(this::handlePasswordResetListener);
-
-        // Set up general notification callback
         model.setOperationResultListener(this::handleGeneralNotification);
-
         initialize();
     }
 
@@ -50,9 +47,7 @@ public class LoginController {
                 if (parts.length >= 2) {
                     String username = parts[0];
                     String verificationCode = parts[1];
-                    // Store current reset user
                     currentPasswordResetUser = username;
-                    // Send verification request - for admin, we'll use a different request type
                     sendAdminPasswordResetRequest(username, verificationCode);
                 }
             }
@@ -61,10 +56,8 @@ public class LoginController {
 
     private void sendAdminPasswordResetRequest(String username, String verificationCode) {
         try {
-            // Create a custom admin password reset request
             String xmlMessage = "<Request><type>ADMIN_REQUEST_PASSWORD_RESET_WITH_CODE</type><content>" +
                     username + "![]!" + verificationCode + "</content></Request>";
-
             System.out.println("Sending admin password reset request: " + xmlMessage);
             model.sendAdminCommand(xmlMessage);
         } catch (Exception e) {
@@ -76,7 +69,6 @@ public class LoginController {
     private void handleVerificationCodeValid(String response) {
         Platform.runLater(() -> {
             try {
-                // For admin, the response should contain the username
                 String username = "";
                 if (username.isEmpty() && currentPasswordResetUser != null) {
                     username = currentPasswordResetUser;
@@ -106,10 +98,8 @@ public class LoginController {
 
     private void resetAdminPasswordOnServer(String username, String newPassword) {
         try {
-            // Create a custom admin password reset command
             String xmlMessage = "<Request><type>ADMIN_RESET_PASSWORD</type><content>" +
                     username + "![]!" + newPassword + "</content></Request>";
-
             System.out.println("Sending admin password reset: " + xmlMessage);
             model.sendAdminCommand(xmlMessage);
         } catch (Exception e) {
@@ -121,7 +111,6 @@ public class LoginController {
     private void handlePasswordResetListener(String username) {
         Platform.runLater(() -> {
             System.out.println("Password reset requested for admin: " + username);
-            // This could be used to show additional information if needed
         });
     }
 
@@ -147,7 +136,7 @@ public class LoginController {
                 if (currentPasswordResetUser != null) {
                     loginJFXController.showPasswordResetSuccessDialog(currentPasswordResetUser);
                     currentPasswordResetUser = null;
-                    return; // Don't show the general notification as well
+                    return;
                 }
             } else if (message.contains("ADMIN_PASSWORD_RESET_SUCCESS")) {
                 alertType = "SUCCESS";
@@ -172,13 +161,13 @@ public class LoginController {
     public void handleLoginResponse(String response) {
         Platform.runLater(() -> {
             if ("LOGIN_SUCCESS".equals(response)) {
-                view.login(); // Close login window
+                view.login();
                 try {
                     AdminView homeView = new AdminView();
                     Stage stage1 = new Stage();
                     homeView.start(stage1);
                     new AdminController(homeView.getFXController(), model);
-                    model.loadData(); // Load admin data
+                    model.loadData();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

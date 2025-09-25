@@ -602,4 +602,11 @@
         <username>carl</username>
         <chathistory/>
     </group>
+    <friendRequests>
+        <request>
+            <user>joshua</user>
+            <type>sent</type>
+            <status>pending</status>
+        </request>
+    </friendRequests>
 </user>

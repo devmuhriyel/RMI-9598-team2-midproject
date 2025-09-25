@@ -505,15 +505,6 @@ public class ServerXMLHandler {
                 String newPasswordRequested = content[2];
                 reply = changePassword(userForPasswordChange, oldPasswordProvided, newPasswordRequested);
                 break;
-            case "ADD_FRIEND_REQUEST":
-                String fromUser = content[0];
-                String toUser = content[1];
-                if (addFriendRequestToServer(fromUser, toUser)) {
-                    reply = "FRIEND_REQUEST_SENT";
-                } else {
-                    reply = "FRIEND_REQUEST_FAILED";
-                }
-                break;
             case "GET_FRIEND_REQUESTS":
                 String requestUser = content[0];
                 String requests = getFriendRequestsForUser(requestUser);
@@ -537,9 +528,335 @@ public class ServerXMLHandler {
                     reply = "FRIEND_REQUEST_DECLINE_FAILED";
                 }
                 break;
+            case "ADD_FRIEND_REQUEST":
+                String fromUser = content[0];
+                String toUser = content[1];
+                String status = content[2];
+                if (addFriendRequestToUserAccounts(fromUser, toUser, status)) {
+                    reply = "FRIEND_REQUEST_ADDED";
+                } else {
+                    reply = "FRIEND_REQUEST_FAILED";
+                }
+                break;
+
+            case "GET_SENT_REQUESTS":
+                String senderUser = content[0];
+                String sentRequests = getSentFriendRequests(senderUser);
+                reply = "SENT_REQUESTS![]!" + sentRequests;
+                break;
+
+            case "GET_RECEIVED_REQUESTS":
+                String receiverUser = content[0];
+                String receivedRequests = getReceivedFriendRequests(receiverUser);
+                reply = "RECEIVED_REQUESTS![]!" + receivedRequests;
+                break;
+
+            case "ACCEPT_FRIEND_REQUEST_NEW":
+                acceptingUser = content[0];
+                requestingUser = content[1];
+                if (acceptFriendRequestNew(acceptingUser, requestingUser)) {
+                    reply = "FRIEND_REQUEST_ACCEPTED_NEW";
+                } else {
+                    reply = "FRIEND_REQUEST_ACCEPT_FAILED_NEW";
+                }
+                break;
+
+            case "DECLINE_FRIEND_REQUEST_NEW":
+                decliningUser = content[0];
+                requestingUserDecline = content[1];
+                if (declineFriendRequestNew(decliningUser, requestingUserDecline)) {
+                    reply = "FRIEND_REQUEST_DECLINED_NEW";
+                } else {
+                    reply = "FRIEND_REQUEST_DECLINE_FAILED_NEW";
+                }
+                break;
         }
         return reply;
     }
+    private boolean addFriendRequestToUserAccounts(String fromUser, String toUser, String status) {
+        try {
+            // Add request to sender's account (sent requests)
+            boolean senderUpdated = addRequestToUserAccount(fromUser, toUser, "sent", status);
+
+            // Add request to receiver's account (received requests)
+            boolean receiverUpdated = addRequestToUserAccount(toUser, fromUser, "received", status);
+
+            if (senderUpdated && receiverUpdated) {
+                // Send updated XML files to both users
+                sendUpdatedAccountXMLToUser(fromUser);
+                sendUpdatedAccountXMLToUser(toUser);
+                return true;
+            }
+
+            return false;
+        } catch (Exception e) {
+            System.err.println("Error adding friend request: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    private boolean addRequestToUserAccount(String username, String otherUser, String type, String status) {
+        try {
+            File file = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc;
+
+            if (file.exists()) {
+                doc = builder.parse(file);
+            } else {
+                // Create new account file if it doesn't exist
+                doc = builder.newDocument();
+                Element root = doc.createElement("user");
+                doc.appendChild(root);
+            }
+
+            Element root = doc.getDocumentElement();
+
+            // Find or create friendRequests element
+            Element friendRequests = null;
+            NodeList requestsNodes = root.getElementsByTagName("friendRequests");
+            if (requestsNodes.getLength() > 0) {
+                friendRequests = (Element) requestsNodes.item(0);
+            } else {
+                friendRequests = doc.createElement("friendRequests");
+                root.appendChild(friendRequests);
+            }
+
+            // Check if request already exists
+            NodeList existingRequests = friendRequests.getElementsByTagName("request");
+            for (int i = 0; i < existingRequests.getLength(); i++) {
+                Element existingRequest = (Element) existingRequests.item(i);
+                String existingUser = existingRequest.getElementsByTagName("user").item(0).getTextContent();
+                String existingType = existingRequest.getElementsByTagName("type").item(0).getTextContent();
+
+                if (existingUser.equals(otherUser) && existingType.equals(type)) {
+                    // Request already exists, update status
+                    existingRequest.getElementsByTagName("status").item(0).setTextContent(status);
+                    saveDocument(doc, file);
+                    return true;
+                }
+            }
+
+            // Create new request element
+            Element request = doc.createElement("request");
+
+            Element userElement = doc.createElement("user");
+            userElement.appendChild(doc.createTextNode(otherUser));
+            request.appendChild(userElement);
+
+            Element typeElement = doc.createElement("type");
+            typeElement.appendChild(doc.createTextNode(type));
+            request.appendChild(typeElement);
+
+            Element statusElement = doc.createElement("status");
+            statusElement.appendChild(doc.createTextNode(status));
+            request.appendChild(statusElement);
+
+            friendRequests.appendChild(request);
+            saveDocument(doc, file);
+
+            System.out.println("Added " + type + " friend request for " + username + " with " + otherUser);
+            return true;
+
+        } catch (Exception e) {
+            System.err.println("Error adding request to user account " + username + ": " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    private String getSentFriendRequests(String username) {
+        try {
+            File file = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
+            if (!file.exists()) return "";
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+
+            List<String> sentRequests = new ArrayList<>();
+            NodeList requestsNodes = doc.getElementsByTagName("friendRequests");
+
+            if (requestsNodes.getLength() > 0) {
+                Element friendRequests = (Element) requestsNodes.item(0);
+                NodeList requests = friendRequests.getElementsByTagName("request");
+
+                for (int i = 0; i < requests.getLength(); i++) {
+                    Element request = (Element) requests.item(i);
+                    String user = request.getElementsByTagName("user").item(0).getTextContent();
+                    String type = request.getElementsByTagName("type").item(0).getTextContent();
+                    String status = request.getElementsByTagName("status").item(0).getTextContent();
+
+                    if (type.equals("sent") && status.equals("pending")) {
+                        sentRequests.add(user);
+                    }
+                }
+            }
+
+            return String.join(",", sentRequests);
+        } catch (Exception e) {
+            System.err.println("Error getting sent requests for " + username + ": " + e.getMessage());
+            e.printStackTrace();
+            return "";
+        }
+    }
+    private String getReceivedFriendRequests(String username) {
+        try {
+            File file = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
+            if (!file.exists()) return "";
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+
+            List<String> receivedRequests = new ArrayList<>();
+            NodeList requestsNodes = doc.getElementsByTagName("friendRequests");
+
+            if (requestsNodes.getLength() > 0) {
+                Element friendRequests = (Element) requestsNodes.item(0);
+                NodeList requests = friendRequests.getElementsByTagName("request");
+
+                for (int i = 0; i < requests.getLength(); i++) {
+                    Element request = (Element) requests.item(i);
+                    String user = request.getElementsByTagName("user").item(0).getTextContent();
+                    String type = request.getElementsByTagName("type").item(0).getTextContent();
+                    String status = request.getElementsByTagName("status").item(0).getTextContent();
+
+                    if (type.equals("received") && status.equals("pending")) {
+                        receivedRequests.add(user);
+                    }
+                }
+            }
+
+            return String.join(",", receivedRequests);
+        } catch (Exception e) {
+            System.err.println("Error getting received requests for " + username + ": " + e.getMessage());
+            e.printStackTrace();
+            return "";
+        }
+    }
+    private boolean acceptFriendRequestNew(String acceptingUser, String requestingUser) {
+        try {
+            // Remove the friend request from both users' accounts
+            removeFriendRequestFromUserAccount(acceptingUser, requestingUser, "received");
+            removeFriendRequestFromUserAccount(requestingUser, acceptingUser, "sent");
+
+            // Add friendship to both users' accounts (reuse existing method)
+            addFriendshipToUserAccounts(acceptingUser, requestingUser);
+
+            // Send updated XML files to both users
+            sendUpdatedAccountXMLToUser(acceptingUser);
+            sendUpdatedAccountXMLToUser(requestingUser);
+
+            System.out.println("Friend request accepted: " + requestingUser + " and " + acceptingUser + " are now friends");
+            return true;
+
+        } catch (Exception e) {
+            System.err.println("Error accepting friend request: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    private boolean declineFriendRequestNew(String decliningUser, String requestingUser) {
+        try {
+            // Remove the friend request from both users' accounts
+            removeFriendRequestFromUserAccount(decliningUser, requestingUser, "received");
+            removeFriendRequestFromUserAccount(requestingUser, decliningUser, "sent");
+
+            // Send updated XML files to both users
+            sendUpdatedAccountXMLToUser(decliningUser);
+            sendUpdatedAccountXMLToUser(requestingUser);
+
+            System.out.println("Friend request declined: " + requestingUser + " -> " + decliningUser);
+            return true;
+
+        } catch (Exception e) {
+            System.err.println("Error declining friend request: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    private boolean removeFriendRequestFromUserAccount(String username, String otherUser, String type) {
+        try {
+            File file = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
+            if (!file.exists()) return false;
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+
+            NodeList requestsNodes = doc.getElementsByTagName("friendRequests");
+            if (requestsNodes.getLength() == 0) return false;
+
+            Element friendRequests = (Element) requestsNodes.item(0);
+            NodeList requests = friendRequests.getElementsByTagName("request");
+
+            for (int i = 0; i < requests.getLength(); i++) {
+                Element request = (Element) requests.item(i);
+                String user = request.getElementsByTagName("user").item(0).getTextContent();
+                String requestType = request.getElementsByTagName("type").item(0).getTextContent();
+
+                if (user.equals(otherUser) && requestType.equals(type)) {
+                    friendRequests.removeChild(request);
+                    saveDocument(doc, file);
+                    System.out.println("Removed " + type + " friend request for " + username + " with " + otherUser);
+                    return true;
+                }
+            }
+
+            return false;
+        } catch (Exception e) {
+            System.err.println("Error removing friend request: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    private void sendUpdatedAccountXMLToUser(String username) {
+        try {
+            // Get the client thread for this user
+            Class<?> clientThreadClass = Class.forName("Server.ClientThread");
+            java.lang.reflect.Field clientsField = clientThreadClass.getDeclaredField("clients");
+            clientsField.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            java.util.ArrayList<Object> clients = (java.util.ArrayList<Object>) clientsField.get(null);
+
+            synchronized (clients) {
+                for (Object client : clients) {
+                    try {
+                        java.lang.reflect.Field nameField = client.getClass().getDeclaredField("name");
+                        nameField.setAccessible(true);
+                        String clientName = (String) nameField.get(client);
+
+                        if (username.equals(clientName)) {
+                            // Read the user's account XML file
+                            File userFile = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
+                            if (userFile.exists()) {
+                                byte[] fileContent = java.nio.file.Files.readAllBytes(userFile.toPath());
+                                String encodedContent = java.util.Base64.getEncoder().encodeToString(fileContent);
+
+                                // Send the updated XML to the client
+                                java.lang.reflect.Method sendMessageMethod = client.getClass().getDeclaredMethod("sendMessage", String.class);
+                                sendMessageMethod.setAccessible(true);
+
+                                String response = "<Response><reply>ACCOUNT_UPDATED</reply><body>" + encodedContent + "</body></Response>";
+                                sendMessageMethod.invoke(client, response);
+
+                                System.out.println("Sent updated account XML to user: " + username);
+                            }
+                            break;
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Error sending updated XML to user " + username + ": " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error accessing clients list: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
     private boolean addFriendRequestToServer(String fromUser, String toUser) {
         try {
             File file = new File("src/main/resources/XMLFiles/Requests.xml");

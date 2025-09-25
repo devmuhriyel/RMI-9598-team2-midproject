@@ -57,7 +57,6 @@ public class LoginJFXController {
         });
     }
 
-    // ========== PASSWORD RESET UI METHODS ==========
     public void showUsernameDialog(java.util.function.Consumer<String> callback) {
         TextInputDialog usernameDialog = new TextInputDialog();
         usernameDialog.setTitle("Admin Password Reset");
@@ -327,7 +326,6 @@ public class LoginJFXController {
         alert.showAndWait();
     }
 
-    // ========== GETTERS AND SETTERS ==========
     public void setLoginButtonListener(Runnable listener) {
         this.loginButtonListener = listener;
     }
@@ -344,31 +342,7 @@ public class LoginJFXController {
         return loginButton;
     }
 
-    public Hyperlink getForgotPasswordLink() {
-        return forgotPasswordLink;
-    }
-
-    public ToggleButton getLoginTab() {
-        return loginTab;
-    }
-
-    public ToggleButton getSignupTab() {
-        return signupTab;
-    }
-
-    public void setSignupLinkListener(Runnable listener) {
-        this.signupLinkListener = listener;
-    }
-
     public void setForgotPasswordLinkListener(Runnable listener) {
         this.forgotPasswordLinkListener = listener;
-    }
-
-    public void showAlert(String msg) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Admin Login");
-        alert.setHeaderText(null);
-        alert.setContentText(msg);
-        alert.showAndWait();
     }
 }

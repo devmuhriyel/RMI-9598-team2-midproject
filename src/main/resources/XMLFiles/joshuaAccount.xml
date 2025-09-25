@@ -9,4 +9,11 @@
         <username>carl</username>
         <chathistory/>
     </group>
+    <friendRequests>
+        <request>
+            <user>bob</user>
+            <type>received</type>
+            <status>pending</status>
+        </request>
+    </friendRequests>
 </user>

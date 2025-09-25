@@ -24,7 +24,6 @@ public class ConnectionController {
         String ip = connectionJFXController.getIpAddress();
         String portText = connectionJFXController.getPortText();
         ConnectionModel.ConnectionResult result = model.connect(ip, portText);
-
         switch(result.getStatus()) {
             case SUCCESS:
                 Platform.runLater(() -> {
@@ -35,8 +34,6 @@ public class ConnectionController {
                         LoginView lView = new LoginView();
                         Stage loginStage = new Stage();
                         lView.start(loginStage);
-
-                        // Create unified model for login phase
                         UnifiedClientModel unifiedModel = new UnifiedClientModel(model.getSocket(), "");
                         new LoginController(lView, unifiedModel, lView.getFXController());
                         new Thread(unifiedModel, "Client Communication").start();

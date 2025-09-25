@@ -131,7 +131,6 @@ public class HomeJFXController {
                     // Normal style for friends
                     userBtn.setStyle(""); // Default or your preferred style
                     userBtn.setOnAction(event -> {
-
                         if (friendClickListener != null) {
                             friendClickListener.accept(user);
                         }
@@ -145,19 +144,32 @@ public class HomeJFXController {
                     // Add "+" button to add as friend
                     Button addBtn = new Button("+");
                     addBtn.setStyle("-fx-background-color: #b3e5fc; -fx-text-fill: #333;");
-                        addBtn.setOnAction(event -> {
-                            if (addFriendListener != null) {
-                                System.out.println("Add friend: " + user);
-                                addFriendListener.accept(user);
 
-                                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                                alert.setTitle(null);
-                                alert.setHeaderText(null);
-                                alert.setContentText("Request sent to " + user +"!");
-                                alert.getDialogPane().setPrefSize(250, 100); // smaller popup
-                                alert.showAndWait();
-                            }
-                        });
+                    // FIXED: Check if listener exists and add debug logging
+                    addBtn.setOnAction(event -> {
+                        System.out.println("Add button clicked for user: " + user);
+                        System.out.println("addFriendListener is null: " + (addFriendListener == null));
+
+                        if (addFriendListener != null) {
+                            System.out.println("Calling addFriendListener for user: " + user);
+                            addFriendListener.accept(user);
+
+                            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                            alert.setTitle(null);
+                            alert.setHeaderText(null);
+                            alert.setContentText("Request sent to " + user + "!");
+                            alert.getDialogPane().setPrefSize(250, 100);
+                            alert.showAndWait();
+                        } else {
+                            System.err.println("ERROR: addFriendListener is null!");
+                            // Show error to user
+                            Alert alert = new Alert(Alert.AlertType.ERROR);
+                            alert.setTitle("Error");
+                            alert.setHeaderText(null);
+                            alert.setContentText("Unable to send friend request. Please try again.");
+                            alert.showAndWait();
+                        }
+                    });
 
                     // Layout: horizontal box for userBtn and addBtn
                     javafx.scene.layout.HBox hbox = new javafx.scene.layout.HBox(5, userBtn, addBtn);

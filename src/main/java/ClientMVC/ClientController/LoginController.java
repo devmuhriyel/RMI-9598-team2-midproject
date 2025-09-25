@@ -26,7 +26,6 @@ public class LoginController {
         model.setMessageListener(this::handleAllResponses);
         model.setGeneralNotificationCallback(this::handleGeneralNotification);
         model.setVerificationCodeValidListener(this::handleVerificationCodeValid);
-
         initialize();
     }
 
@@ -40,7 +39,6 @@ public class LoginController {
             Platform.runLater(() -> {
                 try {
                     LoginView.getPrimaryStage().close();
-
                     SignupView signupView = new SignupView();
                     new SignupController(model, signupView, signupView.getFxController());
                     signupView.getStage().show();
@@ -49,11 +47,7 @@ public class LoginController {
                 }
             });
         });
-
-
-        loginJFXController.setForgotPasswordLinkListener(() -> {
-            handleForgotPassword();
-        });
+        loginJFXController.setForgotPasswordLinkListener(this::handleForgotPassword);
     }
 
     private void handleForgotPassword() {
@@ -63,9 +57,7 @@ public class LoginController {
                 if (parts.length >= 2) {
                     String username = parts[0];
                     String verificationCode = parts[1];
-                    // Store current reset user
                     currentPasswordResetUser = username;
-                    // Send verification request
                     model.requestPasswordResetWithCode(username, verificationCode);
                 }
             }
@@ -75,7 +67,6 @@ public class LoginController {
     private void handleVerificationCodeValid(String xmlResponse) {
         Platform.runLater(() -> {
             try {
-                // Extract username from response body
                 String body = userXMLHandler.getResponseBody(xmlResponse);
                 String username;
                 if (body != null && !body.trim().isEmpty()) {

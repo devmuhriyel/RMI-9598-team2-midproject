@@ -70,6 +70,9 @@ public class AccountJFXController {
     private Runnable passwordChangeListener;
     private Consumer<String> acceptRequestListener;
     private Consumer<String> declineRequestListener;
+    private boolean showingSentRequests = false;
+    private Consumer<Void> receivedRequestsListener;
+    private Runnable sentRequestButtonListener;
 
     // Top Section for Draggable
     private double xOffset = 0;
@@ -198,7 +201,35 @@ public class AccountJFXController {
     }
 
     private void setUpButtons() {
+        if (requestsAccountButton != null) {
+            requestsAccountButton.setOnAction(event -> {
+                showingSentRequests = false;
+                requestsAccountButton.setStyle("-fx-background-color: #8700b1;"); // Active style
+                if (sentRequestButton != null) {
+                    sentRequestButton.setStyle("-fx-background-color: #525252;"); // Inactive style
+                }
 
+                if (receivedRequestsListener != null) {
+                    receivedRequestsListener.accept(null);
+                }
+            });
+        }
+
+        // Set up sent requests button
+        if (sentRequestButton != null) {
+            sentRequestButton.setOnAction(event -> {
+                showingSentRequests = true;
+                sentRequestButton.setStyle("-fx-background-color: #8700b1;"); // Active style
+                if (requestsAccountButton != null) {
+                    requestsAccountButton.setStyle("-fx-background-color: #525252;"); // Inactive style
+                }
+
+                // Trigger the existing sent request listener
+                if (sentRequestButtonListener != null) {
+                    sentRequestButtonListener.run();
+                }
+            });
+        }
         // Only set up backButton if it exists (main view only)
         if (backButton != null) {
             backButton.setOnAction(event -> {
@@ -296,21 +327,7 @@ public class AccountJFXController {
         }
     }
 
-    @FXML
-    public void showRequests() {
-        System.out.println("showRequests() called");
-        hideAllViews();
-        if (requestsView != null) {
-            requestsView.setVisible(true);
-            System.out.println("Requests view made visible");
 
-            // Load friend requests after view is visible
-            javafx.application.Platform.runLater(() -> {
-                System.out.println("Platform.runLater executing...");
-                loadFriendRequests();
-            });
-        }
-    }
 
     @FXML
     public void showSettings() {
@@ -426,16 +443,16 @@ public class AccountJFXController {
         }
     }
 
-    @FXML
-    public void hideChangeUsername() {
-        if (changeUsernameFrame != null) {
-            changeUsernameFrame.setVisible(false);
-        }
-    }
-
     // USERNAME FEEDBACK
     public void showUsernameUpdated() {
-        updateStatus(usernameStatusLabel, "Username updated!", Color.rgb(0, 245, 83), false);
+        hideUsernameProcessing();
+        updateStatus(usernameStatusLabel, "Username updated successfully!", Color.rgb(0, 245, 83), false);
+        if (usernameStatusLabel != null) {
+            javafx.animation.FadeTransition fadeIn = new javafx.animation.FadeTransition(javafx.util.Duration.millis(300), usernameStatusLabel);
+            fadeIn.setFromValue(0.0);
+            fadeIn.setToValue(1.0);
+            fadeIn.play();
+        }
     }
 
     public void showUsernameEmpty() {
@@ -443,7 +460,8 @@ public class AccountJFXController {
     }
 
     public void showUsernameUpdateFailed() {
-        updateStatus(usernameStatusLabel, "Username update failed!", Color.rgb(217, 27, 36), true);
+        hideUsernameProcessing();
+        updateStatus(usernameStatusLabel, "Username update failed! Please try again.", Color.rgb(217, 27, 36), true);
     }
 
     // PASSWORD FEEDBACK
@@ -566,6 +584,13 @@ public class AccountJFXController {
         System.out.println("Setting password change listener: " + (listener != null));
         this.passwordChangeListener = listener;
     }
+    public void setReceivedRequestsListener(Consumer<Void> listener) {
+        this.receivedRequestsListener = listener;
+    }
+
+    public void setSentRequestButtonListener(Runnable listener) {
+        this.sentRequestButtonListener = listener;
+    }
 
     // Method to update the displayed username (call this when username changes)
     public void updateDisplayedUsername(String newUsername) {
@@ -581,44 +606,156 @@ public class AccountJFXController {
             requestList.getChildren().clear();
 
             if (requests == null || requests.isEmpty()) {
-                requestList.getChildren().add(new Label("No sent requests"));
+                String emptyMessage = showingSentRequests ? "No sent requests" : "No friend requests";
+                javafx.scene.control.Label emptyLabel = new javafx.scene.control.Label(emptyMessage);
+                emptyLabel.setTextFill(javafx.scene.paint.Color.WHITE);
+                requestList.getChildren().add(emptyLabel);
                 return;
             }
 
             for (String friendName : requests) {
-                // Create frame directly here (no need for createFriendRequestFrame)
-                AnchorPane requestFrame = new AnchorPane();
-                requestFrame.setPrefHeight(65.0);
-                requestFrame.setPrefWidth(372.0);
-                requestFrame.setStyle("-fx-background-color: #2a2a2a; -fx-background-radius: 10;");
+                javafx.scene.layout.AnchorPane requestFrame;
 
-                // Friend name label
-                Label userLabel = new Label(friendName);
-                userLabel.setLayoutX(14.0);
-                userLabel.setLayoutY(24.0);
-                userLabel.setTextFill(javafx.scene.paint.Color.WHITE);
-                userLabel.setFont(javafx.scene.text.Font.font("Gill Sans MT", 12.0));
-
-                // Remove button
-                Button removeButton = new Button("Remove");
-                removeButton.setLayoutX(270.0);
-                removeButton.setLayoutY(20.0);
-                removeButton.setStyle("-fx-background-color: #b32626; -fx-text-fill: white;");
-
-                removeButton.setOnAction(e -> {
-                    System.out.println("Removed sent request to " + friendName);
-                    requestList.getChildren().remove(requestFrame);
-
-                    String sender = (currentUsernameLabel != null) ? currentUsernameLabel.getText() : "";
-                    UserXMLHandler.removeFriendRequest(sender, friendName);
-                });
-
-                requestFrame.getChildren().addAll(userLabel, removeButton);
+                if (showingSentRequests) {
+                    // Create frame for sent requests (with cancel option)
+                    requestFrame = createSentRequestFrame(friendName);
+                } else {
+                    // Create frame for received requests (with accept/decline options)
+                    requestFrame = createReceivedRequestFrame(friendName);
+                }
 
                 requestList.getChildren().add(requestFrame);
             }
         });
     }
+    private javafx.scene.layout.AnchorPane createSentRequestFrame(String friendName) {
+        javafx.scene.layout.AnchorPane requestFrame = new javafx.scene.layout.AnchorPane();
+        requestFrame.setPrefHeight(65.0);
+        requestFrame.setPrefWidth(372.0);
+        requestFrame.setStyle("-fx-background-color: #2a2a2a; -fx-background-radius: 10;");
+
+        // Friend name label
+        javafx.scene.control.Label userLabel = new javafx.scene.control.Label("Request sent to " + friendName);
+        userLabel.setLayoutX(14.0);
+        userLabel.setLayoutY(24.0);
+        userLabel.setTextFill(javafx.scene.paint.Color.WHITE);
+        userLabel.setFont(javafx.scene.text.Font.font("Gill Sans MT", 12.0));
+
+        // Cancel button
+        javafx.scene.control.Button cancelButton = new javafx.scene.control.Button("Cancel");
+        cancelButton.setLayoutX(270.0);
+        cancelButton.setLayoutY(20.0);
+        cancelButton.setStyle("-fx-background-color: #b32626; -fx-text-fill: white;");
+
+        cancelButton.setOnAction(e -> {
+            System.out.println("Cancelled sent request to " + friendName);
+            requestList.getChildren().remove(requestFrame);
+            // Note: You might want to implement a cancel request method in the model
+            // For now, this just removes it from the UI
+        });
+
+        requestFrame.getChildren().addAll(userLabel, cancelButton);
+        return requestFrame;
+    }
+    private javafx.scene.layout.AnchorPane createReceivedRequestFrame(String friendName) {
+        javafx.scene.layout.AnchorPane requestFrame = new javafx.scene.layout.AnchorPane();
+        requestFrame.setPrefHeight(65.0);
+        requestFrame.setPrefWidth(372.0);
+        requestFrame.setStyle("-fx-background-color: #2a2a2a; -fx-background-radius: 10;");
+
+        // Friend name label
+        javafx.scene.control.Label userLabel = new javafx.scene.control.Label(friendName + " wants to be your friend");
+        userLabel.setLayoutX(14.0);
+        userLabel.setLayoutY(24.0);
+        userLabel.setTextFill(javafx.scene.paint.Color.WHITE);
+        userLabel.setFont(javafx.scene.text.Font.font("Gill Sans MT", 12.0));
+
+        // Accept button
+        javafx.scene.control.Button acceptButton = new javafx.scene.control.Button("Accept");
+        acceptButton.setLayoutX(200.0);
+        acceptButton.setLayoutY(20.0);
+        acceptButton.setStyle("-fx-background-color: #8700b1; -fx-text-fill: white;");
+
+        acceptButton.setOnAction(e -> {
+            System.out.println("Accepting friend request from " + friendName);
+            requestList.getChildren().remove(requestFrame);
+
+            if (acceptRequestListener != null) {
+                acceptRequestListener.accept(friendName);
+            }
+        });
+
+        // Decline button
+        javafx.scene.control.Button declineButton = new javafx.scene.control.Button("Decline");
+        declineButton.setLayoutX(270.0);
+        declineButton.setLayoutY(20.0);
+        declineButton.setStyle("-fx-background-color: #525252; -fx-text-fill: white;");
+
+        declineButton.setOnAction(e -> {
+            System.out.println("Declining friend request from " + friendName);
+            requestList.getChildren().remove(requestFrame);
+
+            if (declineRequestListener != null) {
+                declineRequestListener.accept(friendName);
+            }
+        });
+
+        requestFrame.getChildren().addAll(userLabel, acceptButton, declineButton);
+        return requestFrame;
+    }
+    @FXML
+    public void showRequests() {
+        System.out.println("showRequests() called");
+        hideAllViews();
+        if (requestsView != null) {
+            requestsView.setVisible(true);
+            System.out.println("Requests view made visible");
+
+            // Set initial button states
+            showingSentRequests = false; // Start with received requests
+            if (requestsAccountButton != null) {
+                requestsAccountButton.setStyle("-fx-background-color: #8700b1;"); // Active
+            }
+            if (sentRequestButton != null) {
+                sentRequestButton.setStyle("-fx-background-color: #525252;"); // Inactive
+            }
+
+            // Load received requests by default
+            javafx.application.Platform.runLater(() -> {
+                if (receivedRequestsListener != null) {
+                    receivedRequestsListener.accept(null);
+                }
+            });
+        }
+    }
+    public void showUsernameValidationError(String message) {
+        updateStatus(usernameStatusLabel, message, javafx.scene.paint.Color.rgb(255, 165, 0), true);
+    }
+    public void showUsernameProcessing() {
+        updateStatus(usernameStatusLabel, "Processing username change...", javafx.scene.paint.Color.rgb(0, 123, 255), false);
+
+        // Disable the save button to prevent multiple submissions
+        if (saveUsernameButton != null) {
+            saveUsernameButton.setDisable(true);
+            saveUsernameButton.setText("Processing...");
+        }
+    }
+    public void hideUsernameProcessing() {
+        // Re-enable the save button and restore its text
+        if (saveUsernameButton != null) {
+            saveUsernameButton.setDisable(false);
+            saveUsernameButton.setText("Save");
+        }
+    }
+    @FXML
+    public void hideChangeUsername() {
+        hideUsernameProcessing();
+        if (changeUsernameFrame != null) {
+            changeUsernameFrame.setVisible(false);
+        }
+        clearUsernameStatus();
+    }
+
 
 
     public void setAcceptRequestListener(Consumer<String> listener) {
@@ -627,8 +764,5 @@ public class AccountJFXController {
 
     public void setDeclineRequestListener(Consumer<String> listener) {
         this.declineRequestListener = listener;
-    }
-    public void setSentRequestButtonListener(Runnable listener) {
-        sentRequestButton.setOnAction(e -> listener.run());
     }
 }

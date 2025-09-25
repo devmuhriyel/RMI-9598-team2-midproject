@@ -10,7 +10,6 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class HomeController {
@@ -26,12 +25,10 @@ public class HomeController {
     }
 
     private void initialize() {
-        //forda UserProfile
         ui.setAccountButtonListener(() -> {
             Platform.runLater(() -> {
                 try {
                     view.getStage().close();
-
                     AccountView accountView = new AccountView();
                     Stage accountStage = new Stage();
                     accountView.start(accountStage);
@@ -45,8 +42,6 @@ public class HomeController {
         if (model.getUsername() != null) {
             ui.setUserLabel(model.getUsername());
         }
-
-        refreshUserData();
         ui.setSearchListener(queryText -> {
             String q = (queryText == null) ? "" : queryText.trim().toLowerCase();
             if (q.isEmpty()) {
@@ -54,17 +49,11 @@ public class HomeController {
                 ui.renderGroups(ui.getOriginalGroups());
                 return;
             }
-
             List<String> allUsers = model.getAllUsers();
             List<String> matchedUsers = filterList(allUsers, q);
-
-            System.out.println("Matched users: " + matchedUsers); // Debug print
-
             ui.renderFriends(matchedUsers);
             ui.renderGroups(filterList(ui.getOriginalGroups(), q));
         });
-
-        // Handle friend clicks
         ui.setFriendClickListener(friendName -> {
             try {
                 openChatWithFriend(friendName);
@@ -73,12 +62,8 @@ public class HomeController {
                 throw new RuntimeException(e);
             }
         });
-
-
-        // Handle group clicks
         ui.setGroupClickListener(groupName -> {
             try {
-                // Check if it's community chat
                 if (groupName.equals("Community Chat")) {
                     openCommunityChat();
                 } else {
@@ -89,63 +74,67 @@ public class HomeController {
                 throw new RuntimeException(e);
             }
         });
-
         ui.setAddFriendListener(username -> {
+            System.out.println("HomeController: addFriend called with username: " + username);
             addFriend(username);
         });
-
-        // Set up force logout handler
         model.setForceLogoutListener(message -> {
             Platform.runLater(() -> {
                 System.out.println("Force logged out: " + message);
-                // Handle logout UI updates
             });
         });
+
         model.setFriendRequestListener(response -> {
             Platform.runLater(() -> {
                 switch (response) {
                     case "REQUEST_SENT":
                         System.out.println("Friend request sent successfully");
-                        // Optionally show confirmation message
                         break;
                     case "REQUEST_FAILED":
                         System.out.println("Failed to send friend request");
-                        // Show error message
+                        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+                        alert.setTitle("Friend Request Failed");
+                        alert.setHeaderText(null);
+                        alert.setContentText("Failed to send friend request. User may not exist or request already sent.");
+                        alert.showAndWait();
+                        break;
+                    case "REQUEST_ACCEPTED":
+                        System.out.println("Friend request was accepted");
+                        refreshUserData();
+                        break;
+                    case "REQUEST_DECLINED":
+                        System.out.println("Friend request was declined");
                         break;
                     case "FRIENDS_UPDATED":
-                        refreshUserData(); // Refresh when friends list changes
+                        refreshUserData();
                         break;
                     default:
-                        if (response.startsWith("REQUESTS_RECEIVED:")) {
-                            // Handle incoming friend requests if needed in home view
-                            String requestData = response.substring("REQUESTS_RECEIVED:".length());
+                        if (response.startsWith("SENT_REQUESTS:")) {
+                            String requestData = response.substring("SENT_REQUESTS:".length());
+                            System.out.println("Received sent requests: " + requestData);
+                        } else if (response.startsWith("RECEIVED_REQUESTS:")) {
+                            String requestData = response.substring("RECEIVED_REQUESTS:".length());
                             System.out.println("Received friend requests: " + requestData);
                         }
                         break;
                 }
             });
         });
+
+        refreshUserData();
     }
+
     private void addFriend(String username) {
         model.addFriend(username);
+        System.out.println("HomeController: Sending friend request to " + username);
     }
-
-
-
 
     public void refreshUserData() {
         Platform.runLater(() -> {
-            // Refresh friends and groups from the model
             List<String> friends = model.getFriends();
             List<String> groups = model.getGroups();
-
-            System.out.println("Refreshing user data - Friends: " + friends.size() + ", Groups: " + groups.size());
-
-            // Update the UI
             ui.setFriends(friends);
             ui.setGroups(groups);
-
-            // Log the groups for debugging
             for (String group : groups) {
                 System.out.println("User is in group: " + group);
             }
@@ -154,25 +143,20 @@ public class HomeController {
 
     private void openChatWithFriend(String friendName) throws IOException {
         model.requestChatHistory(friendName);
-
         ChatView chatView = new ChatView();
         Stage stage = new Stage();
         chatView.start(stage);
         chatView.getFXController().setLabel(friendName);
-
-        // Pass the unified model to chat controller
         ChatController chatController = new ChatController(model, chatView, chatView.getFXController());
         chatController.loadChatHistory(model.getUsername(), friendName);
     }
 
     private void openGroupChat(String groupName) throws IOException {
         model.requestGroupChatHistory(groupName);
-
         ChatView chatView = new ChatView();
         Stage stage = new Stage();
         chatView.start(stage);
         chatView.getFXController().setLabel("Group: " + groupName);
-
         ChatController chatController = new ChatController(model, chatView, chatView.getFXController());
         chatController.loadGroupChatHistory(model.getUsername(), groupName);
     }
@@ -182,7 +166,6 @@ public class HomeController {
         Stage stage = new Stage();
         chatView.start(stage);
         chatView.getFXController().setLabel("Community Chat");
-
         ChatController chatController = new ChatController(model, chatView, chatView.getFXController());
         chatController.loadCommunityChatHistory(model.getUsername());
     }

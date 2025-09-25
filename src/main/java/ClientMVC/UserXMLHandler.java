@@ -137,6 +137,170 @@ public class UserXMLHandler {
             return null;
         }
     }
+
+    public void updateUsernameInLocalFiles(String oldUsername, String newUsername) {
+        try {
+            File xmlFilesDir = new File("src/main/resources/XMLFiles/");
+            if (!xmlFilesDir.exists()) {
+                System.out.println("XMLFiles directory not found");
+                return;
+            }
+
+            File[] accountFiles = xmlFilesDir.listFiles((dir, name) -> name.endsWith("Account.xml"));
+            if (accountFiles == null || accountFiles.length == 0) {
+                System.out.println("No account files found to update");
+                return;
+            }
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+
+            for (File accountFile : accountFiles) {
+                try {
+                    boolean fileModified = false;
+                    Document doc = builder.parse(accountFile);
+                    Element root = doc.getDocumentElement();
+
+                    // Update sender tags in chat histories
+                    NodeList allSenderNodes = root.getElementsByTagName("sender");
+                    for (int i = 0; i < allSenderNodes.getLength(); i++) {
+                        Element senderElement = (Element) allSenderNodes.item(i);
+                        String senderText = senderElement.getTextContent().trim();
+                        if (oldUsername.equals(senderText)) {
+                            senderElement.setTextContent(newUsername);
+                            fileModified = true;
+                            System.out.println("Updated sender reference in " + accountFile.getName());
+                        }
+                    }
+
+                    // Update username tags in friend lists
+                    NodeList friendNodes = root.getElementsByTagName("friend");
+                    for (int i = 0; i < friendNodes.getLength(); i++) {
+                        Element friendElement = (Element) friendNodes.item(i);
+                        NodeList friendUsernameNodes = friendElement.getElementsByTagName("username");
+                        for (int j = 0; j < friendUsernameNodes.getLength(); j++) {
+                            Element usernameElement = (Element) friendUsernameNodes.item(j);
+                            String usernameText = usernameElement.getTextContent().trim();
+                            if (oldUsername.equals(usernameText)) {
+                                usernameElement.setTextContent(newUsername);
+                                fileModified = true;
+                                System.out.println("Updated friend reference in " + accountFile.getName());
+                            }
+                        }
+                    }
+
+                    // Update username tags in group members
+                    NodeList groupNodes = root.getElementsByTagName("group");
+                    for (int i = 0; i < groupNodes.getLength(); i++) {
+                        Element groupElement = (Element) groupNodes.item(i);
+                        NodeList groupUsernameNodes = groupElement.getElementsByTagName("username");
+                        for (int j = 0; j < groupUsernameNodes.getLength(); j++) {
+                            Element usernameElement = (Element) groupUsernameNodes.item(j);
+                            String usernameText = usernameElement.getTextContent().trim();
+                            if (oldUsername.equals(usernameText)) {
+                                usernameElement.setTextContent(newUsername);
+                                fileModified = true;
+                                System.out.println("Updated group member reference in " + accountFile.getName());
+                            }
+                        }
+                    }
+
+                    // Update group owner tags
+                    NodeList groupOwnerNodes = root.getElementsByTagName("groupOwner");
+                    for (int i = 0; i < groupOwnerNodes.getLength(); i++) {
+                        Element groupOwner = (Element) groupOwnerNodes.item(i);
+                        String ownerText = groupOwner.getTextContent().trim();
+                        if (oldUsername.equals(ownerText)) {
+                            groupOwner.setTextContent(newUsername);
+                            fileModified = true;
+                            System.out.println("Updated group owner reference in " + accountFile.getName());
+                        }
+                    }
+
+                    // Update friend request references
+                    NodeList requestNodes = root.getElementsByTagName("request");
+                    for (int i = 0; i < requestNodes.getLength(); i++) {
+                        Element requestElement = (Element) requestNodes.item(i);
+                        NodeList userNodes = requestElement.getElementsByTagName("user");
+                        for (int j = 0; j < userNodes.getLength(); j++) {
+                            Element userElement = (Element) userNodes.item(j);
+                            String userText = userElement.getTextContent().trim();
+                            if (oldUsername.equals(userText)) {
+                                userElement.setTextContent(newUsername);
+                                fileModified = true;
+                                System.out.println("Updated friend request reference in " + accountFile.getName());
+                            }
+                        }
+                    }
+
+                    // Save the file if it was modified
+                    if (fileModified) {
+                        saveUpdatedDocument(doc, accountFile);
+                        System.out.println("Successfully updated " + accountFile.getName() + " with new username");
+                    }
+
+                } catch (Exception e) {
+                    System.err.println("Error updating account file " + accountFile.getName() + ": " + e.getMessage());
+                    // Continue with other files even if one fails
+                }
+            }
+
+            System.out.println("Completed username update in all local files");
+
+        } catch (Exception e) {
+            System.err.println("Error in updateUsernameInLocalFiles: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    private void saveUpdatedDocument(Document doc, File file) throws Exception {
+        // Remove empty text nodes for cleaner formatting
+        removeEmptyTextNodes(doc);
+
+        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+        Transformer transformer = transformerFactory.newTransformer();
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+        transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+        transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+
+        DOMSource source = new DOMSource(doc);
+        StreamResult result = new StreamResult(file);
+        transformer.transform(source, result);
+    }
+    private void removeEmptyTextNodes(Document doc) {
+        removeEmptyTextNodesRecursive(doc.getDocumentElement());
+    }
+
+    private void removeEmptyTextNodesRecursive(Node node) {
+        NodeList children = node.getChildNodes();
+        List<Node> nodesToRemove = new ArrayList<>();
+
+        for (int i = 0; i < children.getLength(); i++) {
+            Node child = children.item(i);
+            if (child.getNodeType() == Node.TEXT_NODE) {
+                if (child.getTextContent().trim().isEmpty()) {
+                    nodesToRemove.add(child);
+                }
+            } else if (child.getNodeType() == Node.ELEMENT_NODE) {
+                removeEmptyTextNodesRecursive(child);
+            }
+        }
+
+        for (Node nodeToRemove : nodesToRemove) {
+            node.removeChild(nodeToRemove);
+        }
+    }
+    public boolean verifyUsernameChange(String newUsername) {
+        try {
+            File newAccountFile = new File("src/main/resources/XMLFiles/" + newUsername + "Account.xml");
+            return newAccountFile.exists() && newAccountFile.length() > 0;
+        } catch (Exception e) {
+            System.err.println("Error verifying username change: " + e.getMessage());
+            return false;
+        }
+    }
+
     /*
      * saveUpdatedAccountXML:
      * 1. Decode the given Base64 content into an XML string.
@@ -149,10 +313,13 @@ public class UserXMLHandler {
         try {
             System.out.println("Attempting to save XML for user: " + username);
             System.out.println("Base64 content length: " + base64Content.length());
+
             byte[] xmlContent = Base64.getDecoder().decode(base64Content);
             String xmlString = new String(xmlContent, "UTF-8");
+
             System.out.println("Decoded XML length: " + xmlString.length());
             System.out.println("XML preview: " + xmlString.substring(0, Math.min(200, xmlString.length())));
+
             if (!xmlString.trim().startsWith("<") || !xmlString.trim().endsWith(">")) {
                 throw new IllegalArgumentException("Invalid XML structure");
             }
@@ -160,11 +327,14 @@ public class UserXMLHandler {
             String filePath = "src/main/resources/XMLFiles/" + username + "Account.xml";
             File file = new File(filePath);
             file.getParentFile().mkdirs();
+
             try (FileOutputStream fos = new FileOutputStream(file)) {
                 fos.write(xmlContent);
                 fos.flush();
             }
+
             System.out.println("Successfully updated " + username + "Account.xml");
+
             if (file.exists() && file.length() > 0) {
                 System.out.println("File verification successful. Size: " + file.length() + " bytes");
             } else {

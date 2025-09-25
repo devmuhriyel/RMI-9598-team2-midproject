@@ -14,7 +14,6 @@ import javafx.util.Duration;
 
 public class AdminConnectionJFXController {
 
-    // FXML fields that exactly match your FXML file
     @FXML private AnchorPane parent;
     @FXML private AnchorPane connectionFrame;
     @FXML private AnchorPane leftFrame;
@@ -37,7 +36,6 @@ public class AdminConnectionJFXController {
 
     @FXML
     public void initialize() {
-        // Apply visual effects to text fields and buttons
         if (portTextField != null) applyInsetShadow(portTextField);
         if (ipAddressTextField != null) applyInsetShadow(ipAddressTextField);
         if (connectButton != null) {
@@ -45,7 +43,6 @@ public class AdminConnectionJFXController {
             addHoverScale(connectButton, 1.05);
         }
 
-        // Set up connect button action
         if (connectButton != null) {
             connectButton.setOnAction(event -> {
                 if (connectButtonListener != null) {
@@ -54,7 +51,6 @@ public class AdminConnectionJFXController {
             });
         }
 
-        // Set up window dragging if titleBar exists
         if (titleBar != null) {
             titleBar.setOnMousePressed(event -> {
                 Stage stage = (Stage) titleBar.getScene().getWindow();
@@ -68,7 +64,6 @@ public class AdminConnectionJFXController {
             });
         }
 
-        // Set up window control buttons
         if (closeButton != null) {
             closeButton.setOnMouseClicked(event -> {
                 ((Stage) closeButton.getScene().getWindow()).close();
@@ -81,7 +76,6 @@ public class AdminConnectionJFXController {
             });
         }
 
-        // Set default values to match your original controller
         if (ipAddressTextField != null) {
             ipAddressTextField.setText("127.0.0.1");
         }
@@ -137,24 +131,6 @@ public class AdminConnectionJFXController {
         btn.setOnMouseExited(e -> exit.playFromStart());
     }
 
-    // Status display methods - handle UI feedback based on model results
-    public void showConnectedLabel() {
-        if (statusLabel != null) {
-            statusLabel.setText("Connected Successfully...");
-            statusLabel.setTextFill(Color.rgb(0, 245, 83));
-            statusLabel.setStyle("-fx-font-size: 12px;");
-        }
-    }
-
-    public void showInvalidInputLabel() {
-        if (statusLabel != null) {
-            statusLabel.setText("Invalid IP/PORT...");
-            statusLabel.setTextFill(Color.rgb(217, 27, 36));
-            statusLabel.setStyle("-fx-font-size: 12px;");
-            addShakeAnimation();
-        }
-    }
-
     public void showEmptyFieldsLabel() {
         if (statusLabel != null) {
             statusLabel.setText("Please fill in all fields...");
@@ -200,7 +176,6 @@ public class AdminConnectionJFXController {
         }
     }
 
-    // Helper method for error feedback animation
     private void addShakeAnimation() {
         if (statusLabel != null) {
             TranslateTransition shake = new TranslateTransition(Duration.millis(50), statusLabel);
@@ -212,7 +187,6 @@ public class AdminConnectionJFXController {
         }
     }
 
-    // FXML action handler (matches onAction="#handleConnect" in FXML)
     @FXML
     private void handleConnect() {
         System.out.println("[DEBUG] handleConnect() triggered from FXML.");
@@ -221,7 +195,6 @@ public class AdminConnectionJFXController {
         }
     }
 
-    // Getters for MVC pattern (following client pattern)
     public String getIpAddress() {
         return ipAddressTextField != null ? ipAddressTextField.getText() : "";
     }
@@ -234,30 +207,7 @@ public class AdminConnectionJFXController {
         return connectButton;
     }
 
-    public Label getStatusLabel() {
-        return statusLabel;
-    }
-
-    public TextField getIpAddressTextField() {
-        return ipAddressTextField;
-    }
-
-    public TextField getPortTextField() {
-        return portTextField;
-    }
-
-    // Additional getters for all FXML elements (in case needed)
     public AnchorPane getParent() { return parent; }
-    public AnchorPane getConnectionFrame() { return connectionFrame; }
-    public AnchorPane getLeftFrame() { return leftFrame; }
-    public AnchorPane getInputFrame() { return inputFrame; }
-    public AnchorPane getTitleBar() { return titleBar; }
-    public ImageView getLogoImage() { return logoImage; }
-    public ImageView getBackgroundImage() { return backgroundImage; }
-    public Label getIpAddressLabel() { return ipAddressLabel; }
-    public Label getPortLabel() { return portLabel; }
-    public Button getCloseButton() { return closeButton; }
-    public Button getMinimizeButton() { return minimizeButton; }
 
     // Setter for MVC pattern
     public void setConnectButtonListener(Runnable listener) {

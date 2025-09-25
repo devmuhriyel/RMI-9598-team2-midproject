@@ -29,7 +29,6 @@ public class UnifiedAdminModel implements Runnable {
     private String adminUsername;
     private volatile boolean shouldStop = false;
 
-    // Data structures to store user and group information
     private ObservableList<Map<String, String>> allUsers;
     private ObservableList<Map<String, String>> allGroups;
     private ObservableList<String> activeUsers;
@@ -87,66 +86,6 @@ public class UnifiedAdminModel implements Runnable {
         this.communityMessages = FXCollections.observableArrayList();
     }
 
-    public ConnectionResult connect(String ip, String portText) {
-        connectionLock.lock();
-        try {
-            this.connected = false;
-            if (this.socket != null && !this.socket.isClosed()) {
-                try {
-                    this.socket.close();
-                } catch (IOException e) {
-                    // ignore
-                }
-            }
-            this.socket = null;
-
-            if (ip == null || ip.trim().isEmpty()) {
-                return new ConnectionResult(ConnectionStatus.EMPTY_FIELDS, "IP address cannot be empty");
-            }
-            if (portText == null || portText.trim().isEmpty()) {
-                return new ConnectionResult(ConnectionStatus.EMPTY_FIELDS, "Port cannot be empty");
-            }
-
-            ip = ip.trim();
-            portText = portText.trim();
-            int port;
-            try {
-                port = Integer.parseInt(portText);
-            } catch (NumberFormatException e) {
-                return new ConnectionResult(ConnectionStatus.INVALID_PORT_FORMAT, "Port must be a valid number");
-            }
-
-            if (port < 1024 || port > 65535) {
-                return new ConnectionResult(ConnectionStatus.INVALID_PORT_RANGE, "Port must be between 1024 and 65535");
-            }
-
-            String ipv4Pattern = "^(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)" +
-                    "(\\.(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)){3}$";
-
-            if (!ip.matches(ipv4Pattern)) {
-                return new ConnectionResult(ConnectionStatus.INVALID_IP_FORMAT, "Invalid IP address format");
-            }
-
-            try {
-                socket = new Socket(ip, port);
-                this.readMSG = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                this.writeMSG = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-                this.connected = true;
-                this.ip = ip;
-                this.port = port;
-                adminClients.add(this);
-                return new ConnectionResult(ConnectionStatus.SUCCESS, "Connected successfully");
-            } catch (IOException e) {
-                this.connected = false;
-                this.socket = null;
-                return new ConnectionResult(ConnectionStatus.CONNECTION_FAILED,
-                        "Failed to connect: " + e.getMessage());
-            }
-        } finally {
-            connectionLock.unlock();
-        }
-    }
-
     public void login(String username, String password) {
         try {
             if (!adminXMLHandler.validateAdminCredentials(username, password)) {
@@ -162,19 +101,6 @@ public class UnifiedAdminModel implements Runnable {
             writeMSG.newLine();
             writeMSG.flush();
             adminUsername = username;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void requestAllUsers() {
-        try {
-            if (writeMSG != null && isConnected()) {
-                String request = adminXMLHandler.createGetAllUsersRequest();
-                writeMSG.write(request);
-                writeMSG.newLine();
-                writeMSG.flush();
-            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -197,19 +123,6 @@ public class UnifiedAdminModel implements Runnable {
         try {
             if (writeMSG != null && isConnected()) {
                 String request = adminXMLHandler.createGetActiveUsersOnlyRequest();
-                writeMSG.write(request);
-                writeMSG.newLine();
-                writeMSG.flush();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void requestAllGroups() {
-        try {
-            if (writeMSG != null && isConnected()) {
-                String request = adminXMLHandler.createGetAllGroupsRequest();
                 writeMSG.write(request);
                 writeMSG.newLine();
                 writeMSG.flush();
@@ -339,26 +252,8 @@ public class UnifiedAdminModel implements Runnable {
         }
     }
 
-    public void getUserStats(String username) {
-        if (!adminXMLHandler.validateUsername(username)) {
-            System.err.println("Invalid username format: " + username);
-            return;
-        }
-
-        try {
-            if (writeMSG != null && isConnected()) {
-                String request = adminXMLHandler.createGetUserStatsRequest(username);
-                writeMSG.write(request);
-                writeMSG.newLine();
-                writeMSG.flush();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     public void createNewUser(String username, String password) {
-        // Validate username format
         if (!adminXMLHandler.validateUsername(username)) {
             Platform.runLater(() -> {
                 if (operationResultListener != null) {
@@ -367,8 +262,6 @@ public class UnifiedAdminModel implements Runnable {
             });
             return;
         }
-
-        // Validate password format
         if (!adminXMLHandler.validatePassword(password)) {
             Platform.runLater(() -> {
                 if (operationResultListener != null) {
@@ -397,34 +290,6 @@ public class UnifiedAdminModel implements Runnable {
                     operationResultListener.accept("Failed to create user: Connection error.");
                 }
             });
-        }
-    }
-
-    public void startCommunityMessageAutoRefresh() {
-        Timeline communityRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(5), event -> {
-            if (isConnected()) {
-                requestCommunityMessages();
-            }
-        }));
-        communityRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
-        communityRefreshTimeline.play();
-    }
-
-    public void createNewGroup(String groupName, String creator) {
-        if (!adminXMLHandler.validateGroupName(groupName) || !adminXMLHandler.validateUsername(creator)) {
-            System.err.println("Invalid group name or creator format");
-            return;
-        }
-
-        try {
-            if (writeMSG != null && isConnected()) {
-                String request = adminXMLHandler.createNewGroupRequest(groupName, creator);
-                writeMSG.write(request);
-                writeMSG.newLine();
-                writeMSG.flush();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
@@ -466,48 +331,11 @@ public class UnifiedAdminModel implements Runnable {
         }
     }
 
-    public void sendCommunityMessage(String message) {
-        try {
-            if (writeMSG != null && isConnected() && adminUsername != null) {
-                String request = "<Request><type>SEND_COMMUNITY_MESSAGE</type><content>" +
-                        adminUsername + "![]!" + message + "</content></Request>";
-                writeMSG.write(request);
-                writeMSG.newLine();
-                writeMSG.flush();
-                System.out.println("Admin community message sent: " + message);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void requestPasswordReset(String username) {
-        if (!adminXMLHandler.validateUsername(username)) {
-            System.err.println("Invalid username format: " + username);
-            return;
-        }
-
-        try {
-            if (writeMSG != null && isConnected()) {
-                String request = adminXMLHandler.createPasswordResetRequest(username);
-                writeMSG.write(request);
-                writeMSG.newLine();
-                writeMSG.flush();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     public void loadData() {
         requestAllUsersWithStatus();
         requestAllGroupsEnhanced();
         requestActiveUsers();
         requestCommunityMessages();
-    }
-
-    public void stopListening() {
-        shouldStop = true;
     }
 
     @Override
@@ -627,33 +455,32 @@ public class UnifiedAdminModel implements Runnable {
 
             case "SEND_COMMUNITY_MESSAGE":
                 handleOperationResponse("Community message sent successfully", finalMsg);
-                // Refresh community messages after sending
                 requestCommunityMessages();
                 break;
 
             case "USER_DELETED":
                 handleOperationResponse("User deleted successfully", finalMsg);
-                loadData(); // Refresh data after delete
+                loadData();
                 break;
 
             case "GROUP_DELETED":
                 handleOperationResponse("Group deleted successfully", finalMsg);
-                loadData(); // Refresh data after delete
+                loadData();
                 break;
 
             case "PASSWORD_CHANGED":
                 handleOperationResponse("Password changed successfully", finalMsg);
-                loadData(); // Refresh data after password change
+                loadData();
                 break;
 
             case "USER_CREATED":
                 handleOperationResponse("User created successfully", finalMsg);
-                loadData(); // Refresh data after user creation
+                loadData();
                 break;
 
             case "GROUP_CREATED":
                 handleOperationResponse("Group created successfully", finalMsg);
-                loadData(); // Refresh data after group creation
+                loadData();
                 break;
 
             case "USER_STATS":
@@ -792,32 +619,6 @@ public class UnifiedAdminModel implements Runnable {
             e.printStackTrace();
         }
     }
-
-    public String createAdminPasswordResetWithCodeRequest(String username, String verificationCode) {
-        return "<Request><type>ADMIN_REQUEST_PASSWORD_RESET_WITH_CODE</type><content>" +
-                username + "![]!" + verificationCode + "</content></Request>";
-    }
-    public String createAdminPasswordResetRequest(String username, String newPassword) {
-        return "<Request><type>ADMIN_RESET_PASSWORD</type><content>" +
-                username + "![]!" + newPassword + "</content></Request>";
-    }
-    public boolean validateAdminVerificationCode(String code) {
-        return code != null && !code.trim().isEmpty() && code.trim().length() >= 4;
-    }
-    public String parseAdminVerificationCodeValidNotification(String xmlString) {
-        try {
-            String bodyContent = adminXMLHandler.getResponseBody(xmlString);
-            if (bodyContent != null && !bodyContent.trim().isEmpty()) {
-                return bodyContent.trim();
-            }
-            return null;
-        } catch (Exception e) {
-            System.err.println("Error parsing admin verification code valid notification: " + e.getMessage());
-            e.printStackTrace();
-            return null;
-        }
-    }
-
 
     private void handleAdminVerificationCodeInvalidResponse(String xmlResponse) {
         try {
@@ -1094,11 +895,7 @@ public class UnifiedAdminModel implements Runnable {
                     Platform.runLater(() -> {
                         String formattedMessage = sender + ": " + message + " [" +
                                 java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "]";
-
-                        // Add to community messages list
                         communityMessages.add(formattedMessage);
-
-                        // Keep only last 100 messages to prevent memory issues
                         if (communityMessages.size() > 100) {
                             communityMessages.remove(0);
                         }
@@ -1152,33 +949,7 @@ public class UnifiedAdminModel implements Runnable {
         }
     }
 
-    public synchronized void requestAdminPasswordResetWithCode(String username, String verificationCode) {
-        try {
-            String xmlMessage = "<Request><type>ADMIN_REQUEST_PASSWORD_RESET_WITH_CODE</type><content>" +
-                    username + "![]!" + verificationCode + "</content></Request>";
-            System.out.println("Sending admin password reset request with code: " + xmlMessage);
-            writeMSG.write(xmlMessage);
-            writeMSG.newLine();
-            writeMSG.flush();
-        } catch (IOException e) {
-            System.err.println("Error sending admin password reset request with code: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
 
-    public synchronized void resetAdminPasswordOnServer(String username, String newPassword) {
-        try {
-            String xmlMessage = "<Request><type>ADMIN_RESET_PASSWORD</type><content>" +
-                    username + "![]!" + newPassword + "</content></Request>";
-            System.out.println("Sending admin password reset to server: " + xmlMessage);
-            writeMSG.write(xmlMessage);
-            writeMSG.newLine();
-            writeMSG.flush();
-        } catch (IOException e) {
-            System.err.println("Error sending admin password reset to server: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
 
     // Getters
     public ObservableList<Map<String, String>> getAllUsers() {
@@ -1189,29 +960,12 @@ public class UnifiedAdminModel implements Runnable {
         return allGroups;
     }
 
-    public ObservableList<String> getActiveUsers() {
-        return activeUsers;
-    }
-
     public ObservableList<String> getCommunityMessages() {
         return communityMessages;
     }
 
-    public Socket getSocket() {
-        connectionLock.lock();
-        try {
-            return socket;
-        } finally {
-            connectionLock.unlock();
-        }
-    }
-
     public boolean isConnected() {
         return connected && socket != null && !socket.isClosed();
-    }
-
-    public String getIp() {
-        return ip;
     }
 
     public int getPort() {
@@ -1220,11 +974,6 @@ public class UnifiedAdminModel implements Runnable {
 
     public String getAdminUsername() {
         return adminUsername;
-    }
-
-    // Setters
-    public void setMessageListener(Consumer<String> listener) {
-        this.messageListener = listener;
     }
 
     public void setLoginResponseListener(Consumer<String> listener) {
@@ -1239,10 +988,6 @@ public class UnifiedAdminModel implements Runnable {
         this.operationResultListener = listener;
     }
 
-    public void setActiveUsersUpdateListener(Consumer<String> listener) {
-        this.activeUsersUpdateListener = listener;
-    }
-
     public void setCommunityMessagesUpdateListener(Consumer<String> listener) {
         this.communityMessagesUpdateListener = listener;
     }
@@ -1253,52 +998,6 @@ public class UnifiedAdminModel implements Runnable {
     public void setVerificationCodeValidListener(Consumer<String> listener) {
         this.verificationCodeValidListener = listener;
     }
-
-    public void setAdminUsername(String adminUsername) {
-        this.adminUsername = adminUsername;
-    }
-
-    // Cleanup methods
-    public void disconnect() {
-        try {
-            shouldStop = true;
-            if (readMSG != null) {
-                readMSG.close();
-            }
-            if (writeMSG != null) {
-                writeMSG.close();
-            }
-            if (socket != null && !socket.isClosed()) {
-                socket.close();
-            }
-            synchronized (adminClients) {
-                adminClients.remove(this);
-            }
-            connected = false;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void stopReadWrite() throws IOException {
-        if (readMSG != null) {
-            readMSG.close();
-        }
-        if (writeMSG != null) {
-            writeMSG.close();
-        }
-    }
-
-
-    // Utility methods
-    public void refreshData() {
-        loadData();
-    }
-
-    public boolean hasValidConnection() {
-        return isConnected() && socket != null;
-    }
-
     public void sendAdminCommand(String command) {
         try {
             if (writeMSG != null && isConnected()) {

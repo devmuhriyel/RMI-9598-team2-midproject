@@ -18,14 +18,9 @@ public class UnifiedClientModel implements Runnable {
     private UserXMLHandler xmlHandler;
     private Consumer<String> friendRequestListener;
 
-
-    // Callback interfaces
     public interface PasswordResetNotificationCallback {
         void onPasswordResetNotification(String username, String newPassword);
-
-        // Add overloaded method with message parameter
         default void onPasswordResetNotification(String username, String newPassword, String message) {
-            // Default implementation calls the two-parameter version
             onPasswordResetNotification(username, newPassword);
         }
     }
@@ -34,7 +29,6 @@ public class UnifiedClientModel implements Runnable {
         void onGeneralNotification(String type, String message);
     }
 
-    // Callback instances
     private Consumer<String> messageListener;
     private Consumer<String> chatHistoryListener;
     private Consumer<String> forceLogoutListener;
@@ -82,47 +76,43 @@ public class UnifiedClientModel implements Runnable {
                     return;
                 }
             }
-
             switch (reply) {
+                case "USERNAME_CHANGED":
+                    handleUsernameChangeWithData(xmlResponse);
+                    if (accountUpdateListener != null) {
+                        Platform.runLater(() -> accountUpdateListener.accept(xmlResponse));
+                    }
+                    break;
                 case "GET_CHAT_HISTORY":
                     handleChatHistoryResponse(xmlResponse, false);
                     break;
-
                 case "NEW_MESSAGE":
                     handleNewMessageResponse(xmlResponse);
                     break;
-
                 case "NEW_GROUP_MESSAGE":
                     handleNewGroupMessageResponse(xmlResponse);
                     break;
-
                 case "COMMUNITY_MESSAGE":
                     handleCommunityMessageResponse(xmlResponse);
                     break;
-
                 case "FILE_SENT":
                     handleFileTransferSuccess(xmlResponse);
                     break;
-
                 case "FILE_SEND_FAILED":
                     handleFileTransferFailure(xmlResponse);
                     break;
-
                 case "GROUP_FILE_SENT":
                     handleGroupFileTransferSuccess(xmlResponse);
                     break;
-
                 case "GROUP_FILE_SEND_FAILED":
                 case "GROUP_ACCESS_DENIED":
                     handleGroupFileTransferFailure(xmlResponse);
                     break;
-
                 case "FORCE_LOGOUT":
                     if (forceLogoutListener != null) {
                         Platform.runLater(() -> forceLogoutListener.accept("Logged out from another location"));
                     }
                     break;
-
                 case "LOGIN_SUCCESS":
                 case "LOGIN_FAILED":
                 case "REGISTER_SUCCESS":
@@ -132,15 +122,6 @@ public class UnifiedClientModel implements Runnable {
                     }
                     break;
 
-                case "USERNAME_CHANGED":
-                    if (reply.equals("USERNAME_CHANGED")) {
-                        handleUsernameChangeWithData(xmlResponse);
-                    }
-
-                    if (accountUpdateListener != null) {
-                        Platform.runLater(() -> accountUpdateListener.accept(xmlResponse));
-                    }
-                    break;
                 case "USERNAME_CHANGE_FAILED":
                 case "USERNAME_EXISTS":
                 case "PASSWORD_CHANGED":
@@ -150,12 +131,9 @@ public class UnifiedClientModel implements Runnable {
                         Platform.runLater(() -> accountUpdateListener.accept(xmlResponse));
                     }
                     break;
-
-                // NEW PASSWORD RESET NOTIFICATION HANDLING
                 case "PASSWORD_RESET_NOTIFICATION":
                     handlePasswordResetNotificationForRequester(xmlResponse);
                     break;
-
                 case "VERIFICATION_CODE_VALID":
                     if (verificationCodeValidListener != null) {
                         Platform.runLater(() -> verificationCodeValidListener.accept(xmlResponse));
@@ -164,31 +142,22 @@ public class UnifiedClientModel implements Runnable {
                         Platform.runLater(() -> messageListener.accept(xmlResponse));
                     }
                     break;
-
                 case "VERIFICATION_CODE_INVALID":
                     if (messageListener != null) {
                         Platform.runLater(() -> messageListener.accept(xmlResponse));
                     }
                     break;
-
                 case "PASSWORD_RESET_REQUESTED":
                     handlePasswordResetRequested(xmlResponse);
                     break;
-
                 case "PASSWORD_RESET_SUCCESS":
                     handlePasswordResetSuccess(xmlResponse);
                     break;
-
                 case "PASSWORD_RESET_FAILED":
                     handlePasswordResetFailed(xmlResponse);
                     break;
-
                 case "PASSWORD_RESET_REJECTED":
                     handlePasswordResetRejected(xmlResponse);
-                    break;
-
-                default:
-                    System.out.println("Unhandled response type: " + reply);
                     break;
                 case "FRIEND_REQUEST_SENT":
                     if (friendRequestListener != null) {
@@ -203,11 +172,18 @@ public class UnifiedClientModel implements Runnable {
                 case "FRIEND_REQUESTS":
                     handleFriendRequestsResponse(xmlResponse);
                     break;
+
+                case "SENT_REQUESTS":
+                    handleSentRequestsResponse(xmlResponse);
+                    break;
+
+                case "RECEIVED_REQUESTS":
+                    handleReceivedRequestsResponse(xmlResponse);
+                    break;
                 case "FRIEND_REQUEST_ACCEPTED":
                     if (friendRequestListener != null) {
                         Platform.runLater(() -> friendRequestListener.accept("REQUEST_ACCEPTED"));
                     }
-                    // Refresh friends list since we have a new friend
                     if (chatHistoryListener != null) {
                         Platform.runLater(() -> chatHistoryListener.accept("FRIENDS_UPDATED"));
                     }
@@ -217,9 +193,44 @@ public class UnifiedClientModel implements Runnable {
                         Platform.runLater(() -> friendRequestListener.accept("REQUEST_DECLINED"));
                     }
                     break;
+                default:
+                    System.out.println("Unhandled response type: " + reply);
+                    break;
             }
         } catch (Exception e) {
-            System.err.println("Error handling XML response: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void handleSentRequestsResponse(String xmlResponse) {
+        try {
+            String body = xmlHandler.getResponseBody(xmlResponse);
+            if (body != null && friendRequestListener != null) {
+                Platform.runLater(() -> friendRequestListener.accept("SENT_REQUESTS:" + body));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void handleReceivedRequestsResponse(String xmlResponse) {
+        try {
+            String body = xmlHandler.getResponseBody(xmlResponse);
+            if (body != null && friendRequestListener != null) {
+                Platform.runLater(() -> friendRequestListener.accept("RECEIVED_REQUESTS:" + body));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    public synchronized void addFriend(String friendUsername) {
+        try {
+            String xmlMessage = "<Request><type>ADD_FRIEND_REQUEST</type><content>" +
+                    username + "![]!" + friendUsername + "![]!pending</content></Request>";
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -230,64 +241,28 @@ public class UnifiedClientModel implements Runnable {
                 Platform.runLater(() -> friendRequestListener.accept("REQUESTS_RECEIVED:" + body));
             }
         } catch (Exception e) {
-            System.err.println("Error handling friend requests response: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    private void handleUsernameChangeWithData(String xmlResponse) {
-        try {
-            String body = xmlHandler.getResponseBody(xmlResponse);
-            if (body != null && body.contains("![]!")) {
-                String[] parts = body.split("!\\[]!");
-                if (parts.length >= 2) {
-                    String newUsername = parts[0].replace("Username successfully changed to ", "").trim();
-                    String base64AccountXML = parts[1];
-
-                    // Update the username
-                    this.username = newUsername;
-
-                    // Save the updated account XML
-                    if (isValidBase64(base64AccountXML)) {
-                        xmlHandler.saveUpdatedAccountXML(newUsername, base64AccountXML);
-                        System.out.println("Updated account XML saved for new username: " + newUsername);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Error handling username change with data: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    // NEW METHOD FOR PASSWORD RESET NOTIFICATION
     private void handlePasswordResetNotificationForRequester(String xmlResponse) {
         try {
             String body = xmlHandler.getResponseBody(xmlResponse);
             if (body != null && !body.isEmpty()) {
                 String[] parts = body.split("!\\[]!");
-
                 if (parts.length >= 2) {
                     String username = parts[0];
                     String newPassword = parts[1];
-
-                    System.out.println("[DEBUG] Received password reset notification for: " + username);
-
-                    // Use callback to show UI with new password
                     if (passwordResetNotificationCallback != null) {
                         Platform.runLater(() -> {
                             passwordResetNotificationCallback.onPasswordResetNotification(username, newPassword);
                         });
                     } else {
-                        System.err.println("[ERROR] No password reset notification callback set");
                     }
-
                 } else {
-                    System.err.println("[ERROR] Invalid password reset notification format: " + body);
                 }
             }
         } catch (Exception e) {
-            System.err.println("Error handling password reset notification: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -299,10 +274,6 @@ public class UnifiedClientModel implements Runnable {
                 String[] parts = body.split("!\\[]!");
                 if (parts.length >= 2) {
                     String username = parts[0];
-                    String verificationCode = parts[1];
-
-                    System.out.println("[DEBUG] Password reset request confirmed for: " + username);
-
                     if (generalNotificationCallback != null) {
                         String message = "Password reset request confirmed for: " + username +
                                 ". Your verification code has been validated. An administrator will review your request.";
@@ -311,14 +282,11 @@ public class UnifiedClientModel implements Runnable {
                 }
             }
         } catch (Exception e) {
-            System.err.println("Error handling password reset requested response: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
     private void handlePasswordResetRejected(String xmlResponse) {
-        System.out.println("[DEBUG] Password reset request was rejected");
-
         if (generalNotificationCallback != null) {
             String message = "Your password reset request was rejected by the administrator. " +
                     "This could be due to incorrect verification code or security concerns. " +
@@ -337,9 +305,6 @@ public class UnifiedClientModel implements Runnable {
                     String username = parts[0];
                     String newPassword = parts[1];
                     String message = parts[2];
-
-                    System.out.println("[DEBUG] Password reset notification received for user: " + username);
-
                     if (passwordResetNotificationCallback != null) {
                         Platform.runLater(() -> passwordResetNotificationCallback.onPasswordResetNotification(username, newPassword, message));
                     }
@@ -348,22 +313,16 @@ public class UnifiedClientModel implements Runnable {
                     String username = parts[0];
                     String newPassword = parts[1];
                     String defaultMessage = "Your password has been successfully reset by an administrator.";
-
-                    System.out.println("[DEBUG] Password reset notification received for user: " + username);
-
                     if (passwordResetNotificationCallback != null) {
                         Platform.runLater(() -> passwordResetNotificationCallback.onPasswordResetNotification(username, newPassword, defaultMessage));
                     }
                 } else {
-                    System.out.println("[DEBUG] Password reset notification with unexpected format: " + body);
-
                     if (generalNotificationCallback != null) {
                         Platform.runLater(() -> generalNotificationCallback.onGeneralNotification("PASSWORD_RESET_SUCCESS", body));
                     }
                 }
             }
         } catch (Exception e) {
-            System.err.println("Error handling password reset success response: " + e.getMessage());
             e.printStackTrace();
 
             if (generalNotificationCallback != null) {
@@ -378,7 +337,6 @@ public class UnifiedClientModel implements Runnable {
         try {
             String body = xmlHandler.getResponseBody(xmlResponse);
             String message;
-
             if (body != null && !body.isEmpty()) {
                 if (body.contains("No verification code found")) {
                     message = "Your account does not have a verification code set up. " +
@@ -389,9 +347,6 @@ public class UnifiedClientModel implements Runnable {
             } else {
                 message = "Your password reset request failed.";
             }
-
-            System.out.println("[DEBUG] Password reset failed: " + message);
-
             if (generalNotificationCallback != null) {
                 Platform.runLater(() -> generalNotificationCallback.onGeneralNotification("PASSWORD_RESET_FAILED", message));
             }
@@ -418,7 +373,6 @@ public class UnifiedClientModel implements Runnable {
                 }
             }
         } catch (Exception e) {
-            System.err.println("Error handling community message response: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -445,44 +399,29 @@ public class UnifiedClientModel implements Runnable {
                 }
             }
         } catch (Exception e) {
-            System.err.println("Error handling chat history response: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
     private void handleNewMessageResponse(String xmlResponse) {
         try {
-            System.out.println("handleNewMessageResponse called");
-            System.out.println("Response length: " + xmlResponse.length());
-
             String body = xmlHandler.getResponseBody(xmlResponse);
             if (body != null && !body.isEmpty()) {
-                System.out.println("Body length: " + body.length());
-
                 if (isValidBase64(body)) {
-                    System.out.println("Valid base64 content, saving to account XML");
                     xmlHandler.saveUpdatedAccountXML(username, body);
-
                     String latestMessage = extractLatestMessageFromBase64(body);
                     if (latestMessage != null && isFileMessage(latestMessage)) {
-                        System.out.println("File message detected: " + latestMessage);
                         handleFileMessage(latestMessage);
                     }
-
                     if (chatHistoryListener != null) {
-                        System.out.println("NEW_MESSAGE received, triggering chat refresh");
                         Platform.runLater(() -> chatHistoryListener.accept("MESSAGE_RECEIVED"));
                     } else {
-                        System.err.println("chatHistoryListener is null!");
                     }
                 } else {
-                    System.err.println("Invalid base64 content in response body");
                 }
             } else {
-                System.err.println("Empty or null response body");
             }
         } catch (Exception e) {
-            System.err.println("Error handling new message response: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -490,28 +429,21 @@ public class UnifiedClientModel implements Runnable {
     private void handleFileTransferSuccess(String xmlResponse) {
         try {
             String body = xmlHandler.getResponseBody(xmlResponse);
-            System.out.println("File transfer successful: " + body);
-
             if (fileStatusListener != null) {
                 Platform.runLater(() -> fileStatusListener.accept("SUCCESS: " + body));
             }
         } catch (Exception e) {
-            System.err.println("Error handling file transfer success: " + e.getMessage());
         }
     }
 
     private void handleFileTransferFailure(String xmlResponse) {
         try {
             String body = xmlHandler.getResponseBody(xmlResponse);
-            System.err.println("File transfer failed: " + body);
-
             String errorMessage = (body != null && !body.isEmpty()) ? body : "Unknown error occurred";
-
             if (fileStatusListener != null) {
                 Platform.runLater(() -> fileStatusListener.accept("FAILURE: " + errorMessage));
             }
         } catch (Exception e) {
-            System.err.println("Error handling file transfer failure: " + e.getMessage());
             if (fileStatusListener != null) {
                 Platform.runLater(() -> fileStatusListener.accept("FAILURE: Error processing server response"));
             }
@@ -521,26 +453,22 @@ public class UnifiedClientModel implements Runnable {
     private void handleGroupFileTransferSuccess(String xmlResponse) {
         try {
             String body = xmlHandler.getResponseBody(xmlResponse);
-            System.out.println("Group file transfer successful: " + body);
-
             if (fileStatusListener != null) {
                 Platform.runLater(() -> fileStatusListener.accept("SUCCESS: " + body));
             }
         } catch (Exception e) {
-            System.err.println("Error handling group file transfer success: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     private void handleGroupFileTransferFailure(String xmlResponse) {
         try {
             String body = xmlHandler.getResponseBody(xmlResponse);
-            System.err.println("Group file transfer failed: " + body);
-
             if (fileStatusListener != null) {
                 Platform.runLater(() -> fileStatusListener.accept("FAILURE: " + body));
             }
         } catch (Exception e) {
-            System.err.println("Error handling group file transfer failure: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -556,13 +484,11 @@ public class UnifiedClientModel implements Runnable {
                     }
 
                     if (chatHistoryListener != null) {
-                        System.out.println("NEW_GROUP_MESSAGE received, triggering chat refresh");
                         Platform.runLater(() -> chatHistoryListener.accept("MESSAGE_RECEIVED"));
                     }
                 }
             }
         } catch (Exception e) {
-            System.err.println("Error handling new group message response: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -597,12 +523,9 @@ public class UnifiedClientModel implements Runnable {
                 org.w3c.dom.Element lastChat = (org.w3c.dom.Element) chatNodes.item(chatNodes.getLength() - 1);
                 String sender = lastChat.getElementsByTagName("sender").item(0).getTextContent();
                 String message = lastChat.getElementsByTagName("msg").item(0).getTextContent();
-
-                System.out.println("Extracted latest message - Sender: " + sender + ", Message: " + message);
                 return sender + ": " + message;
             }
         } catch (Exception e) {
-            System.err.println("Error extracting latest message: " + e.getMessage());
             e.printStackTrace();
         }
         return null;
@@ -618,37 +541,29 @@ public class UnifiedClientModel implements Runnable {
         }
     }
 
-    // FILE TRANSFER METHODS
     public synchronized boolean sendFile(String filePath, String receiver) {
         try {
             File file = new File(filePath);
             if (!file.exists() || !file.isFile()) {
-                System.err.println("File not found or is not a valid file: " + filePath);
                 if (fileStatusListener != null) {
                     Platform.runLater(() -> fileStatusListener.accept("FAILURE: File not found"));
                 }
                 return false;
             }
-
             long fileSize = file.length();
-            System.out.println("Preparing to send file: " + file.getName() + " (" + fileSize + " bytes)");
 
             if (fileSize > 10 * 1024 * 1024) {
-                System.err.println("File too large. Maximum size is 10MB");
                 if (fileStatusListener != null) {
                     Platform.runLater(() -> fileStatusListener.accept("FAILURE: File too large (max 10MB)"));
                 }
                 return false;
             }
-
             if (fileSize == 0) {
-                System.err.println("Cannot send empty file");
                 if (fileStatusListener != null) {
                     Platform.runLater(() -> fileStatusListener.accept("FAILURE: Empty file"));
                 }
                 return false;
             }
-
             byte[] fileContent = Files.readAllBytes(file.toPath());
             String encodedContent = Base64.getEncoder().encodeToString(fileContent);
             String fileName = file.getName();
@@ -661,12 +576,8 @@ public class UnifiedClientModel implements Runnable {
             writeMSG.write(xmlMessage);
             writeMSG.newLine();
             writeMSG.flush();
-
-            System.out.println("File message sent to server");
             return true;
-
         } catch (IOException e) {
-            System.err.println("Error sending file: " + e.getMessage());
             e.printStackTrace();
             if (fileStatusListener != null) {
                 Platform.runLater(() -> fileStatusListener.accept("FAILURE: " + e.getMessage()));
@@ -678,17 +589,14 @@ public class UnifiedClientModel implements Runnable {
     public synchronized boolean sendGroupFile(String filePath, String groupName) {
         try {
             if (!canAccessGroup(groupName)) {
-                System.err.println("Access denied: User " + username + " is not a member of group " + groupName);
                 return false;
             }
             File file = new File(filePath);
             if (!file.exists() || !file.isFile()) {
-                System.err.println("File not found or is not a valid file: " + filePath);
                 return false;
             }
             long fileSize = file.length();
             if (fileSize > 10 * 1024 * 1024) {
-                System.err.println("File too large. Maximum size is 10MB");
                 return false;
             }
             byte[] fileContent = Files.readAllBytes(file.toPath());
@@ -708,7 +616,6 @@ public class UnifiedClientModel implements Runnable {
             return true;
 
         } catch (IOException e) {
-            System.err.println("Error sending group file: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -720,7 +627,6 @@ public class UnifiedClientModel implements Runnable {
             File userDir = new File(userFilesPath);
 
             if (!userDir.exists()) {
-                System.err.println("User files directory not found: " + userFilesPath);
                 return false;
             }
 
@@ -729,12 +635,12 @@ public class UnifiedClientModel implements Runnable {
                 for (File file : files) {
                     if (file.getName().contains(fileName)) {
                         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-                            reader.readLine(); // SENDER line
-                            String originalNameLine = reader.readLine(); // ORIGINAL_NAME line
-                            reader.readLine(); // EXTENSION line
-                            reader.readLine(); // TIMESTAMP line
-                            reader.readLine(); // SIZE line
-                            String contentLine = reader.readLine(); // CONTENT line
+                            reader.readLine();
+                            String originalNameLine = reader.readLine();
+                            reader.readLine();
+                            reader.readLine();
+                            reader.readLine();
+                            String contentLine = reader.readLine();
 
                             if (contentLine != null && contentLine.startsWith("CONTENT:")) {
                                 String base64Content = contentLine.substring(8);
@@ -746,12 +652,8 @@ public class UnifiedClientModel implements Runnable {
                     }
                 }
             }
-
-            System.err.println("File not found in server storage: " + fileName);
             return false;
-
         } catch (Exception e) {
-            System.err.println("Error saving received file: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -764,34 +666,25 @@ public class UnifiedClientModel implements Runnable {
             if (!downloadsDir.exists()) {
                 boolean created = downloadsDir.mkdirs();
                 if (!created) {
-                    System.err.println("Failed to create downloads directory: " + downloadsPath);
                     return false;
                 }
             }
-
             File outputFile = new File(downloadsDir, fileName);
             int counter = 1;
             String baseName = fileName;
             String extension = getFileExtension(fileName);
-
             if (!extension.isEmpty()) {
                 baseName = fileName.substring(0, fileName.lastIndexOf('.'));
             }
-
             while (outputFile.exists()) {
                 String newFileName = baseName + "(" + counter + ")" + extension;
                 outputFile = new File(downloadsDir, newFileName);
                 counter++;
             }
-
             byte[] fileContent = Base64.getDecoder().decode(base64Content);
             Files.write(outputFile.toPath(), fileContent);
-
-            System.out.println("File saved to: " + outputFile.getAbsolutePath());
             return true;
-
         } catch (Exception e) {
-            System.err.println("Error saving file to downloads: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -812,10 +705,7 @@ public class UnifiedClientModel implements Runnable {
                     }
                 }
             }
-
-            System.out.println("File not found in downloads, attempting to retrieve from server storage...");
             boolean downloaded = saveReceivedFile(fileName);
-
             if (downloaded) {
                 if (downloadsDir.exists()) {
                     File[] files = downloadsDir.listFiles();
@@ -828,8 +718,6 @@ public class UnifiedClientModel implements Runnable {
                     }
                 }
             }
-
-            System.err.println("Could not find or download file: " + fileName);
             return false;
 
         } catch (Exception e) {
@@ -845,14 +733,11 @@ public class UnifiedClientModel implements Runnable {
                 java.awt.Desktop desktop = java.awt.Desktop.getDesktop();
                 if (desktop.isSupported(java.awt.Desktop.Action.OPEN)) {
                     desktop.open(file);
-                    System.out.println("Opening file: " + file.getAbsolutePath());
                     return true;
                 }
             }
-            System.err.println("Desktop operations not supported");
             return false;
         } catch (Exception e) {
-            System.err.println("Error opening file with system: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -882,13 +767,11 @@ public class UnifiedClientModel implements Runnable {
             List<String> userGroups = xmlHandler.getUserGroups(username);
 
             if (!groupName.equals("Community Chat") && !userGroups.contains(groupName)) {
-                System.err.println("Access denied: User " + username + " is not a member of group " + groupName);
                 return;
             }
 
             String xmlMessage = "<Request><type>SEND_GROUP_MESSAGE</type><content>" +
                     username + "![]!" + groupName + "![]!" + message + "</content></Request>";
-            System.out.println("Sending group message: " + xmlMessage);
             writeMSG.write(xmlMessage);
             writeMSG.newLine();
             writeMSG.flush();
@@ -910,7 +793,6 @@ public class UnifiedClientModel implements Runnable {
         try {
             String xmlMessage = "<Request><type>SEND_COMMUNITY_MESSAGE</type><content>" +
                     username + "![]!" + message + "</content></Request>";
-            System.out.println("Sending community message: " + xmlMessage);
             writeMSG.write(xmlMessage);
             writeMSG.newLine();
             writeMSG.flush();
@@ -923,7 +805,6 @@ public class UnifiedClientModel implements Runnable {
         try {
             String xmlMessage = "<Request><type>GET_CHAT_HISTORY</type><content>" +
                     username + "![]!" + friendName + "</content></Request>";
-            System.out.println("Requesting chat history: " + xmlMessage);
             writeMSG.write(xmlMessage);
             writeMSG.newLine();
             writeMSG.flush();
@@ -936,7 +817,6 @@ public class UnifiedClientModel implements Runnable {
         try {
             String xmlMessage = "<Request><type>GET_GROUP_CHAT_HISTORY</type><content>" +
                     username + "![]!" + groupName + "</content></Request>";
-            System.out.println("Requesting group chat history: " + xmlMessage);
             writeMSG.write(xmlMessage);
             writeMSG.newLine();
             writeMSG.flush();
@@ -959,7 +839,6 @@ public class UnifiedClientModel implements Runnable {
 
     public synchronized void sendRawMessage(String xmlMessage) {
         try {
-            System.out.println("Sending raw message: " + xmlMessage);
             writeMSG.write(xmlMessage);
             writeMSG.newLine();
             writeMSG.flush();
@@ -972,74 +851,210 @@ public class UnifiedClientModel implements Runnable {
         try {
             String xmlMessage = "<Request><type>CHANGE_USERNAME</type><content>" +
                     username + "![]!" + newUsername + "</content></Request>";
-            System.out.println("Sending username change request: " + xmlMessage);
             writeMSG.write(xmlMessage);
             writeMSG.newLine();
             writeMSG.flush();
         } catch (IOException e) {
-            System.err.println("Error sending username change request: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    public synchronized void changePasswordDirect(String newPassword) {
+    private void handleUsernameChangeWithData(String xmlResponse) {
         try {
-            String xmlMessage = "<Request><type>CHANGE_PASSWORD</type><content>" +
-                    username + "![]!dummy![]!" + newPassword + "</content></Request>";
-            System.out.println("Sending direct password change request: " + xmlMessage);
-            writeMSG.write(xmlMessage);
-            writeMSG.newLine();
-            writeMSG.flush();
-        } catch (IOException e) {
-            System.err.println("Error sending direct password change request: " + e.getMessage());
+            String body = xmlHandler.getResponseBody(xmlResponse);
+            if (body != null && body.contains("![]!")) {
+                String[] parts = body.split("!\\[]!");
+                if (parts.length >= 2) {
+                    String newUsername = parts[0].replace("Username successfully changed to ", "").trim();
+                    String base64AccountXML = parts[1];
+
+                    // Store old username for file operations
+                    String oldUsername = this.username;
+
+                    // Update the current username
+                    this.username = newUsername;
+
+                    // Handle local file operations
+                    handleLocalUsernameChange(oldUsername, newUsername);
+
+                    // Save the updated account XML with new username
+                    if (isValidBase64(base64AccountXML)) {
+                        xmlHandler.saveUpdatedAccountXML(newUsername, base64AccountXML);
+                    }
+
+                    System.out.println("Username change completed: " + oldUsername + " -> " + newUsername);
+                }
+            }
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    private void handleLocalUsernameChange(String oldUsername, String newUsername) {
+        try {
+            // 1. Rename the local account XML file
+            renameLocalAccountFile(oldUsername, newUsername);
+
+            // 2. Rename user files directory if it exists
+            renameUserFilesDirectory(oldUsername, newUsername);
+
+            // 3. Update any cached data or references
+            updateCachedUserData(oldUsername, newUsername);
+
+            System.out.println("Local username change operations completed");
+
+        } catch (Exception e) {
+            System.err.println("Error handling local username change: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void renameLocalAccountFile(String oldUsername, String newUsername) {
+        try {
+            String oldAccountPath = "src/main/resources/XMLFiles/" + oldUsername + "Account.xml";
+            String newAccountPath = "src/main/resources/XMLFiles/" + newUsername + "Account.xml";
+
+            java.io.File oldFile = new java.io.File(oldAccountPath);
+            java.io.File newFile = new java.io.File(newAccountPath);
+
+            if (oldFile.exists()) {
+                // Create backup before renaming
+                String backupPath = "src/main/resources/XMLFiles/" + oldUsername + "Account_backup.xml";
+                java.io.File backupFile = new java.io.File(backupPath);
+                java.nio.file.Files.copy(oldFile.toPath(), backupFile.toPath(),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+                // Rename the file
+                boolean renamed = oldFile.renameTo(newFile);
+                if (renamed) {
+                    System.out.println("Successfully renamed account file: " + oldUsername + " -> " + newUsername);
+
+                    // Clean up backup after successful rename
+                    backupFile.delete();
+                } else {
+                    System.err.println("Failed to rename account file, restoring from backup");
+                    // Restore from backup if rename failed
+                    java.nio.file.Files.copy(backupFile.toPath(), oldFile.toPath(),
+                            java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                    backupFile.delete();
+                }
+            } else {
+                System.out.println("Old account file not found (may have been updated by server): " + oldAccountPath);
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error renaming local account file: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void renameUserFilesDirectory(String oldUsername, String newUsername) {
+        try {
+            String oldDirPath = "src/main/resources/XMLFiles/userFiles/" + oldUsername;
+            String newDirPath = "src/main/resources/XMLFiles/userFiles/" + newUsername;
+
+            java.io.File oldDir = new java.io.File(oldDirPath);
+            java.io.File newDir = new java.io.File(newDirPath);
+
+            if (oldDir.exists() && oldDir.isDirectory()) {
+                boolean renamed = oldDir.renameTo(newDir);
+                if (renamed) {
+                    System.out.println("Successfully renamed user files directory: " + oldUsername + " -> " + newUsername);
+                } else {
+                    System.err.println("Failed to rename user files directory");
+                }
+            } else {
+                System.out.println("User files directory not found (this is normal if no files were shared): " + oldDirPath);
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error renaming user files directory: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void updateCachedUserData(String oldUsername, String newUsername) {
+        try {
+            // Update any cached friend lists, group memberships, etc.
+            // This ensures the UI shows the correct username immediately
+
+            // Re-initialize xmlHandler with new username context if needed
+            xmlHandler = new UserXMLHandler();
+
+            System.out.println("Updated cached user data for username change");
+
+        } catch (Exception e) {
+            System.err.println("Error updating cached user data: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 
     public synchronized void changePassword(String oldPassword, String newPassword) {
         try {
             String xmlMessage = "<Request><type>CHANGE_PASSWORD</type><content>" +
                     username + "![]!" + oldPassword + "![]!" + newPassword + "</content></Request>";
-            System.out.println("Sending password change request: " + xmlMessage);
             writeMSG.write(xmlMessage);
             writeMSG.newLine();
             writeMSG.flush();
         } catch (IOException e) {
-            System.err.println("Error sending password change request: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    public synchronized void getSentRequests() {
+        try {
+            String xmlMessage = "<Request><type>GET_SENT_REQUESTS</type><content>" +
+                    username + "</content></Request>";
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-//    public void addFriend(String friendUsername) {
-//        try {
-//            String xmlMessage = "<Request><type>ADD_FRIEND_REQUEST</type><content>" +
-//                    username + "![]!" + friendUsername + "</content></Request>";
-//            System.out.println("Sending friend request: " + xmlMessage);
-//            writeMSG.write(xmlMessage);
-//            writeMSG.newLine();
-//            writeMSG.flush();
-//        } catch (IOException e) {
-//            System.err.println("Error sending friend request: " + e.getMessage());
-//            e.printStackTrace();
-//        }
-//    }
+    public synchronized void getReceivedRequests() {
+        try {
+            String xmlMessage = "<Request><type>GET_RECEIVED_REQUESTS</type><content>" +
+                    username + "</content></Request>";
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public synchronized void acceptFriendRequestNew(String requestingUser) {
+        try {
+            String xmlMessage = "<Request><type>ACCEPT_FRIEND_REQUEST_NEW</type><content>" +
+                    username + "![]!" + requestingUser + "</content></Request>";
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
-    public void addFriend(String friendUsername) {
-        System.out.println("UnifiedClientModel: Adding friend " + friendUsername);
-        UserXMLHandler.addFriendRequest(this.username, friendUsername);
+    public synchronized void declineFriendRequestNew(String requestingUser) {
+        try {
+            String xmlMessage = "<Request><type>DECLINE_FRIEND_REQUEST_NEW</type><content>" +
+                    username + "![]!" + requestingUser + "</content></Request>";
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void getFriendRequests() {
         try {
             String xmlMessage = "<Request><type>GET_FRIEND_REQUESTS</type><content>" +
                     username + "</content></Request>";
-            System.out.println("Requesting friend requests: " + xmlMessage);
             writeMSG.write(xmlMessage);
             writeMSG.newLine();
             writeMSG.flush();
         } catch (IOException e) {
-            System.err.println("Error getting friend requests: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -1047,12 +1062,10 @@ public class UnifiedClientModel implements Runnable {
         try {
             String xmlMessage = "<Request><type>ACCEPT_FRIEND_REQUEST</type><content>" +
                     username + "![]!" + requestingUser + "</content></Request>";
-            System.out.println("Accepting friend request: " + xmlMessage);
             writeMSG.write(xmlMessage);
             writeMSG.newLine();
             writeMSG.flush();
         } catch (IOException e) {
-            System.err.println("Error accepting friend request: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -1061,12 +1074,10 @@ public class UnifiedClientModel implements Runnable {
         try {
             String xmlMessage = "<Request><type>DECLINE_FRIEND_REQUEST</type><content>" +
                     username + "![]!" + requestingUser + "</content></Request>";
-            System.out.println("Declining friend request: " + xmlMessage);
             writeMSG.write(xmlMessage);
             writeMSG.newLine();
             writeMSG.flush();
         } catch (IOException e) {
-            System.err.println("Error declining friend request: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -1075,12 +1086,10 @@ public class UnifiedClientModel implements Runnable {
         try {
             String xmlMessage = "<Request><type>REQUEST_PASSWORD_RESET_WITH_CODE</type><content>" +
                     username + "![]!" + verificationCode + "</content></Request>";
-            System.out.println("Sending password reset request with code: " + xmlMessage);
             writeMSG.write(xmlMessage);
             writeMSG.newLine();
             writeMSG.flush();
         } catch (IOException e) {
-            System.err.println("Error sending password reset request with code: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -1090,12 +1099,10 @@ public class UnifiedClientModel implements Runnable {
             // Since this is a password reset via verification code, we need to send a direct password change
             String xmlMessage = "<Request><type>RESET_PASSWORD_CLIENT</type><content>" +
                     username + "![]!" + newPassword + "</content></Request>";
-            System.out.println("Sending password reset to server: " + xmlMessage);
             writeMSG.write(xmlMessage);
             writeMSG.newLine();
             writeMSG.flush();
         } catch (IOException e) {
-            System.err.println("Error sending password reset to server: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -1108,10 +1115,6 @@ public class UnifiedClientModel implements Runnable {
 
 
     // SETTERS FOR CALLBACKS
-    public void setPasswordResetNotificationCallback(PasswordResetNotificationCallback callback) {
-        this.passwordResetNotificationCallback = callback;
-    }
-
     public void setGeneralNotificationCallback(GeneralNotificationCallback callback) {
         this.generalNotificationCallback = callback;
     }
