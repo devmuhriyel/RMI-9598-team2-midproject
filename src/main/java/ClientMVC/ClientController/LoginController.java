@@ -32,7 +32,6 @@ public class LoginController {
 
     private void initialize() {
         loginJFXController.setLoginButtonListener(() -> {
-            loginJFXController.getLoginButton().setDisable(true);
             String username = loginJFXController.getUsername();
             String password = loginJFXController.getPassword();
             model.login(username, password);

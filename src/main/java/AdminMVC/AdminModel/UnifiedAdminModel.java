@@ -703,10 +703,145 @@ public class UnifiedAdminModel implements Runnable {
                     }
                 });
                 break;
+            case "ADMIN_VERIFICATION_CODE_VALID":
+                handleAdminVerificationCodeValidResponse(finalMsg);
+                break;
+
+            case "ADMIN_VERIFICATION_CODE_INVALID":
+                handleAdminVerificationCodeInvalidResponse(finalMsg);
+                break;
+
+            case "ADMIN_PASSWORD_RESET_SUCCESS":
+                handleAdminPasswordResetSuccessResponse(finalMsg);
+                break;
+
+            case "ADMIN_PASSWORD_RESET_FAILED":
+                handleAdminPasswordResetFailedResponse(finalMsg);
+                break;
 
             default:
                 System.out.println("Unhandled admin response: " + reply);
                 break;
+        }
+    }
+
+    private void handleAdminVerificationCodeValidResponse(String xmlResponse) {
+        try {
+            String body = adminXMLHandler.getResponseBody(xmlResponse);
+            String username;
+            if (body != null && !body.trim().isEmpty()) {
+                username = body.trim();
+            } else {
+                // Fallback to admin username if no body content
+                username = adminUsername != null ? adminUsername : "";
+            }
+
+            System.out.println("[DEBUG] Admin verification code valid for: " + username);
+
+            if (verificationCodeValidListener != null) {
+                Platform.runLater(() -> verificationCodeValidListener.accept(username));
+            } else {
+                System.err.println("[ERROR] No verificationCodeValidListener set for admin");
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling admin verification code valid response: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void handleAdminPasswordResetSuccessResponse(String xmlResponse) {
+        try {
+            String body = adminXMLHandler.getResponseBody(xmlResponse);
+            String message;
+
+            if (body != null && !body.trim().isEmpty()) {
+                String[] parts = body.split("!\\[]!");
+                if (parts.length >= 2) {
+                    String username = parts[0];
+                    String additionalMessage = parts[1];
+                    message = "Admin password for " + username + " has been successfully reset: " + additionalMessage;
+                } else {
+                    message = body;
+                }
+            } else {
+                message = "Admin password has been successfully reset";
+            }
+
+            if (operationResultListener != null) {
+                Platform.runLater(() -> operationResultListener.accept("ADMIN_PASSWORD_RESET_SUCCESS: " + message));
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling admin password reset success response: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void handleAdminPasswordResetFailedResponse(String xmlResponse) {
+        try {
+            String body = adminXMLHandler.getResponseBody(xmlResponse);
+            String message;
+
+            if (body != null && !body.trim().isEmpty()) {
+                if (body.contains("No verification code found")) {
+                    message = "Your admin account does not have a verification code set up. Please contact the system administrator.";
+                } else {
+                    message = "Admin password reset failed: " + body;
+                }
+            } else {
+                message = "Admin password reset failed";
+            }
+
+            if (operationResultListener != null) {
+                Platform.runLater(() -> operationResultListener.accept("PASSWORD_RESET_FAILED: " + message));
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling admin password reset failed response: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public String createAdminPasswordResetWithCodeRequest(String username, String verificationCode) {
+        return "<Request><type>ADMIN_REQUEST_PASSWORD_RESET_WITH_CODE</type><content>" +
+                username + "![]!" + verificationCode + "</content></Request>";
+    }
+    public String createAdminPasswordResetRequest(String username, String newPassword) {
+        return "<Request><type>ADMIN_RESET_PASSWORD</type><content>" +
+                username + "![]!" + newPassword + "</content></Request>";
+    }
+    public boolean validateAdminVerificationCode(String code) {
+        return code != null && !code.trim().isEmpty() && code.trim().length() >= 4;
+    }
+    public String parseAdminVerificationCodeValidNotification(String xmlString) {
+        try {
+            String bodyContent = adminXMLHandler.getResponseBody(xmlString);
+            if (bodyContent != null && !bodyContent.trim().isEmpty()) {
+                return bodyContent.trim();
+            }
+            return null;
+        } catch (Exception e) {
+            System.err.println("Error parsing admin verification code valid notification: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+
+    private void handleAdminVerificationCodeInvalidResponse(String xmlResponse) {
+        try {
+            String body = adminXMLHandler.getResponseBody(xmlResponse);
+            String message;
+            if (body != null && !body.trim().isEmpty()) {
+                message = body;
+            } else {
+                message = "Invalid admin verification code";
+            }
+
+            if (operationResultListener != null) {
+                Platform.runLater(() -> operationResultListener.accept("VERIFICATION_CODE_INVALID: " + message));
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling admin verification code invalid response: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -1020,6 +1155,34 @@ public class UnifiedAdminModel implements Runnable {
             }
         } catch (Exception e) {
             System.err.println("Error handling user stats response: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public synchronized void requestAdminPasswordResetWithCode(String username, String verificationCode) {
+        try {
+            String xmlMessage = "<Request><type>ADMIN_REQUEST_PASSWORD_RESET_WITH_CODE</type><content>" +
+                    username + "![]!" + verificationCode + "</content></Request>";
+            System.out.println("Sending admin password reset request with code: " + xmlMessage);
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+        } catch (IOException e) {
+            System.err.println("Error sending admin password reset request with code: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public synchronized void resetAdminPasswordOnServer(String username, String newPassword) {
+        try {
+            String xmlMessage = "<Request><type>ADMIN_RESET_PASSWORD</type><content>" +
+                    username + "![]!" + newPassword + "</content></Request>";
+            System.out.println("Sending admin password reset to server: " + xmlMessage);
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+        } catch (IOException e) {
+            System.err.println("Error sending admin password reset to server: " + e.getMessage());
             e.printStackTrace();
         }
     }

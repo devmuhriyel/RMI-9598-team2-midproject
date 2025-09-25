@@ -131,6 +131,17 @@ public class ClientThread implements Runnable {
                     case "ADMIN_LOGIN_FAILED":
                         sendMessage("<Response><reply>ADMIN_LOGIN_FAILED</reply><body>Invalid admin credentials</body></Response>");
                         break;
+                    case "ADMIN_VERIFICATION_CODE_VALID":
+                        String[] adminVerificationParts = reply.split("!\\[]!");
+                        String verifiedAdminUsername = adminVerificationParts.length > 1 ? adminVerificationParts[1] : extractUsername(xmlMsg);
+                        sendMessage("<Response><reply>ADMIN_VERIFICATION_CODE_VALID</reply><body>" + verifiedAdminUsername + "</body></Response>");
+                        System.out.println("[DEBUG] Admin verification code valid sent to client");
+                        break;
+
+                    case "ADMIN_VERIFICATION_CODE_INVALID":
+                        sendMessage("<Response><reply>ADMIN_VERIFICATION_CODE_INVALID</reply><body>Invalid admin verification code</body></Response>");
+                        System.out.println("[DEBUG] Admin verification code invalid sent to client");
+                        break;
 
                     //ADMIN LOGIC CASES
                     case "ALL_USERS":

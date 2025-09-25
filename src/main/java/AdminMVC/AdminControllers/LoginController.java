@@ -4,22 +4,29 @@ import AdminMVC.AdminModel.UnifiedAdminModel;
 import AdminMVC.AdminView.Admin.AdminView;
 import AdminMVC.AdminView.Login.LoginJFXController;
 import AdminMVC.AdminView.Login.LoginView;
-import AdminMVC.AdminXMLHandler;
+
 
 import javafx.application.Platform;
+import javafx.scene.control.Alert;
 import javafx.stage.Stage;
 
 public class LoginController {
     private final LoginJFXController loginJFXController;
     private final LoginView view;
     private final UnifiedAdminModel model;
-    private AdminXMLHandler adminXMLHandler = new AdminXMLHandler();
+    private String currentPasswordResetUser = null;
 
     public LoginController(LoginView loginView, UnifiedAdminModel unifiedModel, LoginJFXController loginJFXController) {
         this.loginJFXController = loginJFXController;
         this.view = loginView;
         this.model = unifiedModel;
         model.setLoginResponseListener(this::handleLoginResponse);
+        model.setVerificationCodeValidListener(this::handleVerificationCodeValid);
+        model.setPasswordResetListener(this::handlePasswordResetListener);
+
+        // Set up general notification callback
+        model.setOperationResultListener(this::handleGeneralNotification);
+
         initialize();
     }
 
@@ -29,6 +36,136 @@ public class LoginController {
             String username = loginJFXController.getUsername();
             String password = loginJFXController.getPassword();
             model.login(username, password);
+        });
+
+        loginJFXController.setForgotPasswordLinkListener(() -> {
+            handleForgotPassword();
+        });
+    }
+
+    private void handleForgotPassword() {
+        loginJFXController.showUsernameDialog(usernameAndCode -> {
+            if (usernameAndCode != null && usernameAndCode.contains("![]!")) {
+                String[] parts = usernameAndCode.split("!\\[]!");
+                if (parts.length >= 2) {
+                    String username = parts[0];
+                    String verificationCode = parts[1];
+                    // Store current reset user
+                    currentPasswordResetUser = username;
+                    // Send verification request - for admin, we'll use a different request type
+                    sendAdminPasswordResetRequest(username, verificationCode);
+                }
+            }
+        });
+    }
+
+    private void sendAdminPasswordResetRequest(String username, String verificationCode) {
+        try {
+            // Create a custom admin password reset request
+            String xmlMessage = "<Request><type>ADMIN_REQUEST_PASSWORD_RESET_WITH_CODE</type><content>" +
+                    username + "![]!" + verificationCode + "</content></Request>";
+
+            System.out.println("Sending admin password reset request: " + xmlMessage);
+            model.sendAdminCommand(xmlMessage);
+        } catch (Exception e) {
+            System.err.println("Error sending admin password reset request: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void handleVerificationCodeValid(String response) {
+        Platform.runLater(() -> {
+            try {
+                // For admin, the response should contain the username
+                String username = "";
+                if (username.isEmpty() && currentPasswordResetUser != null) {
+                    username = currentPasswordResetUser;
+                } else {
+                    username = response.trim();
+                }
+
+                if (username != null && !username.isEmpty()) {
+                    String finalUsername = username;
+                    loginJFXController.showPasswordChangeDialog(username, newPassword -> {
+                        resetAdminPasswordOnServer(finalUsername, newPassword);
+                    });
+                } else {
+                    loginJFXController.showAlert(Alert.AlertType.ERROR,
+                            "Error",
+                            "Unable to process admin password reset. Please try again.");
+                    currentPasswordResetUser = null;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                loginJFXController.showAlert(Alert.AlertType.ERROR,
+                        "Error",
+                        "An error occurred while processing your request. Please try again.");
+            }
+        });
+    }
+
+    private void resetAdminPasswordOnServer(String username, String newPassword) {
+        try {
+            // Create a custom admin password reset command
+            String xmlMessage = "<Request><type>ADMIN_RESET_PASSWORD</type><content>" +
+                    username + "![]!" + newPassword + "</content></Request>";
+
+            System.out.println("Sending admin password reset: " + xmlMessage);
+            model.sendAdminCommand(xmlMessage);
+        } catch (Exception e) {
+            System.err.println("Error sending admin password reset: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void handlePasswordResetListener(String username) {
+        Platform.runLater(() -> {
+            System.out.println("Password reset requested for admin: " + username);
+            // This could be used to show additional information if needed
+        });
+    }
+
+    private void handleGeneralNotification(String message) {
+        Platform.runLater(() -> {
+            String alertType, title, header;
+
+            if (message.contains("VERIFICATION_CODE_INVALID") || message.contains("Invalid verification code")) {
+                alertType = "ERROR";
+                title = "Invalid Verification Code";
+                header = "Admin Verification Failed";
+                currentPasswordResetUser = null;
+            } else if (message.contains("PASSWORD_RESET_FAILED") || message.contains("Password reset failed")) {
+                alertType = "ERROR";
+                title = "Admin Password Reset Failed";
+                header = "Unable to reset your administrator password";
+                currentPasswordResetUser = null;
+            } else if (message.contains("PASSWORD_CHANGED") || message.contains("Password changed successfully")) {
+                alertType = "SUCCESS";
+                title = "Password Changed";
+                header = "Admin Password Successfully Changed";
+
+                if (currentPasswordResetUser != null) {
+                    loginJFXController.showPasswordResetSuccessDialog(currentPasswordResetUser);
+                    currentPasswordResetUser = null;
+                    return; // Don't show the general notification as well
+                }
+            } else if (message.contains("ADMIN_PASSWORD_RESET_SUCCESS")) {
+                alertType = "SUCCESS";
+                title = "Password Reset Successful";
+                header = "Admin Password Successfully Reset";
+
+                if (currentPasswordResetUser != null) {
+                    loginJFXController.showPasswordResetSuccessDialog(currentPasswordResetUser);
+                    currentPasswordResetUser = null;
+                    return;
+                }
+            } else {
+                alertType = "INFO";
+                title = "Admin Notification";
+                header = "System Notification";
+            }
+
+            loginJFXController.showNotification(alertType, title, header, message);
         });
     }
 

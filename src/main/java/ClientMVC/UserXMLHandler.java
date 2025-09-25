@@ -359,18 +359,6 @@ public class UserXMLHandler {
         public String getBody() {
             return body;
         }
-
-        public boolean isLoginSuccess() {
-            return "LOGIN_SUCCESS".equals(status);
-        }
-
-        public boolean isLoginFailed() {
-            return "LOGIN_FAILED".equals(status);
-        }
-
-        public boolean isForceLogout() {
-            return "FORCE_LOGOUT".equals(status);
-        }
     }
 
     public List<String> getFriends(String username) {

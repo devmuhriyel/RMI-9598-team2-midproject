@@ -436,7 +436,6 @@ public class ServerXMLHandler {
                     reply = "ADMIN_PASSWORD_RESET_FAILED![]!" + adminResetUsername + "![]!Invalid verification code";
                 }
                 break;
-
             case "REJECT_PASSWORD_RESET":
                 String rejectedUser = content[0];
                 System.out.println("[DEBUG] Admin rejected password reset for user: " + rejectedUser);
@@ -446,8 +445,31 @@ public class ServerXMLHandler {
 
                 reply = "PASSWORD_RESET_REJECTED![]!" + rejectedUser + "![]!Password reset request rejected";
                 break;
+            case "ADMIN_REQUEST_PASSWORD_RESET_WITH_CODE":
+                String adminResetUsernameWithCode = content[0];
+                String adminProvidedVerificationCode = content[1];
 
+                System.out.println("[DEBUG] Admin password reset request with verification code from: " + adminResetUsernameWithCode);
 
+                if (verifyAdminResetCode(adminResetUsernameWithCode, adminProvidedVerificationCode)) {
+                    reply = "ADMIN_VERIFICATION_CODE_VALID";
+                    System.out.println("[DEBUG] Admin verification code valid for: " + adminResetUsernameWithCode);
+                } else {
+                    reply = "ADMIN_VERIFICATION_CODE_INVALID";
+                    System.out.println("[DEBUG] Admin verification code invalid for: " + adminResetUsernameWithCode);
+                }
+                break;
+            case "ADMIN_RESET_PASSWORD":
+                String adminUsernameForReset = content[0];
+                adminNewPassword = content[1];
+
+                if (changeAdminPassword(adminUsernameForReset, adminNewPassword)) {
+                    reply = "ADMIN_PASSWORD_RESET_SUCCESS![]!" + adminUsernameForReset + "![]!" + adminNewPassword + "![]!Your administrator password has been successfully reset.";
+                } else {
+                    System.out.println("[DEBUG] Failed to reset admin password for user: " + adminUsernameForReset);
+                    reply = "ADMIN_PASSWORD_RESET_FAILED![]!" + adminUsernameForReset + "![]!Failed to reset administrator password";
+                }
+                break;
 
             case "VERIFY_RESET_CODE":
                 String verifyUsername = content[0];
@@ -472,11 +494,10 @@ public class ServerXMLHandler {
                 String newPasswordRequested = content[2];
                 reply = changePassword(userForPasswordChange, oldPasswordProvided, newPasswordRequested);
                 break;
-
-
         }
         return reply;
     }
+
 
     //HELPER METHODS FOR SIGNING UP
     private void registerUser(String username, String password) throws Exception {
@@ -581,6 +602,94 @@ public class ServerXMLHandler {
             System.err.println("Error creating default admin file: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+    public boolean verifyAdminResetCode(String username, String providedCode) {
+        try {
+            System.out.println("[DEBUG] Verifying admin reset code for user: " + username);
+            System.out.println("[DEBUG] Provided admin code: " + providedCode);
+
+            File file = new File(ADMIN_FILE_PATH);
+            if (!file.exists()) {
+                System.out.println("[DEBUG] AdminCredentials.xml file does not exist: " + file.getAbsolutePath());
+                return false;
+            }
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+
+            NodeList admins = doc.getElementsByTagName("admin");
+            for (int i = 0; i < admins.getLength(); i++) {
+                Element admin = (Element) admins.item(i);
+                String adminUsername = admin.getElementsByTagName("username").item(0).getTextContent();
+
+                if (adminUsername.equals(username)) {
+                    System.out.println("[DEBUG] Found admin user: " + username);
+
+                    // Look for 'verification' element (permanent security code)
+                    NodeList codeNodes = admin.getElementsByTagName("verification");
+                    if (codeNodes.getLength() > 0) {
+                        String storedCode = codeNodes.item(0).getTextContent().trim();
+                        System.out.println("[DEBUG] Stored admin code: " + storedCode + ", Provided code: " + providedCode);
+
+                        boolean codeMatches = storedCode.equals(providedCode);
+                        System.out.println("[DEBUG] Admin code verification result: " + codeMatches);
+                        return codeMatches;
+                    } else {
+                        System.out.println("[DEBUG] No verification code found for admin user: " + username);
+                        return false;
+                    }
+                }
+            }
+
+            System.out.println("[DEBUG] Admin user not found: " + username);
+            return false;
+        } catch (Exception e) {
+            System.err.println("[ERROR] Error verifying admin reset code: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    public boolean changeAdminPassword(String username, String newPassword) {
+        try {
+            File file = new File(ADMIN_FILE_PATH);
+            if (!file.exists()) {
+                System.out.println("[DEBUG] AdminCredentials.xml file does not exist");
+                return false;
+            }
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(file);
+
+            NodeList admins = doc.getElementsByTagName("admin");
+            for (int i = 0; i < admins.getLength(); i++) {
+                Element admin = (Element) admins.item(i);
+                String adminUsername = admin.getElementsByTagName("username").item(0).getTextContent();
+
+                if (adminUsername.equals(username)) {
+                    admin.getElementsByTagName("password").item(0).setTextContent(newPassword);
+
+                    // Save the updated document
+                    removeEmptyTextNodes(doc);
+                    TransformerFactory tf = TransformerFactory.newInstance();
+                    Transformer transformer = tf.newTransformer();
+                    transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                    transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+                    transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+                    transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+                    transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
+                    transformer.transform(new DOMSource(doc), new StreamResult(file));
+
+                    System.out.println("[DEBUG] Admin password changed successfully for user: " + username);
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[ERROR] Error changing admin password: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
     }
 
     //HELPER METHODS FOR PASSWORD CHANGE
