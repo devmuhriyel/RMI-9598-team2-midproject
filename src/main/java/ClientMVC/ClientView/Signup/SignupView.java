@@ -1,33 +1,30 @@
 package ClientMVC.ClientView.Signup;
 
-import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
-public class SignupView extends Application {
-    private static Stage primaryStage;
+public class SignupView {
+    private Stage stage;
     private SignupJFXController fxController;
 
-    @Override
-    public void start(Stage stage) throws Exception {
-        primaryStage = stage;
+    public SignupView() throws Exception {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/Signup.fxml"));
         Parent root = loader.load();
         fxController = loader.getController();
 
-        primaryStage.setTitle("Sign Up");
-        primaryStage.setScene(new Scene(root, 400, 450));
-        primaryStage.setResizable(false);
-        primaryStage.show();
+        stage = new Stage();
+        stage.setTitle("Sign Up");
+        stage.setScene(new Scene(root, 400, 450));
+        stage.setResizable(false);
     }
 
-    public static Stage getStage() {
-        return primaryStage;
+    public Stage getStage() {
+        return stage;
     }
 
-    public SignupJFXController getFXController() {
+    public SignupJFXController getFxController() {
         return fxController;
     }
 }

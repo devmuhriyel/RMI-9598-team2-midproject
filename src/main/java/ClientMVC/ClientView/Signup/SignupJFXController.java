@@ -3,91 +3,73 @@ package ClientMVC.ClientView.Signup;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 
-public class SignupJFXController {
+import java.util.function.Consumer;
 
-    @FXML
-    private Hyperlink signInLink;
+public class SignupJFXController {
 
     @FXML
     private TextField usernameField;
 
     @FXML
-    private TextField firstNameField;
-
-    @FXML
-    private TextField lastNameField;
-
-    @FXML
-    private TextField emailField;
-
-    @FXML
     private PasswordField passwordField;
+
+    @FXML
+    private PasswordField confirmPasswordField;
+
+    @FXML
+    private TextField verificationField;
 
     @FXML
     private Button signupButton;
 
     @FXML
-    private CheckBox termsCheckbox;
+    private Hyperlink signInLink;
 
-    private Runnable signInListener;
-    private Runnable signupButtonListener;
+    // Callbacks → set by SignupController
+    private Runnable onSignup;
+    private Runnable onSignIn;
 
-    @FXML
-    private void initialize() {
-        signupButton.setOnAction(event -> {
-            if (signupButtonListener != null) {
-                signupButtonListener.run();
-            }
-        });
-
-        signInLink.setOnAction(e -> {
-            if (signInListener != null) {
-                signInListener.run();
-            }
-        });
-    }
-
-    public void setSignupButtonListener(Runnable listener) {
-        this.signupButtonListener = listener;
-    }
-
-    public void setSignInListener(Runnable listener) {
-        this.signInListener = listener;
-    }
-
+    // ====== Exposed Getters for Controller ======
     public String getUsername() {
         return usernameField.getText();
-    }
-
-    public String getFirstName() {
-        return firstNameField.getText();
-    }
-
-    public String getLastName() {
-        return lastNameField.getText();
-    }
-
-    public String getEmail() {
-        return emailField.getText();
     }
 
     public String getPassword() {
         return passwordField.getText();
     }
 
-    public boolean isTermsAccepted() {
-        return termsCheckbox.isSelected();
+    public String getConfirmPassword() {
+        return confirmPasswordField.getText();
     }
 
-    public void showAlert(String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Signup");
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+    public String getVerificationCode() {
+        return verificationField.getText();
     }
+
     public Button getSignupButton() {
         return signupButton;
     }
 
+    // ====== Listeners to be injected by Controller ======
+    public void setSignupButtonListener(Runnable listener) {
+        this.onSignup = listener;
+        signupButton.setOnAction(e -> {
+            if (onSignup != null) onSignup.run();
+        });
+    }
+
+    public void setSignInListener(Runnable listener) {
+        this.onSignIn = listener;
+        signInLink.setOnAction(e -> {
+            if (onSignIn != null) onSignIn.run();
+        });
+    }
+
+    // ====== Feedback helper for Controller ======
+    public void showAlert(String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
 }

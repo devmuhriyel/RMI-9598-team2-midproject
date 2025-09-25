@@ -157,25 +157,36 @@ public class ServerXMLHandler {
                 }
                 break;
             case "REGISTER": {
-                username = (content.length >= 2)
+                username = (content.length >= 3)
                         ? content[0].trim()
                         : (doc.getElementsByTagName("username").getLength() > 0
                         ? doc.getElementsByTagName("username").item(0).getTextContent().trim()
                         : null);
-                password = (content.length >= 2)
+
+                password = (content.length >= 3)
                         ? content[1].trim()
                         : (doc.getElementsByTagName("password").getLength() > 0
                         ? doc.getElementsByTagName("password").item(0).getTextContent().trim()
                         : null);
-                if (username == null || username.isEmpty() || password == null || password.isEmpty()) {
+
+                String verification = (content.length >= 3)
+                        ? content[2].trim()
+                        : (doc.getElementsByTagName("verification").getLength() > 0
+                        ? doc.getElementsByTagName("verification").item(0).getTextContent().trim()
+                        : null);
+
+                if (username == null || username.isEmpty() ||
+                        password == null || password.isEmpty() ||
+                        verification == null || verification.isEmpty()) {
                     reply = "REGISTER_FAILED";
                     break;
                 }
+
                 synchronized (this) {
                     if (userExists(username)) {
                         reply = "USER_EXISTS";
                     } else {
-                        boolean saved = addUserToDocument(username, password);
+                        boolean saved = addUserToDocument(username, password, verification); // update method
                         if (saved) {
                             try {
                                 createUserAccountXML(username);
@@ -2119,7 +2130,7 @@ public class ServerXMLHandler {
         return false;
     }
 
-    private boolean addUserToDocument(String username, String password) {
+    private boolean addUserToDocument(String username, String password, String verification) {
         try {
             File file = new File(FILE_PATH);
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -2149,6 +2160,10 @@ public class ServerXMLHandler {
             Element pass = doc.createElement("password");
             pass.appendChild(doc.createTextNode(password.trim()));
             userElement.appendChild(pass);
+
+            Element verify = doc.createElement("verification");
+            verify.appendChild(doc.createTextNode(verification.trim()));
+            userElement.appendChild(verify);
 
             root.appendChild(userElement);
 

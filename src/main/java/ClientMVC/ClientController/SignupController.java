@@ -11,42 +11,39 @@ public class SignupController {
     private final UnifiedClientModel model;
     private final SignupView view;
     private final SignupJFXController fxController;
-    private UserXMLHandler xmlHandler = new UserXMLHandler();
+    private final UserXMLHandler xmlHandler = new UserXMLHandler();
 
     public SignupController(UnifiedClientModel model, SignupView view, SignupJFXController fxController) {
         this.model = model;
         this.view = view;
         this.fxController = fxController;
 
-        // Set up message listener for signup responses
+        // Listen for signup responses from the model
         model.setMessageListener(this::handleSignupResponse);
+
         initialize();
     }
 
     private void initialize() {
-        // Handle signup button click
+        // Signup button
         fxController.setSignupButtonListener(() -> {
             if (validateInput()) {
                 fxController.getSignupButton().setDisable(true);
 
                 String username = fxController.getUsername();
                 String password = fxController.getPassword();
+                String verification = fxController.getVerificationCode();
 
-                // Send signup request through unified model
-                String xmlMessage = "<Request><type>REGISTER</type><content>" +
-                        username + "![]!" + password + "</content></Request>";
-                model.sendRawMessage(xmlMessage);
+                // Use model.signup instead of building XML here
+                model.signup(username, password, verification);
             }
         });
 
-        // Handle sign in link click
+        // Switch to Login link
         fxController.setSignInListener(() -> {
             Platform.runLater(() -> {
                 try {
-                    // Hide signup stage
                     view.getStage().hide();
-
-                    // Show login stage
                     Stage loginStage = ClientMVC.ClientView.Login.LoginView.getPrimaryStage();
                     if (loginStage != null) {
                         loginStage.show();
@@ -61,12 +58,9 @@ public class SignupController {
     private boolean validateInput() {
         String username = fxController.getUsername();
         String password = fxController.getPassword();
-        String firstName = fxController.getFirstName();
-        String lastName = fxController.getLastName();
-        String email = fxController.getEmail();
-        boolean termsAccepted = fxController.isTermsAccepted();
+        String confirmPassword = fxController.getConfirmPassword();
+        String verification = fxController.getVerificationCode();
 
-        // Basic validation
         if (username == null || username.trim().isEmpty()) {
             fxController.showAlert("Username is required");
             return false;
@@ -77,33 +71,21 @@ public class SignupController {
             return false;
         }
 
-        if (firstName == null || firstName.trim().isEmpty()) {
-            fxController.showAlert("First name is required");
+        if (confirmPassword == null || confirmPassword.trim().isEmpty()) {
+            fxController.showAlert("Please confirm your password");
             return false;
         }
 
-        if (lastName == null || lastName.trim().isEmpty()) {
-            fxController.showAlert("Last name is required");
+        if (!password.equals(confirmPassword)) {
+            fxController.showAlert("Passwords do not match");
             return false;
         }
 
-        if (email == null || email.trim().isEmpty()) {
-            fxController.showAlert("Email is required");
+        if (verification == null || verification.trim().isEmpty()) {
+            fxController.showAlert("Verification code is required");
             return false;
         }
 
-        if (!termsAccepted) {
-            fxController.showAlert("You must accept the terms and conditions");
-            return false;
-        }
-
-        // Basic email validation
-        if (!email.contains("@") || !email.contains(".")) {
-            fxController.showAlert("Please enter a valid email address");
-            return false;
-        }
-
-        // Password length validation
         if (password.length() < 6) {
             fxController.showAlert("Password must be at least 6 characters long");
             return false;
@@ -115,23 +97,13 @@ public class SignupController {
     private void handleSignupResponse(String msg) {
         try {
             String reply = xmlHandler.getReply(msg.trim());
-            if (reply != null && reply.equals("REGISTER_SUCCESS")) {
+            if ("REGISTER_SUCCESS".equals(reply)) {
                 Platform.runLater(() -> {
                     fxController.showAlert("Registration successful! Please login with your new account.");
                     fxController.getSignupButton().setDisable(false);
-
-                    // Navigate back to Log in
-                    try {
-                        view.getStage().hide();
-                        Stage loginStage = ClientMVC.ClientView.Login.LoginView.getPrimaryStage();
-                        if (loginStage != null) {
-                            loginStage.show();
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+                    navigateToLogin();
                 });
-            } else if (reply != null && reply.equals("REGISTER_FAILED")) {
+            } else if ("REGISTER_FAILED".equals(reply)) {
                 Platform.runLater(() -> {
                     fxController.showAlert("Registration failed. Username may already exist.");
                     fxController.getSignupButton().setDisable(false);
@@ -142,7 +114,19 @@ public class SignupController {
                 fxController.showAlert("Error processing registration response.");
                 fxController.getSignupButton().setDisable(false);
             });
-            System.out.println("Error processing signup response: " + e.getMessage());
+            System.out.println("Error in handleSignupResponse: " + e.getMessage());
+        }
+    }
+
+    private void navigateToLogin() {
+        try {
+            view.getStage().hide();
+            Stage loginStage = ClientMVC.ClientView.Login.LoginView.getPrimaryStage();
+            if (loginStage != null) {
+                loginStage.show();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
