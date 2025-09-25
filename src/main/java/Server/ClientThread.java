@@ -176,12 +176,23 @@ public class ClientThread implements Runnable {
                         sendMessage("<Response><reply>GROUP_DELETE_FAILED</reply><body>Failed to delete group</body></Response>");
                         break;
                     case "PASSWORD_CHANGED":
-                        String[] passwordContent = extractContent(xmlMsg);
-                        sendMessage("<Response><reply>PASSWORD_CHANGED</reply><body>Password changed for " + passwordContent[0] + "</body></Response>");
+                        String[] passwordChangeContent = extractContent(xmlMsg);
+                        String passwordUsername = passwordChangeContent.length > 0 ? passwordChangeContent[0] : this.name;
+
+                        // Send success response
+                        sendMessage("<Response status=\"PASSWORD_CHANGED\"><body>Password changed successfully</body></Response>");
+
+                        // Send updated account XML (password changes don't affect the account XML content directly,
+                        // but this ensures client has the latest data)
+                        if (passwordUsername != null) {
+                            sendUpdatedAccountXML(passwordUsername);
+                        }
                         break;
+
                     case "PASSWORD_CHANGE_FAILED":
-                        sendMessage("<Response><reply>PASSWORD_CHANGE_FAILED</reply><body>Failed to change password</body></Response>");
+                        sendMessage("<Response status=\"PASSWORD_CHANGE_FAILED\"><body>Failed to change password. Please try again.</body></Response>");
                         break;
+
                     case "USER_CREATED":
                         String[] createUserContent = extractContent(xmlMsg);
                         sendMessage("<Response><reply>USER_CREATED</reply><body>User " + createUserContent[0] + " created successfully</body></Response>");
@@ -567,17 +578,19 @@ public class ClientThread implements Runnable {
                         }
                         break;
                     case "USERNAME_CHANGED":
-                        parts = reply.split("!\\[]!");
-                        if (parts.length >= 3) {
-                            String changedUsername = parts[1];
-                            String updatedAccountXML = parts[2];
+                        String[] usernameChangeContent = extractContent(xmlMsg);
 
-                            this.name = changedUsername;
+                        if (usernameChangeContent.length > 1) {
+                            newUsername = usernameChangeContent[1];
+                            this.name = newUsername;
 
-                            // Send success response with updated XML data
-                            sendMessage("<Response><type> USERNAME_CHANGED</type><body>Username successfully changed to " + changedUsername + "![]!" + updatedAccountXML + "</body></Response>");
+                            // Send success response
+                            sendMessage("<Response status=\"USERNAME_CHANGED\"><body>Username successfully changed to " + newUsername + "</body></Response>");
+
+                            // Send updated account XML
+                            sendUpdatedAccountXML(newUsername);
                         } else {
-                            sendMessage("<Response><type> USERNAME_CHANGED</type><body>Username successfully changed</body></Response>");
+                            sendMessage("<Response status=\"USERNAME_CHANGED\"><body>Username successfully changed</body></Response>");
                         }
                         break;
                     case "USERNAME_CHANGE_FAILED":
@@ -748,5 +761,23 @@ public class ClientThread implements Runnable {
         }
         socket.close();
     }
+
+    private void sendUpdatedAccountXML(String username) {
+        try {
+            File userFile = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
+            if (userFile.exists()) {
+                byte[] fileContent = java.nio.file.Files.readAllBytes(userFile.toPath());
+                String encodedContent = java.util.Base64.getEncoder().encodeToString(fileContent);
+                sendMessage("<Response><reply>GET_CHAT_HISTORY</reply><body>" + encodedContent + "</body></Response>");
+                System.out.println("Sent updated account XML to user: " + username);
+            } else {
+                System.err.println("Account file not found for user: " + username);
+            }
+        } catch (Exception e) {
+            System.err.println("Error sending updated account XML: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
 
 }

@@ -3189,7 +3189,14 @@ public class ServerXMLHandler {
             // Step 3: Rename the user's account XML file
             renameUserAccountFile(oldUsername, newUsername);
 
-            return "USERNAME_CHANGED";
+            // Step 4: Get the updated account XML and return it with the response
+            String updatedAccountXML = getUpdatedAccountXML(newUsername);
+
+            if (!updatedAccountXML.isEmpty()) {
+                return "USERNAME_CHANGED![]!" + newUsername + "![]!" + updatedAccountXML;
+            } else {
+                return "USERNAME_CHANGED![]!" + newUsername;
+            }
 
         } catch (Exception e) {
             System.err.println("Error changing username: " + e.getMessage());
@@ -3197,6 +3204,8 @@ public class ServerXMLHandler {
             return "USERNAME_CHANGE_FAILED";
         }
     }
+
+    // Also modify the changePassword method to include updated account data:
     public synchronized String changePassword(String username, String oldPassword, String newPassword) {
         try {
             // Validate inputs
@@ -3249,7 +3258,7 @@ public class ServerXMLHandler {
                 return "PASSWORD_CHANGE_FAILED";
             }
 
-            // FIXED: Use consistent transformer settings
+            // Save updated Users.xml
             removeEmptyTextNodes(doc);
             TransformerFactory tf = TransformerFactory.newInstance();
             Transformer transformer = tf.newTransformer();
@@ -3261,7 +3270,15 @@ public class ServerXMLHandler {
             transformer.transform(new DOMSource(doc), new StreamResult(file));
 
             System.out.println("Password changed for user: " + username);
-            return "PASSWORD_CHANGED";
+
+            // Get updated account XML and return it with the response
+            String updatedAccountXML = getUpdatedAccountXML(username);
+
+            if (!updatedAccountXML.isEmpty()) {
+                return "PASSWORD_CHANGED![]!" + username + "![]!" + updatedAccountXML;
+            } else {
+                return "PASSWORD_CHANGED![]!" + username;
+            }
 
         } catch (Exception e) {
             System.err.println("Error changing password: " + e.getMessage());
@@ -3269,6 +3286,7 @@ public class ServerXMLHandler {
             return "PASSWORD_CHANGE_FAILED";
         }
     }
+
     /**
      * Updates username references in all account XML files
      * This includes chat histories, group memberships, and friend relationships

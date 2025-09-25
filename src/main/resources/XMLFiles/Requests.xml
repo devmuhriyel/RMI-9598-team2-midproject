@@ -18,7 +18,51 @@
 </requests>
          
     </request>
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <request>
+
+
+
+        <from>alice</from>
+
+
+
+        <to>steven</to>
+
+
+
+        <status>pending</status>
+
+
+
+    </request>
+
+
+
+    <request>
+
+        <from>alice</from>
+
+        <to>rea</to>
+
+        <status>pending</status>
+
+    </request>
+
     <request>
         <from>bob</from>
         <to>joshua</to>
