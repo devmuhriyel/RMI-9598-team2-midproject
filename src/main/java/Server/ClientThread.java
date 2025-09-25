@@ -575,22 +575,22 @@ public class ClientThread implements Runnable {
                             this.name = changedUsername;
 
                             // Send success response with updated XML data
-                            sendMessage("<Response status=\"USERNAME_CHANGED\"><body>Username successfully changed to " + changedUsername + "![]!" + updatedAccountXML + "</body></Response>");
+                            sendMessage("<Response><type> USERNAME_CHANGED</type><body>Username successfully changed to " + changedUsername + "![]!" + updatedAccountXML + "</body></Response>");
                         } else {
-                            sendMessage("<Response status=\"USERNAME_CHANGED\"><body>Username successfully changed</body></Response>");
+                            sendMessage("<Response><type> USERNAME_CHANGED</type><body>Username successfully changed</body></Response>");
                         }
                         break;
                     case "USERNAME_CHANGE_FAILED":
-                        sendMessage("<Response status=\"USERNAME_CHANGE_FAILED\"><body>Failed to change username. Please try again.</body></Response>");
+                        sendMessage("<Response><type> USERNAME_CHANGE_FAILED</type><body>Failed to change username. Please try again.</body></Response>");
                         break;
                     case "USERNAME_EXISTS":
-                        sendMessage("<Response status=\"USERNAME_EXISTS\"><body>Username already exists. Please choose a different username.</body></Response>");
+                        sendMessage("<Response><type> USERNAME_EXISTS</type><body>Username already exists. Please choose a different username.</body></Response>");
                         break;
                     case "USER_EXISTS":
                         sendMessage("<Response><reply>USER_EXISTS</reply><body>Username already exists. Please choose a different username.</body></Response>");
                         break;
                     case "INVALID_OLD_PASSWORD":
-                        sendMessage("<Response status=\"INVALID_OLD_PASSWORD\"><body>Current password is incorrect.</body></Response>");
+                        sendMessage("<Response><type> INVALID_PASSWORD</type><body>Current password is incorrect.</body></Response>");
                         break;
 
                         //to validate

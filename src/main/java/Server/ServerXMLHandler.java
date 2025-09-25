@@ -1941,7 +1941,6 @@ public class ServerXMLHandler {
     }
     public void fixExistingGroupMemberships() {
         try {
-            System.out.println("Starting to fix existing group memberships...");
             Document doc = loadDocument();
             NodeList groupList = doc.getElementsByTagName("group");
 
@@ -1961,9 +1960,6 @@ public class ServerXMLHandler {
                     ensureUserHasGroupInAccount(memberName, groupName);
                 }
             }
-
-            System.out.println("Finished fixing existing group memberships.");
-
         } catch (Exception e) {
             System.err.println("Error fixing existing group memberships: " + e.getMessage());
             e.printStackTrace();
