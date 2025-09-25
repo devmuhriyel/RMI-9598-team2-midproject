@@ -1447,7 +1447,7 @@ public class ServerXMLHandler {
                     java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "]";
             communityMessages.add(formattedMessage);
             if (communityMessages.size() > 100) {
-                communityMessages.removeFirst();
+                communityMessages.remove(0);
             }
         }
     }

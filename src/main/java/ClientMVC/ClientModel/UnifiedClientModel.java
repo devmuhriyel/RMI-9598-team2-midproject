@@ -1011,19 +1011,25 @@ public class UnifiedClientModel implements Runnable {
         }
     }
 
+//    public void addFriend(String friendUsername) {
+//        try {
+//            String xmlMessage = "<Request><type>ADD_FRIEND_REQUEST</type><content>" +
+//                    username + "![]!" + friendUsername + "</content></Request>";
+//            System.out.println("Sending friend request: " + xmlMessage);
+//            writeMSG.write(xmlMessage);
+//            writeMSG.newLine();
+//            writeMSG.flush();
+//        } catch (IOException e) {
+//            System.err.println("Error sending friend request: " + e.getMessage());
+//            e.printStackTrace();
+//        }
+//    }
+
     public void addFriend(String friendUsername) {
-        try {
-            String xmlMessage = "<Request><type>ADD_FRIEND_REQUEST</type><content>" +
-                    username + "![]!" + friendUsername + "</content></Request>";
-            System.out.println("Sending friend request: " + xmlMessage);
-            writeMSG.write(xmlMessage);
-            writeMSG.newLine();
-            writeMSG.flush();
-        } catch (IOException e) {
-            System.err.println("Error sending friend request: " + e.getMessage());
-            e.printStackTrace();
-        }
+        System.out.println("UnifiedClientModel: Adding friend " + friendUsername);
+        UserXMLHandler.addFriendRequest(this.username, friendUsername);
     }
+
     public void getFriendRequests() {
         try {
             String xmlMessage = "<Request><type>GET_FRIEND_REQUESTS</type><content>" +

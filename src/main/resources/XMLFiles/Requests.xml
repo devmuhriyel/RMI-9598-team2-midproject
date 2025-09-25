@@ -1,3 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<Requests>
-</Requests>
+<requests>
+    
+    <request>
+        <from>alice</from>
+        <to>joshua</to>
+        <status>pending</status>
+    </request>
+</requests>
