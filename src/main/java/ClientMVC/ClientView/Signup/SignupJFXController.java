@@ -3,10 +3,9 @@ package ClientMVC.ClientView.Signup;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 
-public class SignupJFXController {
+import java.util.function.Consumer;
 
-    @FXML
-    private Hyperlink signInLink;
+public class SignupJFXController {
 
     @FXML
     private TextField usernameField;
@@ -15,45 +14,22 @@ public class SignupJFXController {
     private PasswordField passwordField;
 
     @FXML
-    private Button signupButton;
+    private PasswordField confirmPasswordField;
 
     @FXML
     private TextField verificationField;
 
-    private Runnable signInListener;
-
-    private Runnable signupButtonListener;
+    @FXML
+    private Button signupButton;
 
     @FXML
-    private PasswordField confirmPasswordField;
+    private Hyperlink signInLink;
 
-    @FXML
-    private void initialize() {
-        signupButton.setOnAction(event -> {
-            if (signupButtonListener != null) {
-                signupButtonListener.run();
-            }
-        });
+    // Callbacks → set by SignupController
+    private Runnable onSignup;
+    private Runnable onSignIn;
 
-        signInLink.setOnAction(e -> {
-            if (signInListener != null) {
-                signInListener.run();
-            }
-        });
-    }
-
-    public String getVerificationCode() {
-        return verificationField.getText();
-    }
-
-    public void setSignupButtonListener(Runnable listener) {
-        this.signupButtonListener = listener;
-    }
-
-    public void setSignInListener(Runnable listener) {
-        this.signInListener = listener;
-    }
-
+    // ====== Exposed Getters for Controller ======
     public String getUsername() {
         return usernameField.getText();
     }
@@ -66,15 +42,34 @@ public class SignupJFXController {
         return confirmPasswordField.getText();
     }
 
-    public void showAlert(String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Signup");
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+    public String getVerificationCode() {
+        return verificationField.getText();
     }
+
     public Button getSignupButton() {
         return signupButton;
     }
 
+    // ====== Listeners to be injected by Controller ======
+    public void setSignupButtonListener(Runnable listener) {
+        this.onSignup = listener;
+        signupButton.setOnAction(e -> {
+            if (onSignup != null) onSignup.run();
+        });
+    }
+
+    public void setSignInListener(Runnable listener) {
+        this.onSignIn = listener;
+        signInLink.setOnAction(e -> {
+            if (onSignIn != null) onSignIn.run();
+        });
+    }
+
+    // ====== Feedback helper for Controller ======
+    public void showAlert(String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
 }

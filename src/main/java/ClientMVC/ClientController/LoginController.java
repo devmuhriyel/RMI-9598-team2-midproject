@@ -41,15 +41,16 @@ public class LoginController {
             Platform.runLater(() -> {
                 try {
                     LoginView.getPrimaryStage().close();
+
                     SignupView signupView = new SignupView();
-                    Stage signupStage = new Stage();
-                    signupView.start(signupStage);
-                    new SignupController(model, signupView, signupView.getFXController());
+                    new SignupController(model, signupView, signupView.getFxController());
+                    signupView.getStage().show();
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }
             });
         });
+
 
         loginJFXController.setForgotPasswordLinkListener(() -> {
             handleForgotPassword();

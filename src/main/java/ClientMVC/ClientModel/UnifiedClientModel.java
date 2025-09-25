@@ -972,6 +972,13 @@ public class UnifiedClientModel implements Runnable {
         }
     }
 
+    public void signup(String username, String password, String verification) {
+        String xmlMessage = "<Request><type>REGISTER</type><content>" +
+                username + "![]!" + password + "![]!" + verification + "</content></Request>";
+        sendRawMessage(xmlMessage);
+    }
+
+
     // SETTERS FOR CALLBACKS
     public void setPasswordResetNotificationCallback(PasswordResetNotificationCallback callback) {
         this.passwordResetNotificationCallback = callback;
