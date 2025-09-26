@@ -3,7 +3,7 @@
     <group>
         <groupname>BananaGang</groupname>
         <groupOwner>joshua</groupOwner>
-        <username>rea</username>
+        <username>Rea</username>
         <username>charlie</username>
         <username>boba</username>
         <username>carl</username>
@@ -12,6 +12,11 @@
     <friendRequests>
         <request>
             <user>bob</user>
+            <type>received</type>
+            <status>pending</status>
+        </request>
+        <request>
+            <user>boba</user>
             <type>received</type>
             <status>pending</status>
         </request>
