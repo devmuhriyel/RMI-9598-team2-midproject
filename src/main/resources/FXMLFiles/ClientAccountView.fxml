@@ -219,11 +219,24 @@
                                 <Glow />
                             </effect>
                         </Label>
-                        <AnchorPane fx:id="requestMainFrame" layoutX="1.0" layoutY="22.0" prefHeight="342.0" prefWidth="382.0">
+
+                        <!-- Toggle Buttons for Received/Sent Requests -->
+                        <HBox fx:id="requestToggleButtons" alignment="CENTER" layoutY="38.0" prefHeight="30.0" prefWidth="390.0" spacing="10.0">
                             <children>
-                                <ScrollPane fx:id="requestScrollPane" fitToWidth="true" layoutY="29.0" prefHeight="312.0" prefWidth="382.0" style="-fx-background: transparent; -fx-background-color: transparent;" vbarPolicy="ALWAYS">
+                                <Button fx:id="requestsAccountButton" mnemonicParsing="false" prefHeight="25.0" prefWidth="100.0"
+                                        style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Received" />
+                                <Button fx:id="sentRequestButton" mnemonicParsing="false" prefHeight="25.0" prefWidth="100.0"
+                                        style="-fx-background-color: #525252; -fx-text-fill: white;" text="Sent" />
+                            </children>
+                        </HBox>
+
+                        <AnchorPane fx:id="requestMainFrame" layoutX="1.0" layoutY="68.0" prefHeight="295.0" prefWidth="382.0">
+                            <children>
+                                <ScrollPane fx:id="requestScrollPane" fitToWidth="true" prefHeight="295.0" prefWidth="382.0"
+                                            style="-fx-background: transparent; -fx-background-color: transparent;" vbarPolicy="AS_NEEDED">
                                     <content>
-                                        <VBox fx:id="requestList" alignment="TOP_CENTER" prefHeight="312.0" prefWidth="366.0" spacing="15.0" style="-fx-padding: 15;">
+                                        <VBox fx:id="requestList" alignment="TOP_CENTER" prefHeight="295.0" prefWidth="366.0"
+                                              spacing="10.0" style="-fx-padding: 10;">
                                         </VBox>
                                     </content>
                                 </ScrollPane>

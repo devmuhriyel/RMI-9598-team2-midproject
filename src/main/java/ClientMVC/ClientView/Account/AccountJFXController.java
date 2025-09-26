@@ -73,6 +73,7 @@ public class AccountJFXController {
     private boolean showingSentRequests = false;
     private Consumer<Void> receivedRequestsListener;
     private Runnable sentRequestButtonListener;
+    private Consumer<String> cancelSentRequestListener;
 
     // Top Section for Draggable
     private double xOffset = 0;
@@ -601,7 +602,7 @@ public class AccountJFXController {
             currentUsernameLabel.setText(newUsername);
         }
     }
-    public void renderRequestList(List<String> requests) {
+    public void renderRequestList(List<String> requests, boolean showingSentRequests) {
         Platform.runLater(() -> {
             requestList.getChildren().clear();
 
@@ -609,6 +610,7 @@ public class AccountJFXController {
                 String emptyMessage = showingSentRequests ? "No sent requests" : "No friend requests";
                 javafx.scene.control.Label emptyLabel = new javafx.scene.control.Label(emptyMessage);
                 emptyLabel.setTextFill(javafx.scene.paint.Color.WHITE);
+                emptyLabel.setStyle("-fx-font-size: 14px; -fx-padding: 20px;");
                 requestList.getChildren().add(emptyLabel);
                 return;
             }
@@ -628,11 +630,12 @@ public class AccountJFXController {
             }
         });
     }
+
     private javafx.scene.layout.AnchorPane createSentRequestFrame(String friendName) {
         javafx.scene.layout.AnchorPane requestFrame = new javafx.scene.layout.AnchorPane();
         requestFrame.setPrefHeight(65.0);
         requestFrame.setPrefWidth(372.0);
-        requestFrame.setStyle("-fx-background-color: #2a2a2a; -fx-background-radius: 10;");
+        requestFrame.setStyle("-fx-background-color: #2a2a2a; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 5, 0, 0, 2);");
 
         // Friend name label
         javafx.scene.control.Label userLabel = new javafx.scene.control.Label("Request sent to " + friendName);
@@ -640,28 +643,43 @@ public class AccountJFXController {
         userLabel.setLayoutY(24.0);
         userLabel.setTextFill(javafx.scene.paint.Color.WHITE);
         userLabel.setFont(javafx.scene.text.Font.font("Gill Sans MT", 12.0));
+        userLabel.setPrefWidth(200.0);
 
-        // Cancel button
+        // Status label
+        javafx.scene.control.Label statusLabel = new javafx.scene.control.Label("Pending");
+        statusLabel.setLayoutX(220.0);
+        statusLabel.setLayoutY(24.0);
+        statusLabel.setTextFill(javafx.scene.paint.Color.ORANGE);
+        statusLabel.setFont(javafx.scene.text.Font.font("Gill Sans MT", 10.0));
+
+        // Cancel button - fixed the syntax error
         javafx.scene.control.Button cancelButton = new javafx.scene.control.Button("Cancel");
-        cancelButton.setLayoutX(270.0);
-        cancelButton.setLayoutY(20.0);
-        cancelButton.setStyle("-fx-background-color: #b32626; -fx-text-fill: white;");
+        cancelButton.setLayoutX(290.0);
+        cancelButton.setLayoutY(20.0); // Fixed: removed the = sign
+        cancelButton.setStyle("-fx-background-color: #b32626; -fx-text-fill: white; -fx-background-radius: 5;");
+        cancelButton.setPrefWidth(60.0);
+        cancelButton.setPrefHeight(25.0);
 
         cancelButton.setOnAction(e -> {
-            System.out.println("Cancelled sent request to " + friendName);
+            System.out.println("Cancel button clicked for: " + friendName);
+
+            // Remove from UI immediately for better UX
             requestList.getChildren().remove(requestFrame);
-            // Note: You might want to implement a cancel request method in the model
-            // For now, this just removes it from the UI
+
+            // Call the controller's cancel method - NO direct model calls from JFX controller
+            if (cancelSentRequestListener != null) {
+                cancelSentRequestListener.accept(friendName);
+            }
         });
 
-        requestFrame.getChildren().addAll(userLabel, cancelButton);
+        requestFrame.getChildren().addAll(userLabel, statusLabel, cancelButton);
         return requestFrame;
     }
     private javafx.scene.layout.AnchorPane createReceivedRequestFrame(String friendName) {
         javafx.scene.layout.AnchorPane requestFrame = new javafx.scene.layout.AnchorPane();
         requestFrame.setPrefHeight(65.0);
         requestFrame.setPrefWidth(372.0);
-        requestFrame.setStyle("-fx-background-color: #2a2a2a; -fx-background-radius: 10;");
+        requestFrame.setStyle("-fx-background-color: #2a2a2a; -fx-background-radius: 10; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 5, 0, 0, 2);");
 
         // Friend name label
         javafx.scene.control.Label userLabel = new javafx.scene.control.Label(friendName + " wants to be your friend");
@@ -669,32 +687,43 @@ public class AccountJFXController {
         userLabel.setLayoutY(24.0);
         userLabel.setTextFill(javafx.scene.paint.Color.WHITE);
         userLabel.setFont(javafx.scene.text.Font.font("Gill Sans MT", 12.0));
+        userLabel.setPrefWidth(180.0);
 
         // Accept button
         javafx.scene.control.Button acceptButton = new javafx.scene.control.Button("Accept");
         acceptButton.setLayoutX(200.0);
         acceptButton.setLayoutY(20.0);
-        acceptButton.setStyle("-fx-background-color: #8700b1; -fx-text-fill: white;");
+        acceptButton.setStyle("-fx-background-color: #8700b1; -fx-text-fill: white; -fx-background-radius: 5;");
+        acceptButton.setPrefWidth(60.0);
+        acceptButton.setPrefHeight(25.0);
 
         acceptButton.setOnAction(e -> {
-            System.out.println("Accepting friend request from " + friendName);
+            System.out.println("Accept button clicked for: " + friendName);
+
+            // Remove from UI immediately for better UX
             requestList.getChildren().remove(requestFrame);
 
+            // Call the controller's accept method - NO direct model calls
             if (acceptRequestListener != null) {
                 acceptRequestListener.accept(friendName);
             }
         });
 
-        // Decline button
+        // Decline button - completing the cut-off code
         javafx.scene.control.Button declineButton = new javafx.scene.control.Button("Decline");
         declineButton.setLayoutX(270.0);
         declineButton.setLayoutY(20.0);
-        declineButton.setStyle("-fx-background-color: #525252; -fx-text-fill: white;");
+        declineButton.setStyle("-fx-background-color: #525252; -fx-text-fill: white; -fx-background-radius: 5;");
+        declineButton.setPrefWidth(60.0);
+        declineButton.setPrefHeight(25.0);
 
         declineButton.setOnAction(e -> {
-            System.out.println("Declining friend request from " + friendName);
+            System.out.println("Decline button clicked for: " + friendName);
+
+            // Remove from UI immediately for better UX
             requestList.getChildren().remove(requestFrame);
 
+            // Call the controller's decline method - NO direct model calls
             if (declineRequestListener != null) {
                 declineRequestListener.accept(friendName);
             }
@@ -764,5 +793,16 @@ public class AccountJFXController {
 
     public void setDeclineRequestListener(Consumer<String> listener) {
         this.declineRequestListener = listener;
+    }
+    public void setCancelSentRequestListener(Consumer<String> listener) {
+        this.cancelSentRequestListener = listener;
+    }
+    private void showSuccessAlert(String title, String message) {
+        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.getDialogPane().setPrefSize(300, 120);
+        alert.showAndWait();
     }
 }

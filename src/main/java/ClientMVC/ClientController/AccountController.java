@@ -217,43 +217,69 @@ public class AccountController {
         }
     }
     private void setupFriendRequestHandling() {
+        // Set up sent request button listener
         accountJFXController.setSentRequestButtonListener(() -> {
             System.out.println("Requesting sent friend requests...");
             model.getSentRequests();
         });
 
+        // Set up received requests button listener
         accountJFXController.setReceivedRequestsListener((Void) -> {
             System.out.println("Requesting received friend requests...");
             model.getReceivedRequests();
         });
 
+        // Set up accept request listener - calls model through controller
         accountJFXController.setAcceptRequestListener(friendName -> {
-            System.out.println("Accepting friend request from: " + friendName);
-            model.acceptFriendRequestNew(friendName);
+            handleAcceptFriendRequest(friendName);
         });
 
+        // Set up decline request listener - calls model through controller
         accountJFXController.setDeclineRequestListener(friendName -> {
-            System.out.println("Declining friend request from: " + friendName);
-            model.declineFriendRequestNew(friendName);
+            handleDeclineFriendRequest(friendName);
         });
 
+        // NEW: Set up cancel sent request listener - calls model through controller
+        accountJFXController.setCancelSentRequestListener(friendName -> {
+            handleCancelSentRequest(friendName);
+        });
+
+        // Set up friend request response listener
         model.setFriendRequestListener(response -> {
             Platform.runLater(() -> {
+                System.out.println("Friend request response: " + response);
+
                 switch (response) {
-                    case "REQUEST_ACCEPTED":
+                    case "FRIEND_REQUEST_ACCEPTED_NEW":
                         System.out.println("Friend request was accepted");
                         showSuccessAlert("Friend Request", "Friend request accepted successfully!");
+                        // Refresh received requests to update the list
                         model.getReceivedRequests();
                         break;
 
-                    case "REQUEST_DECLINED":
+                    case "FRIEND_REQUEST_DECLINED_NEW":
                         System.out.println("Friend request was declined");
                         showSuccessAlert("Friend Request", "Friend request declined.");
+                        // Refresh received requests to update the list
                         model.getReceivedRequests();
                         break;
 
-                    case "FRIENDS_UPDATED":
-                        System.out.println("Friends list updated");
+                    case "FRIEND_REQUEST_CANCELLED":
+                        System.out.println("Friend request was cancelled");
+                        showSuccessAlert("Friend Request", "Friend request cancelled.");
+                        // Refresh sent requests to update the list
+                        model.getSentRequests();
+                        break;
+
+                    case "FRIEND_REQUEST_ADDED":
+                        System.out.println("Friend request sent successfully");
+                        showSuccessAlert("Friend Request", "Friend request sent!");
+                        break;
+
+                    case "REQUEST_ACCEPTED":
+                    case "REQUEST_DECLINED":
+                        // Handle legacy responses
+                        System.out.println("Legacy friend request response: " + response);
                         break;
 
                     default:
@@ -268,40 +294,79 @@ public class AccountController {
                 }
             });
         });
+
+        // Load received requests initially when the view is shown
         Platform.runLater(() -> {
             model.getReceivedRequests();
         });
     }
+    private void handleAcceptFriendRequest(String friendName) {
+        System.out.println("Controller: Accepting friend request from: " + friendName);
+
+        // Show immediate feedback
+        Platform.runLater(() -> {
+            showSuccessAlert("Friend Request", "Accepting friend request from " + friendName + "...");
+        });
+
+        // Call model
+        model.acceptFriendRequestNew(friendName);
+    }
+    private void handleDeclineFriendRequest(String friendName) {
+        System.out.println("Controller: Declining friend request from: " + friendName);
+
+        // Show immediate feedback
+        Platform.runLater(() -> {
+            showSuccessAlert("Friend Request", "Declining friend request from " + friendName + "...");
+        });
+
+        // Call model
+        model.declineFriendRequestNew(friendName);
+    }
+    private void handleCancelSentRequest(String friendName) {
+        System.out.println("Controller: Cancelling sent request to: " + friendName);
+
+        // Show immediate feedback
+        Platform.runLater(() -> {
+            showSuccessAlert("Friend Request", "Cancelling friend request to " + friendName + "...");
+        });
+
+        // Call model to cancel the request
+        model.cancelSentRequest(friendName);
+    }
     private void handleSentRequests(String requestData) {
         System.out.println("Handling sent requests: " + requestData);
 
-        if (requestData != null && !requestData.isEmpty()) {
+        List<String> requestList = new ArrayList<>();
+        if (requestData != null && !requestData.trim().isEmpty()) {
             String[] requests = requestData.split(",");
-            List<String> requestList = new ArrayList<>();
             for (String request : requests) {
-                if (!request.trim().isEmpty()) {
-                    requestList.add(request.trim());
+                String trimmedRequest = request.trim();
+                if (!trimmedRequest.isEmpty()) {
+                    requestList.add(trimmedRequest);
                 }
             }
-            accountJFXController.renderRequestList(requestList);
-        } else {
-            accountJFXController.renderRequestList(new ArrayList<>());
         }
+
+        // Pass to JFX controller for UI rendering only
+        accountJFXController.renderRequestList(requestList, true); // true for sent requests
     }
+
     private void handleReceivedRequests(String requestData) {
         System.out.println("Handling received requests: " + requestData);
-        if (requestData != null && !requestData.isEmpty()) {
+
+        List<String> requestList = new ArrayList<>();
+        if (requestData != null && !requestData.trim().isEmpty()) {
             String[] requests = requestData.split(",");
-            List<String> requestList = new ArrayList<>();
             for (String request : requests) {
-                if (!request.trim().isEmpty()) {
-                    requestList.add(request.trim());
+                String trimmedRequest = request.trim();
+                if (!trimmedRequest.isEmpty()) {
+                    requestList.add(trimmedRequest);
                 }
             }
-            accountJFXController.renderRequestList(requestList);
-        } else {
-            accountJFXController.renderRequestList(new ArrayList<>());
         }
+
+        // Pass to JFX controller for UI rendering only
+        accountJFXController.renderRequestList(requestList, false); // false for received requests
     }
 
     private void showSuccessAlert(String title, String message) {
@@ -312,7 +377,6 @@ public class AccountController {
         alert.getDialogPane().setPrefSize(300, 120);
         alert.showAndWait();
     }
-
     private String extractNewUsernameFromResponse(String xmlResponse) {
         try {
             if (xmlResponse != null && xmlResponse.contains("Username successfully changed to ")) {

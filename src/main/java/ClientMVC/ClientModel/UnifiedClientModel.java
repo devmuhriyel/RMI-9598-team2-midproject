@@ -77,6 +77,19 @@ public class UnifiedClientModel implements Runnable {
                 }
             }
             switch (reply) {
+                case "FRIEND_REQUEST_CANCELLED":
+                    if (friendRequestListener != null) {
+                        Platform.runLater(() -> friendRequestListener.accept("FRIEND_REQUEST_CANCELLED"));
+                    }
+                    // Also handle the account update
+                    handleChatHistoryResponse(xmlResponse, false);
+                    break;
+
+                case "FRIEND_REQUEST_CANCEL_FAILED":
+                    if (friendRequestListener != null) {
+                        Platform.runLater(() -> friendRequestListener.accept("FRIEND_REQUEST_CANCEL_FAILED"));
+                    }
+                    break;
                 case "USERNAME_CHANGED":
                     handleUsernameChangeWithData(xmlResponse);
                     if (accountUpdateListener != null) {
@@ -180,17 +193,35 @@ public class UnifiedClientModel implements Runnable {
                 case "RECEIVED_REQUESTS":
                     handleReceivedRequestsResponse(xmlResponse);
                     break;
-                case "FRIEND_REQUEST_ACCEPTED":
+                case "FRIEND_REQUEST_ACCEPTED_NEW":
                     if (friendRequestListener != null) {
-                        Platform.runLater(() -> friendRequestListener.accept("REQUEST_ACCEPTED"));
+                        Platform.runLater(() -> friendRequestListener.accept("FRIEND_REQUEST_ACCEPTED_NEW"));
                     }
-                    if (chatHistoryListener != null) {
-                        Platform.runLater(() -> chatHistoryListener.accept("FRIENDS_UPDATED"));
-                    }
+                    // Also handle the account update
+                    handleChatHistoryResponse(xmlResponse, false);
                     break;
-                case "FRIEND_REQUEST_DECLINED":
+
+                case "FRIEND_REQUEST_DECLINED_NEW":
                     if (friendRequestListener != null) {
-                        Platform.runLater(() -> friendRequestListener.accept("REQUEST_DECLINED"));
+                        Platform.runLater(() -> friendRequestListener.accept("FRIEND_REQUEST_DECLINED_NEW"));
+                    }
+                    // Also handle the account update
+                    handleChatHistoryResponse(xmlResponse, false);
+                    break;
+
+                case "FRIEND_REQUEST_ADDED":
+                    if (friendRequestListener != null) {
+                        Platform.runLater(() -> friendRequestListener.accept("FRIEND_REQUEST_ADDED"));
+                    }
+                    // Also handle the account update
+                    handleChatHistoryResponse(xmlResponse, false);
+                    break;
+
+                case "ACCOUNT_UPDATED":
+                    // Handle account updates (used when friend requests are processed)
+                    handleChatHistoryResponse(xmlResponse, false);
+                    if (chatHistoryListener != null) {
+                        Platform.runLater(() -> chatHistoryListener.accept("ACCOUNT_UPDATED"));
                     }
                     break;
                 default:
@@ -283,6 +314,21 @@ public class UnifiedClientModel implements Runnable {
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+    public synchronized void cancelSentRequest(String targetUser) {
+        try {
+            String xmlMessage = "<Request><type>CANCEL_FRIEND_REQUEST</type><content>" +
+                    username + "![]!" + targetUser + "</content></Request>";
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+            System.out.println("Cancel request sent for: " + targetUser);
+        } catch (IOException e) {
+            e.printStackTrace();
+            if (friendRequestListener != null) {
+                Platform.runLater(() -> friendRequestListener.accept("FRIEND_REQUEST_CANCEL_FAILED"));
+            }
         }
     }
 
@@ -538,6 +584,18 @@ public class UnifiedClientModel implements Runnable {
             return xmlContent.contains("<") && xmlContent.contains(">");
         } catch (Exception e) {
             return false;
+        }
+    }
+    public synchronized void sendFriendRequest(String targetUser) {
+        try {
+            String xmlMessage = "<Request><type>ADD_FRIEND_REQUEST</type><content>" +
+                    username + "![]!" + targetUser + "![]!pending</content></Request>";
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+            System.out.println("Friend request sent to: " + targetUser);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 

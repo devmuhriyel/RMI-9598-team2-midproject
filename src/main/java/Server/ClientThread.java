@@ -605,8 +605,59 @@ public class ClientThread implements Runnable {
                     case "INVALID_OLD_PASSWORD":
                         sendMessage("<Response><type> INVALID_PASSWORD</type><body>Current password is incorrect.</body></Response>");
                         break;
+                    case "FRIEND_REQUEST_ACCEPTED_NEW":
+                        // Send success response and updated account data
+                        sendMessage("<Response><reply>FRIEND_REQUEST_ACCEPTED_NEW</reply><body>Friend request accepted successfully</body></Response>");
 
-                        //to validate
+                        // Send updated account XML to both users involved
+                        acceptContent = extractContent(xmlMsg);
+                        if (acceptContent.length >= 2) {
+                            String acceptingUser = acceptContent[0];
+                            requestingUser = acceptContent[1];
+
+                            sendUpdatedAccountXMLToUser(acceptingUser);
+                            sendUpdatedAccountXMLToUser(requestingUser);
+                        }
+                        break;
+                    case "FRIEND_REQUEST_DECLINED_NEW":
+                        // Send success response and updated account data
+                        sendMessage("<Response><reply>FRIEND_REQUEST_DECLINED_NEW</reply><body>Friend request declined</body></Response>");
+
+                        // Send updated account XML to both users involved
+                        declineContent = extractContent(xmlMsg);
+                        if (declineContent.length >= 2) {
+                            String decliningUser = declineContent[0];
+                            String requestingUserDecline = declineContent[1];
+
+                            sendUpdatedAccountXMLToUser(decliningUser);
+                            sendUpdatedAccountXMLToUser(requestingUserDecline);
+                        }
+                        break;
+                    case "FRIEND_REQUEST_ADDED":
+                        sendMessage("<Response><reply>FRIEND_REQUEST_ADDED</reply><body>Friend request sent successfully</body></Response>");
+
+                        // Send updated account XML to both users
+                        String[] addRequestContent = extractContent(xmlMsg);
+                        if (addRequestContent.length >= 2) {
+                            sendUpdatedAccountXMLToUser(addRequestContent[0]); // sender
+                            sendUpdatedAccountXMLToUser(addRequestContent[1]); // receiver
+                        }
+                        break;
+
+                    case "SENT_REQUESTS":
+                        String[] sentParts = reply.split("!\\[]!", 2);
+                        String sentRequestData = sentParts.length > 1 ? sentParts[1] : "";
+                        sendMessage("<Response><reply>SENT_REQUESTS</reply><body>" + sentRequestData + "</body></Response>");
+                        break;
+
+                    case "RECEIVED_REQUESTS":
+                        String[] receivedParts = reply.split("!\\[]!", 2);
+                        String receivedRequestData = receivedParts.length > 1 ? receivedParts[1] : "";
+                        sendMessage("<Response><reply>RECEIVED_REQUESTS</reply><body>" + receivedRequestData + "</body></Response>");
+                        break;
+
+
+                    //to validate
 
 
                 }
@@ -619,6 +670,40 @@ public class ClientThread implements Runnable {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+    }
+    private void sendUpdatedAccountXMLToUser(String username) {
+        try {
+            // Get the client thread for this user
+            ClientThread targetClient = null;
+            synchronized (clients) {
+                for (ClientThread client : clients) {
+                    if (client.name != null && client.name.equals(username)) {
+                        targetClient = client;
+                        break;
+                    }
+                }
+            }
+
+            if (targetClient != null) {
+                // Read the user's account XML file
+                File userFile = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
+                if (userFile.exists()) {
+                    byte[] fileContent = java.nio.file.Files.readAllBytes(userFile.toPath());
+                    String encodedContent = java.util.Base64.getEncoder().encodeToString(fileContent);
+
+                    // Send the updated XML to the client
+                    String response = "<Response><reply>ACCOUNT_UPDATED</reply><body>" + encodedContent + "</body></Response>";
+                    targetClient.sendMessage(response);
+
+                    System.out.println("Sent updated account XML to user: " + username);
+                }
+            } else {
+                System.out.println("User " + username + " is not currently online");
+            }
+        } catch (Exception e) {
+            System.err.println("Error sending updated XML to user " + username + ": " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
