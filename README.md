@@ -6,13 +6,24 @@ SETUP OF CLIENTS (USER/ADMIN)
 
 TASKS TO COMPLETE FOR MIDTERMS
 
+    TASKS FOR EVERYONE:
 1. Reconfigure project into an RMI project from a Socket Programming project (EVERYONE)
-2. Implement working methods for friend request-related functionalities (Marielle and Josh)
-3. Implement creating a group chat from the user module (Carl)
-4. Remove creating of group chat from the admin module (Joshua)
-5. Remove validation of IP Address from the server (Carl)
-6. Reconfigure chat history logging from individual files to a unified chat history file (Gabriel)
-7. Added extra features to improve program (EVERYONE)
+2. Added extra features to improve program (EVERYONE)
+3. Decouple MVC components. The Model should only handle business logic, Controller should only bridge Model and View, and View should only show GUI updates (EVERYONE)
+
+    INDIVIDUAL TASKS:
+1. Implement working methods for friend request-related functionalities (Marielle and Josh)
+2. Implement creating a group chat from the user module (Carl)
+3. Remove creating of group chat from the admin module (Joshua)
+4. Remove validation of IP Address from the server (Carl)
+5. Reconfigure chat history logging from individual files to a unified chat history file (Gabriel)
+6. Implement feature of unfriending people (Marielle)
+7. Implement JSON handlers for admin, user, and server modules (Gabriel)
+8. Implement unread message indication (Joshua)
+9. Implement user is typing feature (Steven)
+10. Implement message status feature. Read, Sent, Delivered (Steven)
+11. Implement user status feature (Steven) 
+
 
 TASK TIMELINES:
 
