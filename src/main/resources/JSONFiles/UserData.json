@@ -1,0 +1,64 @@
+{
+  "userAccounts": [
+    {
+      "username": "alice",
+      "password": "alice123",
+      "verificationCode": "superman",
+      "incomingFriendRequests": [
+        {
+          "requester": "gian",
+          "responder": "alice",
+          "status": "pending"
+        }
+      ],
+      "outgoingFriendRequests": [
+        {
+          "requester": "alice",
+          "responder": "diana",
+          "status": "pending"
+        }
+      ],
+      "chatHistory": [
+        {
+          "message": [
+            {
+              "sender": "gian",
+              "receiver": "alice",
+              "content": "hello alice"
+            },
+            {
+              "sender": "alice",
+              "receiver": "gian",
+              "content": "hello gian"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "username": "gian",
+      "password": "gian123",
+      "verificationCode": "batman"
+    },
+    {
+      "username": "diana",
+      "password": "diana123",
+      "verificationCode": "wonderwoman"
+    },
+    {
+      "username": "hal",
+      "password": "jordan123",
+      "verificationCode": "greenlantern"
+    },
+    {
+      "username": "Clark",
+      "password": "Kent123",
+      "verificationCode": "Superman"
+    },
+    {
+      "username": "wally",
+      "password": "west123",
+      "verificationCode": "kidFlash"
+    }
+  ]
+}
