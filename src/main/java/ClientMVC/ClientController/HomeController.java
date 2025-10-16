@@ -6,9 +6,11 @@ import ClientMVC.ClientView.Home.HomeJFXController;
 import ClientMVC.ClientView.Home.HomeView;
 import ClientMVC.ClientView.Chat.ChatView;
 import javafx.application.Platform;
+import javafx.scene.control.TextInputDialog;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -78,6 +80,29 @@ public class HomeController {
             System.out.println("HomeController: addFriend called with username: " + username);
             addFriend(username);
         });
+        ui.setCreateGroupListener(this::createGroup);
+        
+        model.setChatHistoryListener(response -> {
+            if ("GROUP_CREATED".equals(response)) {
+                Platform.runLater(() -> {
+                    javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+                    alert.setTitle("Group Created");
+                    alert.setHeaderText(null);
+                    alert.setContentText("Group has been created successfully!");
+                    alert.showAndWait();
+                    refreshUserData();
+                });
+            } else if ("GROUP_CREATE_FAILED".equals(response)) {
+                Platform.runLater(() -> {
+                    javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+                    alert.setTitle("Group Creation Failed");
+                    alert.setHeaderText(null);
+                    alert.setContentText("Failed to create group. Please try again.");
+                    alert.showAndWait();
+                });
+            }
+        });
+        
         model.setForceLogoutListener(message -> {
             Platform.runLater(() -> {
                 System.out.println("Force logged out: " + message);
@@ -127,6 +152,33 @@ public class HomeController {
     private void addFriend(String username) {
         model.addFriend(username);
         System.out.println("HomeController: Sending friend request to " + username);
+    }
+
+    private void createGroup(String groupName) {
+        // Show a dialog to select members for the group
+        TextInputDialog dialog = new TextInputDialog("");
+        dialog.setTitle("Create Group");
+        dialog.setHeaderText("Create new group: " + groupName);
+        dialog.setContentText("Enter comma-separated usernames to add to the group (optional):");
+
+        Optional<String> result = dialog.showAndWait();
+        if (result.isPresent()) {
+            String membersInput = result.get().trim();
+            if (!membersInput.isEmpty()) {
+                String[] membersArray = membersInput.split(",");
+                List<String> members = new ArrayList<>();
+                for (String member : membersArray) {
+                    String trimmedMember = member.trim();
+                    if (!trimmedMember.isEmpty() && !trimmedMember.equals(model.getUsername())) {
+                        members.add(trimmedMember);
+                    }
+                }
+                model.createGroup(groupName, members);
+            } else {
+                model.createGroup(groupName, new ArrayList<>());
+            }
+            refreshUserData();
+        }
     }
 
     public void refreshUserData() {

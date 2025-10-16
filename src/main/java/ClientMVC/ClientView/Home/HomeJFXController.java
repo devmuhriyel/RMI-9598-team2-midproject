@@ -7,10 +7,12 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
+import javafx.scene.control.TextInputDialog;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 public class HomeJFXController {
@@ -39,6 +41,7 @@ public class HomeJFXController {
     private List<String> originalFriends = Collections.emptyList();
     private List<String> originalGroups = Collections.emptyList();
     private Consumer<String> searchListener;
+    private Consumer<String> createGroupListener;
 
     @FXML
     private void initialize() {
@@ -213,11 +216,26 @@ public class HomeJFXController {
             createGroupBtn.setStyle("-fx-background-color: #dedcff; -fx-text-fill: black; -fx-padding: 10;");
             createGroupBtn.setOnAction(event -> {
                 System.out.println("Create new group clicked");
+                // Show dialog to get group name
+                TextInputDialog dialog = new TextInputDialog("");
+                dialog.setTitle("Create Group");
+                dialog.setHeaderText("Create a new group chat");
+                dialog.setContentText("Enter group name:");
 
-                // TODO: Implement group creation functionality
+                Optional<String> result = dialog.showAndWait();
+                if (result.isPresent() && !result.get().trim().isEmpty()) {
+                    String groupName = result.get().trim();
+                    if (createGroupListener != null) {
+                        createGroupListener.accept(groupName);
+                    }
+                }
             });
             messagesArea1.getChildren().add(createGroupBtn);
         });
+    }
+    
+    public void setCreateGroupListener(Consumer<String> listener) {
+        this.createGroupListener = listener;
     }
     public void setAccountButtonListener(Runnable listener) {
         this.accountButtonListener = listener;

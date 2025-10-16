@@ -245,6 +245,8 @@ public class ClientThread implements Runnable {
                         }
                         if (xmlHandler.createGroupWithMembers(groupName, creator, members)) {
                             sendMessage("<Response><reply>GROUP_CREATED</reply><body>Group created with members</body></Response>");
+                            // Refresh the creator's group list
+                            sendUpdatedAccountXML(creator);
                         } else {
                             sendMessage("<Response><reply>GROUP_CREATE_FAILED</reply><body>Failed to create group</body></Response>");
                         }
