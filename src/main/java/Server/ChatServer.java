@@ -7,7 +7,7 @@ import java.rmi.registry.Registry;
 public class ChatServer {
     public static void main(String[] args) {
         try{
-            ClientImplementation implementation = new ClientImplementation();
+            ImplementationClass implementation = new ImplementationClass();
             Registry registry = LocateRegistry.createRegistry(1099);
             registry.rebind("ChatServer", implementation);
             System.out.println("Server ready");

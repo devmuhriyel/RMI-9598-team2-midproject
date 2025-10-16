@@ -1,4 +1,9 @@
-import Server.ServerClasses.*;
+import Server.ServerClasses.AdminObjects.Admin;
+import Server.ServerClasses.AdminObjects.AdminAccounts;
+import Server.ServerClasses.ClientObjects.ChatHistory;
+import Server.ServerClasses.ClientObjects.Client;
+import Server.ServerClasses.ClientObjects.ClientAccounts;
+import Server.ServerClasses.ClientObjects.Message;
 import Server.ServerJSONHandler;
 
 import java.util.List;

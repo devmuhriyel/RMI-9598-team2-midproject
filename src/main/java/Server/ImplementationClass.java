@@ -2,14 +2,17 @@ package Server;
 
 import CommonInterface.AdminInterface;
 import CommonInterface.ClientInterface;
-import Server.ServerClasses.Admin;
-import Server.ServerClasses.Client;
+import Server.ServerClasses.AdminObjects.Admin;
+import Server.ServerClasses.AdminObjects.AdminAccounts;
+import Server.ServerClasses.ClientObjects.Client;
+import Server.ServerClasses.ClientObjects.ClientAccounts;
+import Server.ServerClasses.LogObjects.LogsList;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ClientImplementation extends UnicastRemoteObject implements ClientInterface, AdminInterface {
+public class ImplementationClass extends UnicastRemoteObject implements ClientInterface, AdminInterface {
     //VARIABLES
     private ConcurrentHashMap<String, Client> onlineUsers;
     private ConcurrentHashMap<String, Client> allUsers;
@@ -18,8 +21,11 @@ public class ClientImplementation extends UnicastRemoteObject implements ClientI
     private ServerJSONHandler serverJSONHandler;
 
     //CONSTRUCTORS
-    public ClientImplementation() throws RemoteException {
+    public ImplementationClass() throws RemoteException {
         super();
+        serverJSONHandler = new ServerJSONHandler();
+        AdminAccounts adminAccounts = serverJSONHandler.readAdminAccountFile("src/main/resources/JSONFiles/AdminAccounts.json");
+        ClientAccounts clientAccounts = serverJSONHandler.readClientAccountFile("src/main/resources/JSONFiles/ClientAccounts.json");
     }
 
     //USER/ADMIN LOG IN, SIGN UP, AND OTHER RELATED METHODS
@@ -139,7 +145,7 @@ public class ClientImplementation extends UnicastRemoteObject implements ClientI
     //USER/ADMIN PRIVATE CHATTING METHODS
     @Override
     public void sendPrivateMessage(String jsonString) throws RemoteException{
-
+        LogsList requestOfClient = serverJSONHandler.decodeClientRequest(jsonString, "src/main/resources/JSONFiles/RequestsByClients.json");
     }
 
     @Override

@@ -1,4 +1,4 @@
-package Server.ServerClasses;
+package Server.ServerClasses.AdminObjects;
 
 import java.util.List;
 

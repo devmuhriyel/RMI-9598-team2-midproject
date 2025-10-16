@@ -1,4 +1,4 @@
-package Server.ServerClasses;
+package Server.ServerClasses.ClientObjects;
 
 public class Message {
     //VARIABLES

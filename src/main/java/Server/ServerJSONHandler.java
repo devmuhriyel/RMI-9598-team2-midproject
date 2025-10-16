@@ -1,8 +1,12 @@
 package Server;
 
-import Server.ServerClasses.*;
+import Server.ServerClasses.AdminObjects.Admin;
+import Server.ServerClasses.AdminObjects.AdminAccounts;
+import Server.ServerClasses.ClientObjects.ChatHistory;
+import Server.ServerClasses.ClientObjects.Client;
+import Server.ServerClasses.ClientObjects.ClientAccounts;
+import Server.ServerClasses.LogObjects.LogsList;
 import com.google.gson.Gson;
-
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.List;
@@ -61,4 +65,20 @@ public class ServerJSONHandler {
         }
         return null;
     }
+    public LogsList decodeClientRequest(String jsonString, String fPath){
+        FileReader jsonReader;
+        try{
+            jsonReader = new FileReader(fPath);
+            LogsList logs = gsonObject.fromJson(jsonReader, LogsList.class);
+            if (request == null) {
+
+            }
+        } catch (FileNotFoundException e) {
+            System.out.println("File not found");
+        }
+        List<LogsList> logs = null;
+
+        return logs;
+    }
+
 }
