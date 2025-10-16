@@ -33,7 +33,7 @@ public interface ClientInterface extends Remote {
     public void getUnreadMessages(String jsonString) throws RemoteException;
 
     //USER PRIVATE CHATTING METHODS
-    public void sendPrivateMessage(String jsonString) throws RemoteException;
+    public void sendPrivateMessage(String sender, String receiver, String message, String jsonString) throws RemoteException;
     public void sendPrivateFile(String jsonString) throws RemoteException;
 
     //USER GROUP CHATTING METHODS

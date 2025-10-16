@@ -1,8 +1,8 @@
 import Server.ServerClasses.AdminObjects.Admin;
-import Server.ServerClasses.AdminObjects.AdminAccounts;
-import Server.ServerClasses.ClientObjects.ChatHistory;
+import Server.ServerClasses.AdminObjects.AdminAccountsList;
+import Server.ServerClasses.ClientObjects.ChatRecords;
 import Server.ServerClasses.ClientObjects.Client;
-import Server.ServerClasses.ClientObjects.ClientAccounts;
+import Server.ServerClasses.ClientObjects.ClientAccountsList;
 import Server.ServerClasses.ClientObjects.Message;
 import Server.ServerJSONHandler;
 
@@ -11,11 +11,11 @@ import java.util.List;
 public class TesterClass {
     public static void main(String[] args) {
         ServerJSONHandler handler = new ServerJSONHandler();
-        AdminAccounts adminAccounts = handler.readAdminAccountFile("src/main/resources/JSONFiles/AdminAccounts.json");
-        ClientAccounts clientAccounts = handler.readClientAccountFile("src/main/resources/JSONFiles/ClientAccounts.json");
-        List<Admin> allAdmins = handler.getAllAdmins(adminAccounts);
-        List<Client> allClients = handler.getAllClients(clientAccounts);
-        List<ChatHistory> chats = handler.getAllChatHistoryOfUser(clientAccounts, "alice");
+        AdminAccountsList adminAccountsList = handler.readAdminAccountFile("src/main/resources/JSONFiles/AdminAccountsList.json");
+        ClientAccountsList clientAccountsList = handler.readClientAccountFile("src/main/resources/JSONFiles/ClientAccountsList.json");
+        List<Admin> allAdmins = handler.getAllAdmins(adminAccountsList);
+        List<Client> allClients = handler.getAllClients(clientAccountsList);
+        List<ChatRecords> chats = handler.getAllChatHistoryOfUser(clientAccountsList, "alice");
 
         if (allAdmins != null) {
             for (Admin admin : allAdmins) {
@@ -35,7 +35,7 @@ public class TesterClass {
         }
 
         if (chats != null) {
-            for (ChatHistory chat : chats) {
+            for (ChatRecords chat : chats) {
                 if(chat.getMessages() != null) {
                     for (Message message : chat.getMessages()) {
                         System.out.println("Sender: " + message.getSender());

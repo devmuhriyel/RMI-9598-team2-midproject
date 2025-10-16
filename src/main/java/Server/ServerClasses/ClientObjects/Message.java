@@ -4,13 +4,13 @@ public class Message {
     //VARIABLES
     private String sender;
     private String receiver;
-    private String content;
+    private String message;
 
     //CONSTRUCTORS
-    public Message(String sndr, String rcvr, String cntnt) {
+    public Message(String sndr, String rcvr, String msg) {
         this.sender = sndr;
         this.receiver = rcvr;
-        this.content = cntnt;
+        this.message = msg;
     }
 
     //SETTERS
@@ -20,8 +20,8 @@ public class Message {
     public void setReceiver(String rcvr) {
         this.receiver = rcvr;
     }
-    public void setContent(String cntnt) {
-        this.content = cntnt;
+    public void setContent(String msg) {
+        this.message = msg;
     }
 
     //GETTERS
@@ -32,6 +32,6 @@ public class Message {
         return receiver;
     }
     public String getContent() {
-        return content;
+        return message;
     }
 }

@@ -2,10 +2,10 @@ package Server.ServerClasses.ClientObjects;
 
 import java.util.List;
 
-public class ClientAccounts {
+public class ClientAccountsList {
     private List<Client> clientAccounts;
 
-    public ClientAccounts(List<Client> clnt) {
+    public ClientAccountsList(List<Client> clnt) {
         this.clientAccounts = clnt;
     }
 

@@ -2,10 +2,10 @@ package Server.ServerClasses.AdminObjects;
 
 import java.util.List;
 
-public class AdminAccounts {
+public class AdminAccountsList {
     private List<Admin> adminAccounts;
 
-    public AdminAccounts(List<Admin> admins) {
+    public AdminAccountsList(List<Admin> admins) {
         this.adminAccounts = admins;
     }
 

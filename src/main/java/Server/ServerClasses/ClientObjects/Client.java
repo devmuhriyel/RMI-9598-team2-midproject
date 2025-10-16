@@ -8,15 +8,15 @@ public class Client {
     private String verificationCode;
     private List<FriendRequest> incomingFriendRequests;
     private List<FriendRequest> outgoingFriendRequests;
-    private List<ChatHistory> chatHistory;
+    private List<ChatRecords> chatRecords;
 
-    public Client(String uName, String pWord, String vCode, List<FriendRequest> inFriends, List<FriendRequest> outFriends, List<ChatHistory> chatHistory) {
+    public Client(String uName, String pWord, String vCode, List<FriendRequest> inFriends, List<FriendRequest> outFriends, List<ChatRecords> chatRecords) {
         this.username = uName;
         this.password = pWord;
         this.verificationCode = vCode;
         this.incomingFriendRequests = inFriends;
         this.outgoingFriendRequests = outFriends;
-        this.chatHistory = chatHistory;
+        this.chatRecords = chatRecords;
     }
 
     //SETTERS
@@ -35,8 +35,8 @@ public class Client {
     public void setOutgoingFriendRequests(List<FriendRequest> outgoingFriendRequests) {
         this.outgoingFriendRequests = outgoingFriendRequests;
     }
-    public void setChatHistory(List<ChatHistory> chatHistory) {
-        this.chatHistory = chatHistory;
+    public void setChatHistory(List<ChatRecords> chatRecords) {
+        this.chatRecords = chatRecords;
     }
 
     //GETTERS
@@ -55,7 +55,7 @@ public class Client {
     public List<FriendRequest> getOutgoingFriendRequests() {
         return outgoingFriendRequests;
     }
-    public List<ChatHistory> getChatHistory() {
-        return chatHistory;
+    public List<ChatRecords> getChatRecords() {
+        return chatRecords;
     }
 }
