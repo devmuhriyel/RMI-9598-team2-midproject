@@ -1,11 +1,19 @@
 package Server;
 
+import ClientMVC.UserXMLHandler;
 import CommonClasses.ChatInterface;
+import Server.ServerClasses.Admin;
+import Server.ServerClasses.User;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ChatImplementation extends UnicastRemoteObject implements ChatInterface {
+    private ConcurrentHashMap<String, User> onlineUsers;
+    private ConcurrentHashMap<String, User> offlineUsers;
+    private ConcurrentHashMap<String, Admin> onlineAdmins;
+    private ConcurrentHashMap<String, Admin> offlineAdmins;
 
     public ChatImplementation() throws RemoteException {
         super();
@@ -13,139 +21,139 @@ public class ChatImplementation extends UnicastRemoteObject implements ChatInter
 
     //USER LOG IN, SIGN UP, AND OTHER RELATED METHODS
     @Override
-    public void signUp() {
+    public void signUp(String jsonString) {
 
     }
 
     @Override
-    public void logIn() {
+    public void logIn(String jsonString) {
 
     }
 
     @Override
-    public void logOut() {
+    public void logOut(String jsonString) {
 
     }
 
     @Override
-    public void changePassword() {
+    public void changePassword(String jsonString) {
 
     }
 
     @Override
-    public void verifyCode() {
+    public void verifyCode(String jsonString) {
 
     }
 
     //USER HOME UI METHODS
     @Override
-    public void searchUsers() {
+    public void searchUsers(String jsonString) {
 
     }
 
     @Override
-    public void searchGroups() {
+    public void searchGroups(String jsonString) {
 
     }
 
     @Override
-    public void sendFriendRequest() {
+    public void sendFriendRequest(String jsonString) {
 
     }
 
     @Override
-    public void getOnlineFriends() {
+    public void getOnlineFriends(String jsonString) {
 
     }
 
     //USER ACCOUNT SETTINGS UI METHODS
     @Override
-    public void changeUsername() {
+    public void changeUsername(String jsonString) {
 
     }
 
     @Override
-    public void changePasswordWithOldPassword() {
+    public void changePasswordWithOldPassword(String jsonString) {
 
     }
 
     //USER FRIEND REQUESTS UI METHODS
     @Override
-    public void cancelFriendRequest() {
+    public void cancelFriendRequest(String jsonString) {
 
     }
 
     @Override
-    public void acceptFriendRequest() {
+    public void acceptFriendRequest(String jsonString) {
 
     }
 
     @Override
-    public void rejectFriendRequest() {
+    public void rejectFriendRequest(String jsonString) {
 
     }
 
     @Override
-    public void removeFromFriendsList() {
+    public void removeFromFriendsList(String jsonString) {
 
     }
 
     @Override
-    public void getChatHistories() {
+    public void getChatHistories(String jsonString) {
 
     }
 
     //USER COMMON CHATTING METHODS
     @Override
-    public void getChatHistory() {
+    public void getChatHistory(String jsonString) {
 
     }
 
     @Override
-    public void getUnreadMessages() {
+    public void getUnreadMessages(String jsonString) {
 
     }
 
     //USER PRIVATE CHATTING METHODS
     @Override
-    public void sendPrivateMessage() {
+    public void sendPrivateMessage(String jsonString) {
 
     }
 
     @Override
-    public void sendPrivateFile() {
+    public void sendPrivateFile(String jsonString) {
 
     }
 
     //USER GROUP CHATTING METHODS
     @Override
-    public void sendGroupMessage() {
+    public void sendGroupMessage(String jsonString) {
 
     }
 
     @Override
-    public void sendGroupFile() {
+    public void sendGroupFile(String jsonString) {
 
     }
 
     @Override
-    public void createGroupChat() {
+    public void createGroupChat(String jsonString) {
 
     }
 
     @Override
-    public void addUserToGroup() {
+    public void addUserToGroup(String jsonString) {
 
     }
 
     @Override
-    public void removeUserFromGroup() {
+    public void removeUserFromGroup(String jsonString) {
 
     }
 
     //USER COMMUNITY CHATTING METHODS
     @Override
-    public void sendCommunityMessage() {
+    public void sendCommunityMessage(String jsonString) {
 
     }
 }
