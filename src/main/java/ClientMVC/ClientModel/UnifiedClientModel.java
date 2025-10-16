@@ -224,6 +224,17 @@ public class UnifiedClientModel implements Runnable {
                         Platform.runLater(() -> chatHistoryListener.accept("ACCOUNT_UPDATED"));
                     }
                     break;
+                case "GROUP_CREATED":
+                    handleChatHistoryResponse(xmlResponse, false);
+                    if (chatHistoryListener != null) {
+                        Platform.runLater(() -> chatHistoryListener.accept("GROUP_CREATED"));
+                    }
+                    break;
+                case "GROUP_CREATE_FAILED":
+                    if (chatHistoryListener != null) {
+                        Platform.runLater(() -> chatHistoryListener.accept("GROUP_CREATE_FAILED"));
+                    }
+                    break;
                 default:
                     System.out.println("Unhandled response type: " + reply);
                     break;
@@ -1171,6 +1182,26 @@ public class UnifiedClientModel implements Runnable {
         sendRawMessage(xmlMessage);
     }
 
+    public synchronized void createGroup(String groupName, List<String> members) {
+        try {
+            StringBuilder membersStr = new StringBuilder();
+            if (members != null && !members.isEmpty()) {
+                for (int i = 0; i < members.size(); i++) {
+                    if (i > 0) membersStr.append(",");
+                    membersStr.append(members.get(i));
+                }
+            }
+            
+            String xmlMessage = "<Request><type>CREATE_GROUP_WITH_MEMBERS</type><content>" +
+                    groupName + "![]!" + username + "![]!" + membersStr.toString() + "</content></Request>";
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+            System.out.println("Group creation request sent for group: " + groupName);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     // SETTERS FOR CALLBACKS
     public void setGeneralNotificationCallback(GeneralNotificationCallback callback) {

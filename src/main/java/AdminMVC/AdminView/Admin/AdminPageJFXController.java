@@ -26,7 +26,6 @@ public class AdminPageJFXController {
 
     @FXML private Button AddButton;
     @FXML private Button ActiveButton;
-    @FXML private Button CreateButton;
     @FXML private Button CommunityButton;
     @FXML private Button refreshButton;
 
@@ -204,10 +203,6 @@ public class AdminPageJFXController {
 
     public Button getActiveButton() {
         return ActiveButton;
-    }
-
-    public Button getCreateButton() {
-        return CreateButton;
     }
 
     public Button getCommunityButton() {

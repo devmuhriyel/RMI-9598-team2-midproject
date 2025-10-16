@@ -293,44 +293,6 @@ public class UnifiedAdminModel implements Runnable {
         }
     }
 
-    public void createNewGroupWithMembers(String groupName, String creator, List<String> members) {
-        if (!adminXMLHandler.validateGroupName(groupName) || !adminXMLHandler.validateUsername(creator)) {
-            System.err.println("Invalid group name or creator format");
-            return;
-        }
-
-        try {
-            if (writeMSG != null && isConnected()) {
-                String membersStr = members != null ? String.join(",", members) : "";
-                String request = adminXMLHandler.createNewGroupWithMembersRequest(groupName, creator, membersStr);
-                writeMSG.write(request);
-                writeMSG.newLine();
-                writeMSG.flush();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void addMembersToGroup(String groupName, List<String> newMembers) {
-        if (!adminXMLHandler.validateGroupName(groupName)) {
-            System.err.println("Invalid group name format");
-            return;
-        }
-
-        try {
-            if (writeMSG != null && isConnected()) {
-                String membersStr = String.join(",", newMembers);
-                String request = adminXMLHandler.createAddMembersToGroupRequest(groupName, membersStr);
-                writeMSG.write(request);
-                writeMSG.newLine();
-                writeMSG.flush();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     public void loadData() {
         requestAllUsersWithStatus();
         requestAllGroupsEnhanced();
@@ -391,11 +353,6 @@ public class UnifiedAdminModel implements Runnable {
 
             case "VERIFICATION_CODE_VALID":
                 handleVerificationCodeValidResponse(finalMsg);
-                break;
-
-            case "MEMBERS_ADDED_TO_GROUP":
-                handleOperationResponse("Members added to group successfully", finalMsg);
-                loadData(); // Refresh data
                 break;
 
             case "ADMIN_LOGIN_SUCCESS":
@@ -478,11 +435,6 @@ public class UnifiedAdminModel implements Runnable {
                 loadData();
                 break;
 
-            case "GROUP_CREATED":
-                handleOperationResponse("Group created successfully", finalMsg);
-                loadData();
-                break;
-
             case "USER_STATS":
                 handleUserStatsResponse(finalMsg);
                 break;
@@ -497,10 +449,6 @@ public class UnifiedAdminModel implements Runnable {
 
             case "USER_CREATE_FAILED":
                 handleOperationResponse("Failed to create user", finalMsg);
-                break;
-
-            case "GROUP_CREATE_FAILED":
-                handleOperationResponse("Failed to create group", finalMsg);
                 break;
 
             case "GROUP_DELETE_FAILED":
