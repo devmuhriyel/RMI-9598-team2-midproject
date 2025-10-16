@@ -1,6 +1,10 @@
 package ClientMVC.ClientModel;
 
+import ClientMVC.ClientJSONHandler;
 import ClientMVC.UserXMLHandler;
+import Server.ServerClasses.AdminObjects.AdminAccounts;
+import Server.ServerClasses.ClientObjects.Client;
+import Server.ServerClasses.ClientObjects.FriendRequest;
 import javafx.application.Platform;
 
 import java.io.*;
@@ -12,10 +16,12 @@ import java.util.function.Consumer;
 
 public class UnifiedClientModel implements Runnable {
     private final Socket socket;
+    private Client client;
     private final BufferedReader readMSG;
     private final BufferedWriter writeMSG;
     private String username;
     private UserXMLHandler xmlHandler;
+    private ClientJSONHandler jsonHandler;
     private Consumer<String> friendRequestListener;
 
     public interface PasswordResetNotificationCallback {
@@ -266,16 +272,10 @@ public class UnifiedClientModel implements Runnable {
         }
     }
     public synchronized void addFriend(String friendUsername) {
-        try {
-            String xmlMessage = "<Request><type>ADD_FRIEND_REQUEST</type><content>" +
-                    username + "![]!" + friendUsername + "![]!pending</content></Request>";
-            writeMSG.write(xmlMessage);
-            writeMSG.newLine();
-            writeMSG.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        boolean friendRequest = jsonHandler.addFriend(friendUsername);
+        ClientJSONHandler.setCurrentUser(client.getUsername());
     }
+
     private void handleFriendRequestsResponse(String xmlResponse) {
         try {
             String body = xmlHandler.getResponseBody(xmlResponse);
