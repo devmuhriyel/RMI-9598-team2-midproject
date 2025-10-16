@@ -1,25 +1,28 @@
 package Server;
 
-import ClientMVC.UserXMLHandler;
-import CommonClasses.ChatInterface;
+import CommonInterface.AdminInterface;
+import CommonInterface.ClientInterface;
 import Server.ServerClasses.Admin;
-import Server.ServerClasses.User;
+import Server.ServerClasses.Client;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ChatImplementation extends UnicastRemoteObject implements ChatInterface {
-    private ConcurrentHashMap<String, User> onlineUsers;
-    private ConcurrentHashMap<String, User> offlineUsers;
+public class ClientImplementation extends UnicastRemoteObject implements ClientInterface, AdminInterface {
+    //VARIABLES
+    private ConcurrentHashMap<String, Client> onlineUsers;
+    private ConcurrentHashMap<String, Client> allUsers;
     private ConcurrentHashMap<String, Admin> onlineAdmins;
-    private ConcurrentHashMap<String, Admin> offlineAdmins;
+    private ConcurrentHashMap<String, Admin> allAdmins;
+    private ServerJSONHandler serverJSONHandler;
 
-    public ChatImplementation() throws RemoteException {
+    //CONSTRUCTORS
+    public ClientImplementation() throws RemoteException {
         super();
     }
 
-    //USER LOG IN, SIGN UP, AND OTHER RELATED METHODS
+    //USER/ADMIN LOG IN, SIGN UP, AND OTHER RELATED METHODS
     @Override
     public void signUp(String jsonString) {
 
@@ -45,7 +48,7 @@ public class ChatImplementation extends UnicastRemoteObject implements ChatInter
 
     }
 
-    //USER HOME UI METHODS
+    //USER/ADMIN HOME UI METHODS
     @Override
     public void searchUsers(String jsonString) {
 
@@ -53,6 +56,16 @@ public class ChatImplementation extends UnicastRemoteObject implements ChatInter
 
     @Override
     public void searchGroups(String jsonString) {
+
+    }
+
+    @Override
+    public void deleteGroup(String jsonString) {
+
+    }
+
+    @Override
+    public void getUnreadMessages(String jsonString) {
 
     }
 
@@ -66,7 +79,7 @@ public class ChatImplementation extends UnicastRemoteObject implements ChatInter
 
     }
 
-    //USER ACCOUNT SETTINGS UI METHODS
+    //USER/ADMIN ACCOUNT SETTINGS UI METHODS
     @Override
     public void changeUsername(String jsonString) {
 
@@ -77,7 +90,7 @@ public class ChatImplementation extends UnicastRemoteObject implements ChatInter
 
     }
 
-    //USER FRIEND REQUESTS UI METHODS
+    //USER/ADMIN FRIEND REQUESTS UI METHODS
     @Override
     public void cancelFriendRequest(String jsonString) {
 
@@ -98,23 +111,32 @@ public class ChatImplementation extends UnicastRemoteObject implements ChatInter
 
     }
 
+    //USER/ADMIN COMMON CHATTING METHODS
     @Override
-    public void getChatHistories(String jsonString) {
-
-    }
-
-    //USER COMMON CHATTING METHODS
-    @Override
-    public void getChatHistory(String jsonString) {
-
+    public String getChatHistories(String jsonString) {
+        return "";
     }
 
     @Override
-    public void getUnreadMessages(String jsonString) {
-
+    public String getChatHistory(String jsonString) {
+        return "";
+    }
+    @Override
+    public String getChatHistoryOfUser(String jsonString) {
+        return "";
     }
 
-    //USER PRIVATE CHATTING METHODS
+    @Override
+    public String getChatHistoryOfGroup(String jsonString) {
+        return "";
+    }
+
+    @Override
+    public String getChatHistoryOfCommunity(String jsonString) {
+        return "";
+    }
+
+    //USER/ADMIN PRIVATE CHATTING METHODS
     @Override
     public void sendPrivateMessage(String jsonString) {
 
@@ -125,7 +147,7 @@ public class ChatImplementation extends UnicastRemoteObject implements ChatInter
 
     }
 
-    //USER GROUP CHATTING METHODS
+    //USER/ADMIN GROUP CHATTING METHODS
     @Override
     public void sendGroupMessage(String jsonString) {
 
@@ -151,7 +173,7 @@ public class ChatImplementation extends UnicastRemoteObject implements ChatInter
 
     }
 
-    //USER COMMUNITY CHATTING METHODS
+    //USER/ADMIN COMMUNITY CHATTING METHODS
     @Override
     public void sendCommunityMessage(String jsonString) {
 

@@ -245,8 +245,8 @@ public class AdminPageJFXController {
     public void showPasswordResetNotification(String username) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Password Reset Request");
-        alert.setHeaderText("User Password Reset Request");
-        alert.setContentText("User '" + username + "' has requested a password reset.\nVerification code has been generated.");
+        alert.setHeaderText("Client Password Reset Request");
+        alert.setContentText("Client '" + username + "' has requested a password reset.\nVerification code has been generated.");
         alert.showAndWait();
     }
 }

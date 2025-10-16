@@ -1,5 +1,5 @@
 {
-  "userAccounts": [
+  "clientAccounts": [
     {
       "username": "alice",
       "password": "alice123",

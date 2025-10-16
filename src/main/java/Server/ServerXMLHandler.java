@@ -1380,7 +1380,7 @@ public class ServerXMLHandler {
         try {
             File accountFile = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
             if (!accountFile.exists()) {
-                return "User account not found";
+                return "Client account not found";
             }
 
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -2004,7 +2004,7 @@ public class ServerXMLHandler {
                 if (groupNameNodes.getLength() > 0) {
                     String existingGroupName = groupNameNodes.item(0).getTextContent();
                     if (existingGroupName.equals(groupName)) {
-                        System.out.println("User " + username + " already has group " + groupName + " in account");
+                        System.out.println("Client " + username + " already has group " + groupName + " in account");
                         return;
                     }
                 }
@@ -2470,7 +2470,7 @@ public class ServerXMLHandler {
                     for (int j = 0; j < existingMembers.getLength(); j++) {
                         Element existingMember = (Element) existingMembers.item(j);
                         if (existingMember.getAttribute("username").equals(username)) {
-                            System.out.println("User " + username + " is already a member of " + groupName);
+                            System.out.println("Client " + username + " is already a member of " + groupName);
                             return true;
                         }
                     }
@@ -2490,7 +2490,7 @@ public class ServerXMLHandler {
             saveDocument(doc);
             updateUserAccountWithGroup(username, groupName);
 
-            System.out.println("User " + username + " successfully joined group " + groupName);
+            System.out.println("Client " + username + " successfully joined group " + groupName);
             return true;
 
         } catch (Exception e) {
@@ -2979,7 +2979,7 @@ public class ServerXMLHandler {
             // Add verification code to user's account XML
             File file = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
             if (!file.exists()) {
-                return null; // User doesn't exist
+                return null; // Client doesn't exist
             }
 
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -3114,7 +3114,7 @@ public class ServerXMLHandler {
                 }
             }
 
-            System.out.println("[DEBUG] User not found: " + username);
+            System.out.println("[DEBUG] Client not found: " + username);
             return false;
         } catch (Exception e) {
             System.err.println("[ERROR] Error verifying reset code: " + e.getMessage());
@@ -3433,12 +3433,12 @@ public class ServerXMLHandler {
             if (oldUserFilesDir.exists()) {
                 boolean dirRenamed = oldUserFilesDir.renameTo(newUserFilesDir);
                 if (dirRenamed) {
-                    System.out.println("User files directory renamed from " + oldUsername + " to " + newUsername);
+                    System.out.println("Client files directory renamed from " + oldUsername + " to " + newUsername);
                 } else {
                     System.err.println("Failed to rename user files directory from " + oldUserFilesDirPath + " to " + newUserFilesDirPath);
                 }
             } else {
-                System.out.println("User files directory not found (this is normal): " + oldUserFilesDirPath);
+                System.out.println("Client files directory not found (this is normal): " + oldUserFilesDirPath);
             }
 
         } catch (Exception e) {

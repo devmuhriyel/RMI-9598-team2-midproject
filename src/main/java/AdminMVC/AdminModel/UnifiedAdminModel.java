@@ -459,7 +459,7 @@ public class UnifiedAdminModel implements Runnable {
                 break;
 
             case "USER_DELETED":
-                handleOperationResponse("User deleted successfully", finalMsg);
+                handleOperationResponse("Client deleted successfully", finalMsg);
                 loadData();
                 break;
 
@@ -474,7 +474,7 @@ public class UnifiedAdminModel implements Runnable {
                 break;
 
             case "USER_CREATED":
-                handleOperationResponse("User created successfully", finalMsg);
+                handleOperationResponse("Client created successfully", finalMsg);
                 loadData();
                 break;
 
@@ -938,7 +938,7 @@ public class UnifiedAdminModel implements Runnable {
     private void handleUserStatsResponse(String xmlResponse) {
         try {
             String body = adminXMLHandler.getResponseBody(xmlResponse);
-            System.out.println("User stats: " + body);
+            System.out.println("Client stats: " + body);
 
             if (userStatsListener != null) {
                 Platform.runLater(() -> userStatsListener.accept(body));

@@ -171,7 +171,7 @@ public class LoginJFXController {
         PasswordField confirmPasswordField = new PasswordField();
         confirmPasswordField.setPromptText("Confirm new admin password");
 
-        Label userLabel = new Label("Admin User: " + username);
+        Label userLabel = new Label("Admin Client: " + username);
         userLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: #d32f2f;");
 
         Label instructionLabel = new Label("Please enter your new administrator password:");

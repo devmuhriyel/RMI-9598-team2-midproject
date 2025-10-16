@@ -164,7 +164,7 @@ public class ClientThread implements Runnable {
                         break;
                     case "USER_DELETED":
                         String[] deleteUserContent = extractContent(xmlMsg);
-                        sendMessage("<Response><reply>USER_DELETED</reply><body>User " + deleteUserContent[0] + " deleted successfully</body></Response>");
+                        sendMessage("<Response><reply>USER_DELETED</reply><body>Client " + deleteUserContent[0] + " deleted successfully</body></Response>");
                         break;
                     case "USER_DELETE_FAILED":
                         sendMessage("<Response><reply>USER_DELETE_FAILED</reply><body>Failed to delete user</body></Response>");
@@ -195,7 +195,7 @@ public class ClientThread implements Runnable {
 
                     case "USER_CREATED":
                         String[] createUserContent = extractContent(xmlMsg);
-                        sendMessage("<Response><reply>USER_CREATED</reply><body>User " + createUserContent[0] + " created successfully</body></Response>");
+                        sendMessage("<Response><reply>USER_CREATED</reply><body>Client " + createUserContent[0] + " created successfully</body></Response>");
                         break;
                     case "USER_CREATE_FAILED":
                         sendMessage("<Response><reply>USER_CREATE_FAILED</reply><body>Failed to create user</body></Response>");
@@ -574,7 +574,7 @@ public class ClientThread implements Runnable {
                         if (verificationCode != null) {
                             sendMessage("<Response><reply>PASSWORD_RESET_REQUESTED</reply><body>" + resetUsername + "![]!" + verificationCode + "</body></Response>");
                         } else {
-                            sendMessage("<Response><reply>PASSWORD_RESET_FAILED</reply><body>User not found</body></Response>");
+                            sendMessage("<Response><reply>PASSWORD_RESET_FAILED</reply><body>Client not found</body></Response>");
                         }
                         break;
                     case "USERNAME_CHANGED":
@@ -699,7 +699,7 @@ public class ClientThread implements Runnable {
                     System.out.println("Sent updated account XML to user: " + username);
                 }
             } else {
-                System.out.println("User " + username + " is not currently online");
+                System.out.println("Client " + username + " is not currently online");
             }
         } catch (Exception e) {
             System.err.println("Error sending updated XML to user " + username + ": " + e.getMessage());

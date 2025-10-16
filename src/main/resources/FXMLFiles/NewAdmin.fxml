@@ -38,7 +38,7 @@
             </children>
         </VBox>
 
-        <!-- User Management Buttons -->
+        <!-- Client Management Buttons -->
         <Button fx:id="editButton" layoutX="20.0" layoutY="298.0" prefHeight="31.0" prefWidth="119.0" style="-fx-background-color: #0087b1; -fx-text-fill: white;" text="Edit" />
         <Button fx:id="deleteButton" layoutX="152.0" layoutY="298.0" prefHeight="31.0" prefWidth="119.0" style="-fx-background-color: #b10000; -fx-text-fill: white;" text="Delete" />
 

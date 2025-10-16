@@ -1,8 +1,8 @@
-package CommonClasses;
+package CommonInterface;
 
 import java.rmi.Remote;
 
-public interface ChatInterface extends Remote {
+public interface ClientInterface extends Remote {
     //USER LOG IN, SIGN UP, AND OTHER RELATED METHODS
     public void signUp(String jsonString);
     public void logIn(String jsonString);
@@ -27,8 +27,8 @@ public interface ChatInterface extends Remote {
     public void removeFromFriendsList(String jsonString);
 
     //USER COMMON CHATTING METHODS
-    public void getChatHistories(String jsonString);
-    public void getChatHistory(String jsonString);
+    public String getChatHistories(String jsonString);
+    public String getChatHistory(String jsonString);
     public void getUnreadMessages(String jsonString);
 
     //USER PRIVATE CHATTING METHODS

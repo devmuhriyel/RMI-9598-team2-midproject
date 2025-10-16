@@ -118,8 +118,8 @@ public class AdminController {
         Platform.runLater(() -> {
             Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
             confirmAlert.setTitle("Password Reset Request");
-            confirmAlert.setHeaderText("User Verification Successful");
-            confirmAlert.setContentText("User '" + username + "' has been verified successfully.\n\n" +
+            confirmAlert.setHeaderText("Client Verification Successful");
+            confirmAlert.setContentText("Client '" + username + "' has been verified successfully.\n\n" +
                     "Their security verification code is correct.\n\n" +
                     "Do you want to proceed with changing their password?");
 
@@ -288,7 +288,7 @@ public class AdminController {
         model.setOperationResultListener(result -> {
             Platform.runLater(() -> {
                 if (result.contains("ADMIN_PASSWORD_RESET_SUCCESS")) {
-                    showAlert("Success", "Password reset completed successfully. User has been notified with new password.");
+                    showAlert("Success", "Password reset completed successfully. Client has been notified with new password.");
                     if (currentPasswordResetRequest != null) {
                         currentPasswordResetRequest = null;
                     }
@@ -299,7 +299,7 @@ public class AdminController {
                         showAlert("Error", "Password reset failed: " + result);
                     }
                 } else if (result.contains("PASSWORD_RESET_REJECTED")) {
-                    showAlert("Success", "Password reset request rejected. User has been notified.");
+                    showAlert("Success", "Password reset request rejected. Client has been notified.");
                     if (currentPasswordResetRequest != null) {
                         currentPasswordResetRequest = null;
                     }
@@ -362,15 +362,15 @@ public class AdminController {
 
     private void showCreateUserDialog() {
         TextInputDialog usernameDialog = new TextInputDialog();
-        usernameDialog.setTitle("Create User");
-        usernameDialog.setHeaderText("Create New User");
+        usernameDialog.setTitle("Create Client");
+        usernameDialog.setHeaderText("Create New Client");
         usernameDialog.setContentText("Username:");
         Optional<String> usernameResult = usernameDialog.showAndWait();
         if (usernameResult.isPresent() && !usernameResult.get().trim().isEmpty()) {
             String username = usernameResult.get().trim();
             TextInputDialog passwordDialog = new TextInputDialog();
-            passwordDialog.setTitle("Create User");
-            passwordDialog.setHeaderText("Create New User");
+            passwordDialog.setTitle("Create Client");
+            passwordDialog.setHeaderText("Create New Client");
             passwordDialog.setContentText("Password:");
             Optional<String> passwordResult = passwordDialog.showAndWait();
             if (passwordResult.isPresent() && !passwordResult.get().trim().isEmpty()) {
@@ -434,7 +434,7 @@ public class AdminController {
         if (verificationCode != null) {
             TextInputDialog verificationDialog = new TextInputDialog();
             verificationDialog.setTitle("Verify Password Reset");
-            verificationDialog.setHeaderText("User '" + username + "' requested password reset");
+            verificationDialog.setHeaderText("Client '" + username + "' requested password reset");
             verificationDialog.setContentText("Enter verification code (sent to user):");
             Optional<String> codeResult = verificationDialog.showAndWait();
             if (codeResult.isPresent() && codeResult.get().equals(verificationCode)) {
@@ -453,7 +453,7 @@ public class AdminController {
             }
         } else {
             TextInputDialog passwordDialog = new TextInputDialog();
-            passwordDialog.setTitle("Edit User");
+            passwordDialog.setTitle("Edit Client");
             passwordDialog.setHeaderText("Change Password for " + username);
             passwordDialog.setContentText("New Password:");
             Optional<String> result = passwordDialog.showAndWait();
@@ -473,7 +473,7 @@ public class AdminController {
         String username = selectedUser.get("username");
         Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
         confirmAlert.setTitle("Confirm Deletion");
-        confirmAlert.setHeaderText("Delete User");
+        confirmAlert.setHeaderText("Delete Client");
         confirmAlert.setContentText("Are you sure you want to delete user: " + username + "?");
         Optional<ButtonType> result = confirmAlert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {

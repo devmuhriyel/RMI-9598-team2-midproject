@@ -1022,7 +1022,7 @@ public class UnifiedClientModel implements Runnable {
                     System.err.println("Failed to rename user files directory");
                 }
             } else {
-                System.out.println("User files directory not found (this is normal if no files were shared): " + oldDirPath);
+                System.out.println("Client files directory not found (this is normal if no files were shared): " + oldDirPath);
             }
 
         } catch (Exception e) {

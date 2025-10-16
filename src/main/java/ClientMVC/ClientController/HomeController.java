@@ -95,7 +95,7 @@ public class HomeController {
                         javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
                         alert.setTitle("Friend Request Failed");
                         alert.setHeaderText(null);
-                        alert.setContentText("Failed to send friend request. User may not exist or request already sent.");
+                        alert.setContentText("Failed to send friend request. Client may not exist or request already sent.");
                         alert.showAndWait();
                         break;
                     case "REQUEST_ACCEPTED":
@@ -136,7 +136,7 @@ public class HomeController {
             ui.setFriends(friends);
             ui.setGroups(groups);
             for (String group : groups) {
-                System.out.println("User is in group: " + group);
+                System.out.println("Client is in group: " + group);
             }
         });
     }

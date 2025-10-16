@@ -144,7 +144,7 @@ public class LoginJFXController {
         newPasswordField.setPromptText("Enter new password");
         PasswordField confirmPasswordField = new PasswordField();
         confirmPasswordField.setPromptText("Confirm new password");
-        Label userLabel = new Label("User: " + username);
+        Label userLabel = new Label("Client: " + username);
         userLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 12px;");
         Label instructionLabel = new Label("Please enter your new password:");
         instructionLabel.setWrapText(true);
