@@ -225,20 +225,12 @@ public class AdminController {
             ui.getAddButton().setOnAction(event -> showCreateUserDialog());
         }
 
-        if (ui.getCreateButton() != null) {
-            ui.getCreateButton().setOnAction(event -> showCreateGroupDialogEnhanced());
-        }
-
         if (ui.getEditButton() != null) {
             ui.getEditButton().setOnAction(event -> editSelectedUser());
         }
 
         if (ui.getDeleteButton() != null) {
             ui.getDeleteButton().setOnAction(event -> deleteSelectedUser());
-        }
-
-        if (ui.getEditGroupButton() != null) {
-            ui.getEditGroupButton().setOnAction(event -> editSelectedGroup());
         }
 
         if (ui.getDeleteGroupButton() != null) {
@@ -380,49 +372,6 @@ public class AdminController {
         }
     }
 
-    private void showCreateGroupDialogEnhanced() {
-        Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("Create Group");
-        dialog.setHeaderText("Create New Group");
-        TextField groupNameField = new TextField();
-        groupNameField.setPromptText("Group Name");
-        TextField creatorField = new TextField();
-        creatorField.setPromptText("Creator Username");
-        TextArea membersArea = new TextArea();
-        membersArea.setPromptText("Additional Members (comma-separated usernames)\nOptional - leave blank for group with just creator");
-        membersArea.setPrefRowCount(4);
-        VBox content = new VBox(10);
-        content.getChildren().addAll(
-                new Label("Group Name:"), groupNameField,
-                new Label("Creator:"), creatorField,
-                new Label("Additional Members:"), membersArea
-        );
-        dialog.getDialogPane().setContent(content);
-        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-        Optional<ButtonType> result = dialog.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            String groupName = groupNameField.getText().trim();
-            String creator = creatorField.getText().trim();
-            String membersText = membersArea.getText().trim();
-            if (!groupName.isEmpty() && !creator.isEmpty()) {
-                List<String> additionalMembers = new ArrayList<>();
-                if (!membersText.isEmpty()) {
-                    String[] members = membersText.split(",");
-                    for (String member : members) {
-                        String trimmedMember = member.trim();
-                        if (!trimmedMember.isEmpty()) {
-                            additionalMembers.add(trimmedMember);
-                        }
-                    }
-                }
-
-                model.createNewGroupWithMembers(groupName, creator, additionalMembers);
-            } else {
-                showAlert("Invalid Input", "Group name and creator are required.");
-            }
-        }
-    }
-
     private void editSelectedUser() {
         Map<String, String> selectedUser = ui.getSelectedUser();
         if (selectedUser == null) {
@@ -480,44 +429,6 @@ public class AdminController {
             model.deleteUser(username);
         }
     }
-
-    private void editSelectedGroup() {
-        Map<String, String> selectedGroup = ui.getSelectedGroup();
-        if (selectedGroup == null) {
-            showAlert("No Selection", "Please select a group to edit.");
-            return;
-        }
-
-        String groupName = selectedGroup.get("groupName");
-        String owner = selectedGroup.get("username");
-
-        Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("Edit Group");
-        dialog.setHeaderText("Edit Group: " + groupName);
-
-        TextArea membersArea = new TextArea();
-        membersArea.setPromptText("Add members (comma-separated usernames)");
-        membersArea.setPrefRowCount(4);
-
-        VBox content = new VBox(10);
-        content.getChildren().addAll(
-                new Label("Current Owner: " + owner),
-                new Label("Add Members:"), membersArea
-        );
-
-        dialog.getDialogPane().setContent(content);
-        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-
-        Optional<ButtonType> result = dialog.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            String membersText = membersArea.getText().trim();
-            if (!membersText.isEmpty()) {
-                List<String> newMembers = Arrays.asList(membersText.split(","));
-                model.addMembersToGroup(groupName, newMembers);
-            }
-        }
-    }
-
     private void deleteSelectedGroup() {
         Map<String, String> selectedGroup = ui.getSelectedGroup();
         if (selectedGroup == null) {
