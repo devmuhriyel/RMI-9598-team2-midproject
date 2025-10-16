@@ -1,6 +1,10 @@
 package ClientMVC.ClientModel;
 
+import ClientMVC.ClientJSONHandler;
 import ClientMVC.UserXMLHandler;
+import Server.ServerClasses.AdminObjects.AdminAccounts;
+import Server.ServerClasses.ClientObjects.Client;
+import Server.ServerClasses.ClientObjects.FriendRequest;
 import javafx.application.Platform;
 
 import java.io.*;
@@ -12,10 +16,12 @@ import java.util.function.Consumer;
 
 public class UnifiedClientModel implements Runnable {
     private final Socket socket;
+    private Client client;
     private final BufferedReader readMSG;
     private final BufferedWriter writeMSG;
     private String username;
     private UserXMLHandler xmlHandler;
+    private ClientJSONHandler jsonHandler;
     private Consumer<String> friendRequestListener;
 
     public interface PasswordResetNotificationCallback {
@@ -224,6 +230,17 @@ public class UnifiedClientModel implements Runnable {
                         Platform.runLater(() -> chatHistoryListener.accept("ACCOUNT_UPDATED"));
                     }
                     break;
+                case "GROUP_CREATED":
+                    handleChatHistoryResponse(xmlResponse, false);
+                    if (chatHistoryListener != null) {
+                        Platform.runLater(() -> chatHistoryListener.accept("GROUP_CREATED"));
+                    }
+                    break;
+                case "GROUP_CREATE_FAILED":
+                    if (chatHistoryListener != null) {
+                        Platform.runLater(() -> chatHistoryListener.accept("GROUP_CREATE_FAILED"));
+                    }
+                    break;
                 default:
                     System.out.println("Unhandled response type: " + reply);
                     break;
@@ -255,16 +272,10 @@ public class UnifiedClientModel implements Runnable {
         }
     }
     public synchronized void addFriend(String friendUsername) {
-        try {
-            String xmlMessage = "<Request><type>ADD_FRIEND_REQUEST</type><content>" +
-                    username + "![]!" + friendUsername + "![]!pending</content></Request>";
-            writeMSG.write(xmlMessage);
-            writeMSG.newLine();
-            writeMSG.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        boolean friendRequest = jsonHandler.addFriend(friendUsername);
+        ClientJSONHandler.setCurrentUser(client.getUsername());
     }
+
     private void handleFriendRequestsResponse(String xmlResponse) {
         try {
             String body = xmlHandler.getResponseBody(xmlResponse);
@@ -1171,6 +1182,26 @@ public class UnifiedClientModel implements Runnable {
         sendRawMessage(xmlMessage);
     }
 
+    public synchronized void createGroup(String groupName, List<String> members) {
+        try {
+            StringBuilder membersStr = new StringBuilder();
+            if (members != null && !members.isEmpty()) {
+                for (int i = 0; i < members.size(); i++) {
+                    if (i > 0) membersStr.append(",");
+                    membersStr.append(members.get(i));
+                }
+            }
+            
+            String xmlMessage = "<Request><type>CREATE_GROUP_WITH_MEMBERS</type><content>" +
+                    groupName + "![]!" + username + "![]!" + membersStr.toString() + "</content></Request>";
+            writeMSG.write(xmlMessage);
+            writeMSG.newLine();
+            writeMSG.flush();
+            System.out.println("Group creation request sent for group: " + groupName);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     // SETTERS FOR CALLBACKS
     public void setGeneralNotificationCallback(GeneralNotificationCallback callback) {

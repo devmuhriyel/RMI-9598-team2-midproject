@@ -207,14 +207,4 @@ public class AdminXMLHandler {
     public String createGetAllGroupsEnhancedRequest() {
         return "<Request><type>GET_ALL_GROUPS_ENHANCED</type><content></content></Request>";
     }
-
-    public String createNewGroupWithMembersRequest(String groupName, String creator, String membersStr) {
-        return "<Request><type>CREATE_GROUP_WITH_MEMBERS</type><content>" +
-                groupName + "![]!" + creator + "![]!" + membersStr + "</content></Request>";
-    }
-
-    public String createAddMembersToGroupRequest(String groupName, String membersStr) {
-        return "<Request><type>ADD_MEMBERS_TO_GROUP</type><content>" +
-                groupName + "![]!" + membersStr + "</content></Request>";
-    }
 }

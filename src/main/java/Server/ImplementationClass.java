@@ -145,7 +145,7 @@ public class ImplementationClass extends UnicastRemoteObject implements ClientIn
     //USER/ADMIN PRIVATE CHATTING METHODS
     @Override
     public void sendPrivateMessage(String jsonString) throws RemoteException{
-        LogsList requestOfClient = serverJSONHandler.decodeClientRequest(jsonString, "src/main/resources/JSONFiles/RequestsByClients.json");
+//        LogsList requestOfClient = serverJSONHandler.decodeClientRequest(jsonString, "src/main/resources/JSONFiles/RequestsByClients.json");
     }
 
     @Override

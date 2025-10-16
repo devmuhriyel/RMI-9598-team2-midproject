@@ -595,6 +595,7 @@ public class ServerXMLHandler {
             return false;
         }
     }
+
     private boolean addRequestToUserAccount(String username, String otherUser, String type, String status) {
         try {
             File file = new File("src/main/resources/XMLFiles/" + username + "Account.xml");
