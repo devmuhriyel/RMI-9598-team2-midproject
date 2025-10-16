@@ -10,6 +10,8 @@ public class ChatImplementation extends UnicastRemoteObject implements ChatInter
     public ChatImplementation() throws RemoteException {
         super();
     }
+
+    //USER LOG IN, SIGN UP, AND OTHER RELATED METHODS
     @Override
     public void signUp() {
 
@@ -35,6 +37,7 @@ public class ChatImplementation extends UnicastRemoteObject implements ChatInter
 
     }
 
+    //USER HOME UI METHODS
     @Override
     public void searchUsers() {
 
@@ -50,6 +53,23 @@ public class ChatImplementation extends UnicastRemoteObject implements ChatInter
 
     }
 
+    @Override
+    public void getOnlineFriends() {
+
+    }
+
+    //USER ACCOUNT SETTINGS UI METHODS
+    @Override
+    public void changeUsername() {
+
+    }
+
+    @Override
+    public void changePasswordWithOldPassword() {
+
+    }
+
+    //USER FRIEND REQUESTS UI METHODS
     @Override
     public void cancelFriendRequest() {
 
@@ -71,25 +91,11 @@ public class ChatImplementation extends UnicastRemoteObject implements ChatInter
     }
 
     @Override
-    public void getOnlineFriends() {
-
-    }
-
-    @Override
-    public void changeUsername() {
-
-    }
-
-    @Override
-    public void changePasswordWithOldPassword() {
-
-    }
-
-    @Override
     public void getChatHistories() {
 
     }
 
+    //USER COMMON CHATTING METHODS
     @Override
     public void getChatHistory() {
 
@@ -100,6 +106,7 @@ public class ChatImplementation extends UnicastRemoteObject implements ChatInter
 
     }
 
+    //USER PRIVATE CHATTING METHODS
     @Override
     public void sendPrivateMessage() {
 
@@ -110,6 +117,7 @@ public class ChatImplementation extends UnicastRemoteObject implements ChatInter
 
     }
 
+    //USER GROUP CHATTING METHODS
     @Override
     public void sendGroupMessage() {
 
@@ -135,6 +143,7 @@ public class ChatImplementation extends UnicastRemoteObject implements ChatInter
 
     }
 
+    //USER COMMUNITY CHATTING METHODS
     @Override
     public void sendCommunityMessage() {
 
