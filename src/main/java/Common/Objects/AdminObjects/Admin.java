@@ -1,4 +1,4 @@
-package Server.ServerClasses.AdminObjects;
+package Common.Objects.AdminObjects;
 
 public class Admin {
     //VARIABLES

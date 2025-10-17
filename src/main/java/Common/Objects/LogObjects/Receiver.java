@@ -1,4 +1,4 @@
-package Server.ServerClasses.LogObjects;
+package Common.Objects.LogObjects;
 
 public class Receiver {
     String name;

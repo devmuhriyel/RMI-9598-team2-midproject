@@ -1,4 +1,4 @@
-package CommonInterface;
+package Common.Interfaces;
 
 import java.rmi.RemoteException;
 
@@ -14,8 +14,9 @@ public interface AdminInterface {
     public void searchUsers(String jsonString) throws RemoteException;
     public void searchGroups(String jsonString) throws RemoteException;
 
-    //ADMIN ACCOUNT SETTINGS UI METHODS
-    public void deleteGroup(String jsonString) throws RemoteException;
+    //ADMIN ACCOUNT AND GROUP UI METHODS
+    void deleteUser(String jsonString) throws RemoteException;
+    void deleteGroup(String jsonString) throws RemoteException;
 
     //ADMIN COMMON CHATTING METHODS
     public String getChatHistoryOfUser(String jsonString) throws RemoteException;

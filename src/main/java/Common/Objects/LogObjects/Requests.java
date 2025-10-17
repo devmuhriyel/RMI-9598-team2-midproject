@@ -1,15 +1,15 @@
-package Server.ServerClasses.LogObjects;
+package Common.Objects.LogObjects;
 
-public class Responses {
+public class Requests {
     //VARIABLES
     private String messageType;
-    private String[] receiver;
+    private String sender;
     private String message;
 
     //CONSTRUCTORS
-    public Responses(String messageType, String[] receiver, String message) {
+    public Requests(String messageType, String sender, String message) {
         this.messageType = messageType;
-        this.receiver = receiver;
+        this.sender = sender;
         this.message = message;
     }
 
@@ -17,8 +17,8 @@ public class Responses {
     public void setMessageType(String messageType) {
         this.messageType = messageType;
     }
-    public void setReceiver(String[] receiver) {
-        this.receiver = receiver;
+    public void setSender(String sender) {
+        this.sender = sender;
     }
     public void setMessage(String message) {
         this.message = message;
@@ -28,8 +28,8 @@ public class Responses {
     public String getMessageType() {
         return messageType;
     }
-    public String[] getReceiver() {
-        return receiver;
+    public String getSender() {
+        return sender;
     }
     public String getMessage() {
         return message;

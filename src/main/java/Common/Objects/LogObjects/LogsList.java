@@ -1,6 +1,4 @@
-package Server.ServerClasses.LogObjects;
-
-import Server.ServerClasses.AdminObjects.Admin;
+package Common.Objects.LogObjects;
 
 import java.util.List;
 

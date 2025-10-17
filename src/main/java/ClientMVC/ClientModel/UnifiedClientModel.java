@@ -2,9 +2,8 @@ package ClientMVC.ClientModel;
 
 import ClientMVC.ClientJSONHandler;
 import ClientMVC.UserXMLHandler;
-import Server.ServerClasses.AdminObjects.AdminAccounts;
-import Server.ServerClasses.ClientObjects.Client;
-import Server.ServerClasses.ClientObjects.FriendRequest;
+import Common.Objects.AdminObjects.AdminAccounts;
+import Common.Objects.ClientObjects.Client;
 import javafx.application.Platform;
 
 import java.io.*;

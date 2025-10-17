@@ -1,9 +1,9 @@
 package Server;
 
-import Server.ServerClasses.AdminObjects.Admin;
-import Server.ServerClasses.AdminObjects.AdminAccountsList;
-import Server.ServerClasses.ClientObjects.*;
-import Server.ServerClasses.LogObjects.LogsList;
+import Common.Objects.AdminObjects.Admin;
+import Common.Objects.AdminObjects.AdminAccountsList;
+import Common.Objects.ClientObjects.*;
+import Common.Objects.LogObjects.LogsList;
 import com.google.gson.Gson;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -43,7 +43,7 @@ public class ServerJSONHandler {
         return accounts;
     }
 
-    //WRITER METHODS
+    //UPDATE METHODS
     public void writeClientAccountFile(String fPath, ClientAccountsList accounts){
         try(FileWriter writer = new FileWriter(fPath)){
             gsonObject.toJson(accounts, writer);
@@ -80,25 +80,7 @@ public class ServerJSONHandler {
     }
 
     //CHATTING METHODS
-    public Conversation getConversationWithRecipient(ClientAccountsList accountsList, String sender, String recipient){
-        List<ChatRecords> chatRecords = getAllConversationsOfUser(accountsList, sender);
-        if(chatRecords != null){
-            for(ChatRecords chatRecord : chatRecords){
-                List<Conversation> conversations = chatRecord.getMessages();
-
-                if(conversations != null){
-                    for(Conversation conversation : conversations){
-                        if(conversation.getRecipient().equals(recipient)){
-                            return conversation;
-                        }
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    public Conversation getConversationWithSender(ClientAccountsList accountsList, String sender, String recipient){
+    public Conversation getConversation(ClientAccountsList accountsList, String sender, String recipient){
         List<ChatRecords> chatRecords = getAllConversationsOfUser(accountsList, sender);
         if(chatRecords != null){
             for(ChatRecords chatRecord : chatRecords){
@@ -127,10 +109,7 @@ public class ServerJSONHandler {
         return null;
     }
 
-    public void updateRecipientJSONSnippet(String receiver, List<Message> receiverHistory){
-
-    }
-    public void updateUserConversation(ClientAccountsList accountsList, String username, String recipient, List<Message> updatedMessages){
+    public void updateUserConversationJSON(ClientAccountsList accountsList, String username, String recipient, List<Message> updatedMessages){
         if(accountsList != null){
             for(Client client : accountsList.getClients()){
                 if(client.getUsername().equals(username)){

@@ -1,13 +1,13 @@
-package Server.ServerClasses.LogObjects;
+package Common.Objects.LogObjects;
 
 import java.util.List;
 
-public class RequestsList {
+public class ResponsesList {
     //VARIABLES
     private List<Requests> requestsList;
 
     //CONSTRUCTORS
-    public RequestsList(List<Requests> requestsList) {
+    public ResponsesList(List<Requests> requestsList) {
         this.requestsList = requestsList;
     }
 

@@ -1,15 +1,20 @@
 package Server;
 
-import CommonInterface.AdminInterface;
-import CommonInterface.ClientInterface;
-import Server.ServerClasses.AdminObjects.Admin;
-import Server.ServerClasses.AdminObjects.AdminAccountsList;
-import Server.ServerClasses.ClientObjects.*;
+import Common.Interfaces.AdminCallbackInterface;
+import Common.Interfaces.AdminInterface;
+import Common.Interfaces.ClientCallbackInterface;
+import Common.Interfaces.ClientInterface;
+import Common.Objects.AdminObjects.Admin;
+import Common.Objects.AdminObjects.AdminAccountsList;
+import Common.Objects.ClientObjects.*;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class ImplementationClass extends UnicastRemoteObject implements ClientInterface, AdminInterface {
     //VARIABLES
@@ -21,12 +26,25 @@ public class ImplementationClass extends UnicastRemoteObject implements ClientIn
     private ClientAccountsList clientAccountsList;
     private ServerJSONHandler serverJSONHandler;
 
+    private ConcurrentHashMap<String, ClientCallbackInterface> clientCallbacks;
+    private ConcurrentHashMap<String, AdminCallbackInterface> adminCallbacks;
+    private ExecutorService callbackExecutor;
+    private ReadWriteLock conversationLock;
+    private ReadWriteLock userAccountsLock;
+
     //CONSTRUCTORS
     public ImplementationClass() throws RemoteException {
         super();
         serverJSONHandler = new ServerJSONHandler();
         adminAccountsList = serverJSONHandler.readAdminAccountFile("src/main/resources/JSONFiles/AdminAccountsList.json");
         clientAccountsList = serverJSONHandler.readClientAccountFile("src/main/resources/JSONFiles/ClientAccountsList.json");
+        clientCallbacks = new ConcurrentHashMap<>();
+        adminCallbacks = new ConcurrentHashMap<>();
+        callbackExecutor = Executors.newFixedThreadPool(50);
+        conversationLock = new ReentrantReadWriteLock();
+        userAccountsLock = new ReentrantReadWriteLock();
+        onlineUsers = new ConcurrentHashMap<>();
+        onlineAdmins = new ConcurrentHashMap<>();
     }
 
     //USER/ADMIN LOG IN, SIGN UP, AND OTHER RELATED METHODS
@@ -63,6 +81,11 @@ public class ImplementationClass extends UnicastRemoteObject implements ClientIn
 
     @Override
     public void searchGroups(String jsonString) throws RemoteException{
+
+    }
+
+    @Override
+    public void deleteUser(String jsonString) throws RemoteException {
 
     }
 
@@ -164,18 +187,22 @@ public class ImplementationClass extends UnicastRemoteObject implements ClientIn
                 12. Set the updated LIST of Requests objects to the LogsList object
 
         */
-        Message msg = new Message(sender, receiver, message);
-        Conversation receiverConvo = serverJSONHandler.getConversationWithSender(clientAccountsList, receiver, sender);
-        Conversation senderConvo = serverJSONHandler.getConversationWithRecipient(clientAccountsList, sender, receiver);
-        List<Message> receiverHistory = receiverConvo.getMessages();
-        List<Message> senderHistory= senderConvo.getMessages();
-        receiverHistory.add(msg);
-        senderHistory.add(msg);
-        receiverConvo.setMessages(receiverHistory);
-        senderConvo.setMessages(senderHistory);
-        serverJSONHandler.updateUserConversation(clientAccountsList, sender, receiver, senderHistory);
-        serverJSONHandler.updateUserConversation(clientAccountsList, receiver, sender, receiverHistory);
-        serverJSONHandler.writeClientAccountFile("src/main/resources/JSONFiles/ClientAccountsList.json", clientAccountsList);
+        conversationLock.writeLock().lock();
+        try {
+            Message msg = new Message(sender, receiver, message);
+            Conversation receiverConvo = serverJSONHandler.getConversation(clientAccountsList, receiver, sender);
+            Conversation senderConvo = serverJSONHandler.getConversation(clientAccountsList, sender, receiver);
+            receiverConvo.getMessages().add(msg);
+            senderConvo.getMessages().add(msg);
+            serverJSONHandler.updateUserConversationJSON(clientAccountsList, sender, receiver, senderHistory);
+            serverJSONHandler.updateUserConversationJSON(clientAccountsList, receiver, sender, receiverHistory);
+        } finally {
+            conversationLock.writeLock().unlock();
+        }
+
+
+
+
     }
 
     @Override

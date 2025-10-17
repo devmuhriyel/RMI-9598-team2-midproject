@@ -1,8 +1,8 @@
 package ClientMVC;
 
-import Server.ServerClasses.ClientObjects.Client;
-import Server.ServerClasses.ClientObjects.ClientAccounts;
-import Server.ServerClasses.ClientObjects.FriendRequest;
+import Common.Objects.ClientObjects.Client;
+import Common.Objects.ClientObjects.ClientAccounts;
+import Common.Objects.ClientObjects.FriendRequest;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
