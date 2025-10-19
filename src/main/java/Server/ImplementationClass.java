@@ -239,8 +239,62 @@ public class ImplementationClass extends UnicastRemoteObject implements ClientIn
     }
 
     @Override
-    public void acceptFriendRequest(String jsonString) throws RemoteException{
+    public void acceptFriendRequest(String jsonString) throws RemoteException {
+        String requester;
+        String responder;
 
+        try {
+            com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(jsonString).getAsJsonObject();
+
+            requester = jsonObject.get("requester").getAsString();
+            responder = jsonObject.get("target").getAsString();
+
+        } catch (Exception e) {
+            System.err.println("Server Error: Failed to parse JSON for acceptFriendRequest: " + jsonString);
+            throw new RemoteException("Invalid request format for acceptance.", e);
+        }
+
+        userAccountsLock.writeLock().lock();
+        try {
+            Client responderClient = findClient(responder);
+            Client requesterClient = findClient(requester);
+
+            if (responderClient == null || requesterClient == null) {
+                System.out.println("Accept Failed: One or both users not found.");
+                return;
+            }
+
+            requesterClient.getOutgoingFriendRequests().removeIf(
+                    req -> req.getResponder().equals(responder)
+            );
+            responderClient.getIncomingFriendRequests().removeIf(
+                    req -> req.getRequester().equals(requester)
+            );
+
+            if (responderClient.getFriends() == null) {
+                responderClient.setFriends(new ArrayList<>());
+            }
+            if (requesterClient.getFriends() == null) {
+                requesterClient.setFriends(new ArrayList<>());
+            }
+
+            if (!responderClient.getFriends().contains(requester)) {
+                responderClient.getFriends().add(requester);
+            }
+            if (!requesterClient.getFriends().contains(responder)) {
+                requesterClient.getFriends().add(responder);
+            }
+
+            serverJSONHandler.writeClientAccountFile(
+                    "src/main/resources/JSONFiles/ClientAccountsList.json", clientAccountsList
+            );
+            System.out.println("Friendship established: " + requester + " and " + responder);
+
+            // TODO: Implement RMI Callback to notify the 'requester' (the friend who was accepted)
+
+        } finally {
+            userAccountsLock.writeLock().unlock();
+        }
     }
 
     @Override

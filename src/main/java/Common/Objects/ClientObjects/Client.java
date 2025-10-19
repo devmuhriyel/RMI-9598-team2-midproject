@@ -1,6 +1,7 @@
 package Common.Objects.ClientObjects;
 
 import java.util.List;
+import java.util.ArrayList;
 
 public class Client {
     private String username;
@@ -9,6 +10,7 @@ public class Client {
     private List<FriendRequest> incomingFriendRequests;
     private List<FriendRequest> outgoingFriendRequests;
     private List<ChatRecords> chatRecords;
+    private List<String> friends;
 
     public Client(String uName, String pWord, String vCode, List<FriendRequest> inFriends, List<FriendRequest> outFriends, List<ChatRecords> chatRecords) {
         this.username = uName;
@@ -17,6 +19,7 @@ public class Client {
         this.incomingFriendRequests = inFriends;
         this.outgoingFriendRequests = outFriends;
         this.chatRecords = chatRecords;
+        this.friends = new ArrayList<>();
     }
 
     //SETTERS
@@ -38,6 +41,9 @@ public class Client {
     public void setChatHistory(List<ChatRecords> chatRecords) {
         this.chatRecords = chatRecords;
     }
+    public void setFriends(List<String> friends) {
+        this.friends = friends;
+    }
 
     //GETTERS
     public String getUsername() {
@@ -57,5 +63,11 @@ public class Client {
     }
     public List<ChatRecords> getChatRecords() {
         return chatRecords;
+    }
+    public List<String> getFriends() {
+        if (this.friends == null) {
+            this.friends = new ArrayList<>();
+        }
+        return this.friends;
     }
 }

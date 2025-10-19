@@ -1141,14 +1141,14 @@ public class UnifiedClientModel implements Runnable {
             e.printStackTrace();
         }
     }
-    public void acceptFriendRequest(String requestingUser) {
+    public synchronized void acceptFriendRequest(String requesterUser) {
         try {
-            String xmlMessage = "<Request><type>ACCEPT_FRIEND_REQUEST</type><content>" +
-                    username + "![]!" + requestingUser + "</content></Request>";
-            writeMSG.write(xmlMessage);
-            writeMSG.newLine();
-            writeMSG.flush();
-        } catch (IOException e) {
+            String jsonPayload = "{\"requester\":\"" + requesterUser + "\", \"target\":\"" + username + "\"}";
+
+            serverRMI.acceptFriendRequest(jsonPayload);
+
+            Platform.runLater(() -> System.out.println("Accepted request from " + requesterUser));
+        } catch (RemoteException e) {
             e.printStackTrace();
         }
     }
