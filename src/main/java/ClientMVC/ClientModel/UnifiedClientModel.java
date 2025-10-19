@@ -2,9 +2,21 @@ package ClientMVC.ClientModel;
 
 import ClientMVC.ClientJSONHandler;
 import ClientMVC.UserXMLHandler;
-import Common.Objects.AdminObjects.AdminAccounts;
+import Common.Objects.AdminObjects.AdminAccountsList;
 import Common.Objects.ClientObjects.Client;
 import javafx.application.Platform;
+
+import Common.Interfaces.ClientInterface;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.net.Socket;
+import java.util.Collections;
+import java.util.function.Consumer;
+import javafx.application.Platform;
+import java.rmi.RemoteException;
 
 import java.io.*;
 import java.net.Socket;
@@ -21,6 +33,7 @@ public class UnifiedClientModel implements Runnable {
     private String username;
     private UserXMLHandler xmlHandler;
     private ClientJSONHandler jsonHandler;
+    public  ClientInterface serverRMI;
     private Consumer<String> friendRequestListener;
 
     public interface PasswordResetNotificationCallback {
@@ -270,10 +283,11 @@ public class UnifiedClientModel implements Runnable {
             e.printStackTrace();
         }
     }
-    public synchronized void addFriend(String friendUsername) {
-        boolean friendRequest = jsonHandler.addFriend(friendUsername);
-        ClientJSONHandler.setCurrentUser(client.getUsername());
-    }
+
+//    public synchronized void addFriend(String friendUsername) {
+//        boolean friendRequest = jsonHandler.addFriend(friendUsername);
+//        ClientJSONHandler.setCurrentUser(client.getUsername());
+//    }
 
     private void handleFriendRequestsResponse(String xmlResponse) {
         try {
@@ -598,14 +612,18 @@ public class UnifiedClientModel implements Runnable {
     }
     public synchronized void sendFriendRequest(String targetUser) {
         try {
-            String xmlMessage = "<Request><type>ADD_FRIEND_REQUEST</type><content>" +
-                    username + "![]!" + targetUser + "![]!pending</content></Request>";
-            writeMSG.write(xmlMessage);
-            writeMSG.newLine();
-            writeMSG.flush();
-            System.out.println("Friend request sent to: " + targetUser);
-        } catch (IOException e) {
+            String log = "{\"requester\":\"" + username + "\", \"target\":\"" + targetUser + "\"}";
+            serverRMI.sendFriendRequest(log);
+            System.out.println("RMI Friend request sent to: " + targetUser);
+            if (friendRequestListener != null) {
+                Platform.runLater(() -> friendRequestListener.accept("REQUEST_SENT"));
+            }
+
+        } catch (java.rmi.RemoteException e) {
             e.printStackTrace();
+            if (friendRequestListener != null) {
+                Platform.runLater(() -> friendRequestListener.accept("REQUEST_FAILED"));
+            }
         }
     }
 
@@ -1248,11 +1266,11 @@ public class UnifiedClientModel implements Runnable {
 
     // GETTERS
     public List<String> getFriends() {
-        return xmlHandler.getFriends(username);
+        return Collections.emptyList();
     }
 
     public List<String> getGroups() {
-        return xmlHandler.getUserGroups(username);
+        return Collections.emptyList();
     }
 
     public List<String> getAllUsers() {

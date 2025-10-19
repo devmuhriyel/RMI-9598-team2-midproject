@@ -150,8 +150,7 @@ public class HomeController {
     }
 
     private void addFriend(String username) {
-        model.addFriend(username);
-        System.out.println("HomeController: Sending friend request to " + username);
+        model.sendFriendRequest(username);
     }
 
     private void createGroup(String groupName) {

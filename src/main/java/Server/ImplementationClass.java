@@ -7,9 +7,11 @@ import Common.Interfaces.ClientInterface;
 import Common.Objects.AdminObjects.Admin;
 import Common.Objects.AdminObjects.AdminAccountsList;
 import Common.Objects.ClientObjects.*;
+import com.google.gson.JsonParser;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -100,8 +102,79 @@ public class ImplementationClass extends UnicastRemoteObject implements ClientIn
     }
 
     @Override
-    public void sendFriendRequest(String jsonString) throws RemoteException{
+    public void sendFriendRequest(String jsonString) throws RemoteException {
+        String requesterUsername;
+        String targetUsername;
 
+        try {
+            JsonParser parser = new JsonParser();
+            com.google.gson.JsonObject jsonObject = parser.parse(jsonString).getAsJsonObject();
+
+            requesterUsername = jsonObject.get("requester").getAsString();
+            targetUsername = jsonObject.get("target").getAsString();
+
+        } catch (Exception e) {
+            System.err.println("Server Error: Failed to parse friend request JSON: " + jsonString);
+            throw new RemoteException("Invalid request format.", e);
+        }
+        userAccountsLock.writeLock().lock();
+        try {
+            boolean success = handleFriendRequestLogic(requesterUsername, targetUsername);
+
+            if (success) {
+                serverJSONHandler.writeClientAccountFile(
+                        "src/main/resources/JSONFiles/ClientAccountsList.json",
+                        clientAccountsList
+                );
+                System.out.println("Friend request saved: " + requesterUsername + " -> " + targetUsername);
+
+                // TODO: Implement RMI Callback to notify the target user (targetUsername) immediately.
+            } else {
+                System.err.println("Friend request failed for logic: " + requesterUsername + " -> " + targetUsername);
+            }
+
+        } finally {
+            userAccountsLock.writeLock().unlock();
+        }
+    }
+    private boolean handleFriendRequestLogic(String requester, String target) {
+        Client requesterClient = null;
+        Client targetClient = null;
+
+        for (Client c : clientAccountsList.getClients()) {
+            if (c.getUsername().equalsIgnoreCase(requester)) {
+                requesterClient = c;
+            } else if (c.getUsername().equalsIgnoreCase(target)) {
+                targetClient = c;
+            }
+        }
+
+        if (requesterClient == null || targetClient == null) {
+            return false;
+        }
+
+        if (requesterClient.getOutgoingFriendRequests() != null) {
+            for (FriendRequest fr : requesterClient.getOutgoingFriendRequests()) {
+                if (fr.getResponder().equalsIgnoreCase(target) && fr.getStatus().equalsIgnoreCase("pending")) {
+                    return false;
+                }
+            }
+        }
+
+        FriendRequest outgoingReq = new FriendRequest(requester, target, "pending");
+        FriendRequest incomingReq = new FriendRequest(requester, target, "pending");
+
+        if (requesterClient.getOutgoingFriendRequests() == null) {
+            requesterClient.setOutgoingFriendRequests(new ArrayList<>());
+        }
+        if (targetClient.getIncomingFriendRequests() == null) {
+            targetClient.setIncomingFriendRequests(new ArrayList<>());
+        }
+
+        requesterClient.getOutgoingFriendRequests().add(outgoingReq);
+        targetClient.getIncomingFriendRequests().add(incomingReq);
+
+        return true;
     }
 
     @Override
@@ -194,8 +267,8 @@ public class ImplementationClass extends UnicastRemoteObject implements ClientIn
             Conversation senderConvo = serverJSONHandler.getConversation(clientAccountsList, sender, receiver);
             receiverConvo.getMessages().add(msg);
             senderConvo.getMessages().add(msg);
-            serverJSONHandler.updateUserConversationJSON(clientAccountsList, sender, receiver, senderHistory);
-            serverJSONHandler.updateUserConversationJSON(clientAccountsList, receiver, sender, receiverHistory);
+//            serverJSONHandler.updateUserConversationJSON(clientAccountsList, sender, receiver, senderHistory);
+//            serverJSONHandler.updateUserConversationJSON(clientAccountsList, receiver, sender, receiverHistory);
         } finally {
             conversationLock.writeLock().unlock();
         }

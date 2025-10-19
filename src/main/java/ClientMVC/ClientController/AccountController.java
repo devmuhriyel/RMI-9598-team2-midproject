@@ -300,6 +300,7 @@ public class AccountController {
             model.getReceivedRequests();
         });
     }
+
     private void handleAcceptFriendRequest(String friendName) {
         System.out.println("Controller: Accepting friend request from: " + friendName);
 

@@ -15,7 +15,7 @@ public class TesterClass {
         ClientAccountsList clientAccountsList = handler.readClientAccountFile("src/main/resources/JSONFiles/ClientAccountsList.json");
         List<Admin> allAdmins = handler.getAllAdmins(adminAccountsList);
         List<Client> allClients = handler.getAllClients(clientAccountsList);
-        List<ChatRecords> chats = handler.getAllChatHistoryOfUser(clientAccountsList, "alice");
+//        List<ChatRecords> chats = handler.getAllChatHistoryOfUser(clientAccountsList, "alice");
 
         if (allAdmins != null) {
             for (Admin admin : allAdmins) {
@@ -33,17 +33,17 @@ public class TesterClass {
                 System.out.println("---");
             }
         }
-
-        if (chats != null) {
-            for (ChatRecords chat : chats) {
-                if(chat.getMessages() != null) {
-                    for (Message message : chat.getMessages()) {
-                        System.out.println("Sender: " + message.getSender());
-                        System.out.println("Receiver: " + message.getReceiver());
-                        System.out.println("Content: " + message.getContent());
-                    }
-                }
-            }
-        }
+//
+//        if (chats != null) {
+//            for (ChatRecords chat : chats) {
+//                if(chat.getMessages() != null) {
+//                    for (Message message : chat.getMessages()) {
+//                        System.out.println("Sender: " + message.getSender());
+//                        System.out.println("Receiver: " + message.getReceiver());
+//                        System.out.println("Content: " + message.getContent());
+//                    }
+//                }
+//            }
+//        }
     }
 }
