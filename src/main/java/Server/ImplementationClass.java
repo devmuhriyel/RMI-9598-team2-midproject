@@ -195,8 +195,47 @@ public class ImplementationClass extends UnicastRemoteObject implements ClientIn
 
     //USER/ADMIN FRIEND REQUESTS UI METHODS
     @Override
-    public void cancelFriendRequest(String jsonString) throws RemoteException{
+    public void cancelFriendRequest(String jsonString) throws RemoteException {
+        String requester;
+        String target;
 
+        try {
+            com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(jsonString).getAsJsonObject();
+
+            requester = jsonObject.get("requester").getAsString();
+            target = jsonObject.get("target").getAsString();
+
+        } catch (Exception e) {
+            System.err.println("Server Error: Failed to parse JSON for cancelFriendRequest: " + jsonString);
+            throw new RemoteException("Invalid request format for cancellation.", e);
+        }
+
+        userAccountsLock.writeLock().lock();
+        try {
+            Client requesterClient = findClient(requester);
+            Client targetClient = findClient(target);
+
+            if (requesterClient == null || targetClient == null) {
+                System.out.println("Cancel Failed: One or both users not found.");
+                return;
+            }
+
+            requesterClient.getOutgoingFriendRequests().removeIf(
+                    req -> req.getResponder().equals(target) && req.getStatus().equals("pending")
+            );
+
+            targetClient.getIncomingFriendRequests().removeIf(
+                    req -> req.getRequester().equals(requester) && req.getStatus().equals("pending")
+            );
+
+            serverJSONHandler.writeClientAccountFile(
+                    "src/main/resources/JSONFiles/ClientAccountsList.json", clientAccountsList
+            );
+            System.out.println("Friend request cancelled: " + requester + " -> " + target);
+
+        } finally {
+            userAccountsLock.writeLock().unlock();
+        }
     }
 
     @Override
@@ -272,10 +311,6 @@ public class ImplementationClass extends UnicastRemoteObject implements ClientIn
         } finally {
             conversationLock.writeLock().unlock();
         }
-
-
-
-
     }
 
     @Override
@@ -313,5 +348,17 @@ public class ImplementationClass extends UnicastRemoteObject implements ClientIn
     @Override
     public void sendCommunityMessage(String jsonString) throws RemoteException{
 
+    }
+
+    //HELPERS
+    private Client findClient(String username) {
+        if (clientAccountsList != null && clientAccountsList.getClients() != null) {
+            for (Client c : clientAccountsList.getClients()) {
+                if (c.getUsername().equalsIgnoreCase(username)) {
+                    return c;
+                }
+            }
+        }
+        return null;
     }
 }

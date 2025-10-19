@@ -340,19 +340,16 @@ public class UnifiedClientModel implements Runnable {
             e.printStackTrace();
         }
     }
+
     public synchronized void cancelSentRequest(String targetUser) {
         try {
-            String xmlMessage = "<Request><type>CANCEL_FRIEND_REQUEST</type><content>" +
-                    username + "![]!" + targetUser + "</content></Request>";
-            writeMSG.write(xmlMessage);
-            writeMSG.newLine();
-            writeMSG.flush();
-            System.out.println("Cancel request sent for: " + targetUser);
-        } catch (IOException e) {
+            String jsonPayload = "{\"requester\":\"" + username + "\", \"target\":\"" + targetUser + "\"}";
+            serverRMI.cancelFriendRequest(jsonPayload);
+
+            Platform.runLater(() -> System.out.println("Canceled request to " + targetUser));
+
+        } catch (java.rmi.RemoteException e) {
             e.printStackTrace();
-            if (friendRequestListener != null) {
-                Platform.runLater(() -> friendRequestListener.accept("FRIEND_REQUEST_CANCEL_FAILED"));
-            }
         }
     }
 
