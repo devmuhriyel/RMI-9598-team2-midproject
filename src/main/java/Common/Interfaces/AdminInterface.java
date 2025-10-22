@@ -4,25 +4,25 @@ import java.rmi.RemoteException;
 
 public interface AdminInterface {
     //ADMIN LOG IN, SIGN UP, AND OTHER RELATED METHODS
-    public void signUp(String jsonString) throws RemoteException;
-    public void logIn(String jsonString) throws RemoteException;
-    public void logOut(String jsonString) throws RemoteException;
-    public void changePassword(String jsonString) throws RemoteException;
-    public void verifyCode(String jsonString) throws RemoteException;
+    void signUp(String username, String password, String verificationCode, String jsonString, AdminCallbackInterface adminCallback) throws RemoteException;
+    void logIn(String username, String jsonString, AdminCallbackInterface adminCallBbck) throws RemoteException;
+    void logOut(String username, String jsonString) throws RemoteException;
+    void changePassword(String jsonString) throws RemoteException;
+    void verifyCode(String jsonString) throws RemoteException;
 
     //ADMIN HOME UI METHODS
-    public void searchUsers(String jsonString) throws RemoteException;
-    public void searchGroups(String jsonString) throws RemoteException;
+    void searchUsers(String jsonString) throws RemoteException;
+    void searchGroups(String jsonString) throws RemoteException;
 
     //ADMIN ACCOUNT AND GROUP UI METHODS
     void deleteUser(String jsonString) throws RemoteException;
     void deleteGroup(String jsonString) throws RemoteException;
 
     //ADMIN COMMON CHATTING METHODS
-    public String getChatHistoryOfUser(String jsonString) throws RemoteException;
-    public String getChatHistoryOfGroup(String jsonString) throws RemoteException;
-    public String getChatHistoryOfCommunity(String jsonString) throws RemoteException;
+    String getChatHistoryOfUser(String jsonString) throws RemoteException;
+    String getChatHistoryOfGroup(String jsonString) throws RemoteException;
+    String getChatHistoryOfCommunity(String jsonString) throws RemoteException;
 
     //ADMIN COMMUNITY CHATTING METHODS
-    public void sendCommunityMessage(String jsonString) throws RemoteException;
+    void sendCommunityMessage(String jsonString) throws RemoteException;
 }

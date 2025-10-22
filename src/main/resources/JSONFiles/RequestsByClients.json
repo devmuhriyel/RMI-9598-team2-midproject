@@ -13,15 +13,13 @@
       "responses": [
         {
           "logType": "response",
-          "message": "SEND_MESSAGE_SUCCESS",
-          "receivers": [
-            {
-              "receiver": "alice"
-            },
-            {
-              "receiver": "gian"
-            }
-          ]
+          "messageType": "SENT_MESSAGE",
+          "receivers": "alice"
+        },
+        {
+          "logType": "response",
+          "messageType": "RECEIVED_MESSAG",
+          "receivers": "gian"
         }
       ]
     }

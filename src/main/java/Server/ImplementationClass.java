@@ -13,8 +13,8 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -24,15 +24,15 @@ public class ImplementationClass extends UnicastRemoteObject implements ClientIn
     private ConcurrentHashMap<String, Client> allUsers;
     private ConcurrentHashMap<String, Admin> onlineAdmins;
     private ConcurrentHashMap<String, Admin> allAdmins;
+    private ConcurrentHashMap<String, ClientCallbackInterface> clientCallbacks;
+    private ConcurrentHashMap<String, AdminCallbackInterface> adminCallbacks;
+    private ConcurrentHashMap<String, ReadWriteLock> conversationLocks;
+
+    private ScheduledExecutorService callbackExecutor;
+    private ReadWriteLock fileLock;
     private AdminAccountsList adminAccountsList;
     private ClientAccountsList clientAccountsList;
     private ServerJSONHandler serverJSONHandler;
-
-    private ConcurrentHashMap<String, ClientCallbackInterface> clientCallbacks;
-    private ConcurrentHashMap<String, AdminCallbackInterface> adminCallbacks;
-    private ExecutorService callbackExecutor;
-    private ReadWriteLock conversationLock;
-    private ReadWriteLock userAccountsLock;
 
     //CONSTRUCTORS
     public ImplementationClass() throws RemoteException {
@@ -42,26 +42,39 @@ public class ImplementationClass extends UnicastRemoteObject implements ClientIn
         clientAccountsList = serverJSONHandler.readClientAccountFile("src/main/resources/JSONFiles/ClientAccountsList.json");
         clientCallbacks = new ConcurrentHashMap<>();
         adminCallbacks = new ConcurrentHashMap<>();
-        callbackExecutor = Executors.newFixedThreadPool(50);
-        conversationLock = new ReentrantReadWriteLock();
-        userAccountsLock = new ReentrantReadWriteLock();
+        callbackExecutor = Executors.newSingleThreadScheduledExecutor();
+        conversationLocks = new ConcurrentHashMap<>();
         onlineUsers = new ConcurrentHashMap<>();
         onlineAdmins = new ConcurrentHashMap<>();
+        fileLock = new ReentrantReadWriteLock();
+
+        updateClientJSONFile("src/main/resources/JSONFiles/ClientAccountsList.json", clientAccountsList);
+        updateAdminJSONFile("src/main/resources/JSONFiles/AdminAccountsList.json", adminAccountsList);
     }
 
     //USER/ADMIN LOG IN, SIGN UP, AND OTHER RELATED METHODS
     @Override
-    public void signUp(String jsonString) throws RemoteException{
+    public void signUp(String username, String password, String verificationCode, String jsonString, AdminCallbackInterface adminCallback) throws RemoteException {
 
     }
 
     @Override
-    public void logIn(String jsonString) throws RemoteException{
+    public void logIn(String username, String jsonString, AdminCallbackInterface adminCallback) throws RemoteException {
 
     }
 
     @Override
-    public void logOut(String jsonString) throws RemoteException{
+    public void signUp(String username, String password, String verificationCode, String jsonString, ClientCallbackInterface clientCallback) throws RemoteException {
+
+    }
+
+    @Override
+    public void logIn(String username, String jsonString, ClientCallbackInterface clientCallback) throws RemoteException {
+
+    }
+
+    @Override
+    public void logOut(String username, String jsonString) throws RemoteException{
 
     }
 
@@ -117,7 +130,7 @@ public class ImplementationClass extends UnicastRemoteObject implements ClientIn
             System.err.println("Server Error: Failed to parse friend request JSON: " + jsonString);
             throw new RemoteException("Invalid request format.", e);
         }
-        userAccountsLock.writeLock().lock();
+        fileLock.writeLock().lock();
         try {
             boolean success = handleFriendRequestLogic(requesterUsername, targetUsername);
 
@@ -134,7 +147,7 @@ public class ImplementationClass extends UnicastRemoteObject implements ClientIn
             }
 
         } finally {
-            userAccountsLock.writeLock().unlock();
+            fileLock.writeLock().unlock();
         }
     }
     private boolean handleFriendRequestLogic(String requester, String target) {
@@ -210,7 +223,7 @@ public class ImplementationClass extends UnicastRemoteObject implements ClientIn
             throw new RemoteException("Invalid request format for cancellation.", e);
         }
 
-        userAccountsLock.writeLock().lock();
+        fileLock.writeLock().lock();
         try {
             Client requesterClient = findClient(requester);
             Client targetClient = findClient(target);
@@ -234,7 +247,7 @@ public class ImplementationClass extends UnicastRemoteObject implements ClientIn
             System.out.println("Friend request cancelled: " + requester + " -> " + target);
 
         } finally {
-            userAccountsLock.writeLock().unlock();
+            fileLock.writeLock().unlock();
         }
     }
 
@@ -254,7 +267,7 @@ public class ImplementationClass extends UnicastRemoteObject implements ClientIn
             throw new RemoteException("Invalid request format for acceptance.", e);
         }
 
-        userAccountsLock.writeLock().lock();
+        fileLock.writeLock().lock();
         try {
             Client responderClient = findClient(responder);
             Client requesterClient = findClient(requester);
@@ -293,7 +306,7 @@ public class ImplementationClass extends UnicastRemoteObject implements ClientIn
             // TODO: Implement RMI Callback to notify the 'requester' (the friend who was accepted)
 
         } finally {
-            userAccountsLock.writeLock().unlock();
+            fileLock.writeLock().unlock();
         }
     }
 
@@ -337,33 +350,63 @@ public class ImplementationClass extends UnicastRemoteObject implements ClientIn
     public void sendPrivateMessage(String sender, String receiver, String message, String jsonString) throws RemoteException{
         /*
             To append a new message record to the JSON file:
-            A.
+            B.
                 1. Create a Message object using the variables the client sent
                 2. Get the Conversation object between the sender and the receiver
                 3. Get the LIST of Message objects in the Conversation objects of the sender and receiver
                 4. Append the newly created Message object to the list of Message objects of the sender and receiver
-                5. Set the updated LIST of Message objects in the Conversation object of the sender and receiver
+                5. Update the JSON file
                 6. Append the changes to the JSON snippets of the sender and receiver
-            B.
-                7. Extract the JSON string for logType, messageType, and sender
-                8. Create a new Requests object with the extracted information
-                9. Get the LogsList object
-                10. Get the list of Requests objects from the LogsList object
-                11. Append the newly created Requests object to the LIST of Request objects
-                12. Set the updated LIST of Requests objects to the LogsList object
+            C.
+                1. Extract the JSON string for logType, messageType, and sender
+                2. Create a new Requests object with the extracted information
+                3. Get the LogsList object
+                4. Get the list of Requests objects from the LogsList object
+                5. Append the newly created Requests object to the LIST of Request objects
+                6. Set the updated LIST of Requests objects to the LogsList object
 
         */
-        conversationLock.writeLock().lock();
+        Message msg = new Message(sender, receiver, message);
+        Conversation receiverConvo = serverJSONHandler.getConversation(clientAccountsList, receiver, sender);
+        Conversation senderConvo = serverJSONHandler.getConversation(clientAccountsList, sender, receiver);
+
+        String conversationKey = serverJSONHandler.createConversationHashMapEntryString(sender, receiver);
+        ReadWriteLock convoLock = conversationLocks.computeIfAbsent(conversationKey, k-> new ReentrantReadWriteLock());
+        convoLock.writeLock().lock();
+
         try {
-            Message msg = new Message(sender, receiver, message);
-            Conversation receiverConvo = serverJSONHandler.getConversation(clientAccountsList, receiver, sender);
-            Conversation senderConvo = serverJSONHandler.getConversation(clientAccountsList, sender, receiver);
             receiverConvo.getMessages().add(msg);
             senderConvo.getMessages().add(msg);
-//            serverJSONHandler.updateUserConversationJSON(clientAccountsList, sender, receiver, senderHistory);
-//            serverJSONHandler.updateUserConversationJSON(clientAccountsList, receiver, sender, receiverHistory);
+            fileLock.writeLock().lock();
+            try {
+                serverJSONHandler.writeClientAccountFile("src/main/resources/JSONFiles/ClientAccountsList.json", clientAccountsList);
+            } finally {
+                fileLock.writeLock().unlock();
+            }
         } finally {
-            conversationLock.writeLock().unlock();
+            convoLock.writeLock().unlock();
+        }
+
+        ClientCallbackInterface senderCallback = clientCallbacks.get(sender);
+        callbackExecutor.execute(() -> {
+            try {
+                senderCallback.onPrivateMessageSent(senderConvo.getMessages().getLast().toString(), serverJSONHandler.createJSONStringResponse("response", "SENT_MESSAGE", sender));
+            } catch (RemoteException e) {
+                System.out.println("Failed to notify sender");
+                e.printStackTrace();
+            }
+        });
+
+        ClientCallbackInterface receiverCallback = clientCallbacks.get(receiver);
+        if (clientCallbacks.get(receiver) != null) {
+            callbackExecutor.execute(() -> {
+                try{
+                    receiverCallback.onPrivateMessageReceived(receiverConvo.getMessages().getLast().toString(), serverJSONHandler.createJSONStringResponse("response", "RECEIVED_MESSAGE", receiver));
+                } catch (RemoteException e) {
+                    System.out.println("Failed to notify receiver");
+                    e.printStackTrace();
+                }
+            });
         }
     }
 
@@ -414,5 +457,13 @@ public class ImplementationClass extends UnicastRemoteObject implements ClientIn
             }
         }
         return null;
+    }
+
+    //FILE UPDATER
+    private void updateClientJSONFile(String filePath, ClientAccountsList fileUpdates) throws RemoteException{
+
+    }
+    private void updateAdminJSONFile(String filePath, AdminAccountsList fileUpdates) throws RemoteException{
+
     }
 }

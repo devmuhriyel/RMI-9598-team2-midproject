@@ -41,8 +41,8 @@ public interface ClientCallbackInterface extends Remote {
     void onGetUnreadMessages() throws RemoteException;
 
     //USER PRIVATE CHATTING METHODS
-    void onPrivateMessageSent() throws RemoteException;
-    void onPrivateMessageReceived() throws RemoteException;
+    void onPrivateMessageSent(String msg, String jsonString) throws RemoteException;
+    void onPrivateMessageReceived(String msg, String jsonString) throws RemoteException;
     void onPrivateFileSent() throws RemoteException;
     void onPrivateFileReceived() throws RemoteException;
 

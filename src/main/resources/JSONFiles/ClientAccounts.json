@@ -18,38 +18,34 @@
           "status": "pending"
         }
       ],
-      "chatRecords": [
+      "conversation": [
         {
-          "conversation": [
+          "recipient": "gian",
+          "messages": [
             {
-              "recipient": "gian",
-              "messages": [
-                {
-                  "sender": "alice",
-                  "receiver": "gian",
-                  "message": "hello gian"
-                },
-                {
-                  "sender": "gian",
-                  "receiver": "alice",
-                  "message": "hello alice"
-                }
-              ]
+              "sender": "alice",
+              "receiver": "gian",
+              "message": "hello gian"
             },
             {
-              "recipient": "diana",
-              "messages": [
-                {
-                  "sender": "alice",
-                  "receiver": "diana",
-                  "message": "hello diana"
-                },
-                {
-                  "sender": "diana",
-                  "receiver": "alice",
-                  "message": "hello alice"
-                }
-              ]
+              "sender": "gian",
+              "receiver": "alice",
+              "message": "hello alice"
+            }
+          ]
+        },
+        {
+          "recipient": "diana",
+          "messages": [
+            {
+              "sender": "alice",
+              "receiver": "diana",
+              "message": "hello diana"
+            },
+            {
+              "sender": "diana",
+              "receiver": "alice",
+              "message": "hello alice"
             }
           ]
         }

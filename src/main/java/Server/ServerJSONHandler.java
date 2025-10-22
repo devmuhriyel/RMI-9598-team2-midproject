@@ -81,55 +81,39 @@ public class ServerJSONHandler {
 
     //CHATTING METHODS
     public Conversation getConversation(ClientAccountsList accountsList, String sender, String recipient){
-        List<ChatRecords> chatRecords = getAllConversationsOfUser(accountsList, sender);
-        if(chatRecords != null){
-            for(ChatRecords chatRecord : chatRecords){
-                List<Conversation> conversations = chatRecord.getMessages();
-
-                if(conversations != null){
-                    for(Conversation conversation : conversations){
-                        if(conversation.getRecipient().equals(recipient)){
-                            return conversation;
-                        }
-                    }
+        List<Conversation> conversations = getAllConversationsOfUser(accountsList, sender);
+        if(conversations != null){
+            for(Conversation conversation : conversations){
+                if(conversation.getRecipient().equals(recipient)){
+                    return conversation;
                 }
             }
         }
         return null;
     }
 
-    public List<ChatRecords> getAllConversationsOfUser(ClientAccountsList clientAccountsList, String user){
+    public List<Conversation> getAllConversationsOfUser(ClientAccountsList clientAccountsList, String user){
         if(clientAccountsList != null){
             for(Client c: clientAccountsList.getClients()){
                 if(c.getUsername().equals(user)){
-                    return c.getChatRecords();
+                    return c.getConversations();
                 }
             }
         }
         return null;
     }
 
-    public void updateUserConversationJSON(ClientAccountsList accountsList, String username, String recipient, List<Message> updatedMessages){
-        if(accountsList != null){
-            for(Client client : accountsList.getClients()){
-                if(client.getUsername().equals(username)){
-                    List<ChatRecords> chatRecords = client.getChatRecords();
-                    if(chatRecords != null){
-                        for(ChatRecords chatRecord : chatRecords){
-                            List<Conversation> conversations = chatRecord.getMessages();
-                            if(conversations != null){
-                                for(Conversation conversation : conversations){
-                                    if(conversation.getRecipient().equals(recipient)){
-                                        conversation.setMessages(updatedMessages);
-                                        return;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+    //Helper Methods For Updating Files
+    public String createConversationHashMapEntryString(String user1, String user2){
+        if (user1.compareTo(user2) > 0) {
+            return user1 + ":" + user2;
+        } else {
+            return user2 + ":" + user1;
         }
+    }
+
+    public String createJSONStringResponse(String logType, String msgType, String receiver){
+        return "{ \\n \" logType \": \"" + logType + "\", \n \" messageType \": \"" + msgType + "\", \n \" receiver \": \n " + receiver + " \n}";
     }
 //    public Requests decodeClientRequest(LogsList logsList, String jsonString){
 //

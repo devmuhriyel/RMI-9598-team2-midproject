@@ -6,9 +6,11 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 
 public class ClientCallbackImplementation extends UnicastRemoteObject implements ClientCallbackInterface {
+    private String name;
     public ClientCallbackImplementation() throws RemoteException {
         super();
     }
+
 
     @Override
     public void onSuccessfulSignUp() throws RemoteException {
@@ -136,12 +138,12 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     }
 
     @Override
-    public void onPrivateMessageSent() throws RemoteException {
+    public void onPrivateMessageSent(String message, String jsonString) throws RemoteException {
 
     }
 
     @Override
-    public void onPrivateMessageReceived() throws RemoteException {
+    public void onPrivateMessageReceived(String message, String jsonString) throws RemoteException {
 
     }
 
@@ -213,5 +215,9 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     @Override
     public void onCommunityMessageReceived() throws RemoteException {
 
+    }
+
+    public String getName(){
+        return name;
     }
 }

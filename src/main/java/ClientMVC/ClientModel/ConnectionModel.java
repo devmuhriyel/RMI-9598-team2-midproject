@@ -1,24 +1,26 @@
 package ClientMVC.ClientModel;
 
+import ClientMVC.ClientCallbackImplementation;
+
+import java.rmi.ConnectException;
+import java.rmi.NotBoundException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.RemoteException;
 import java.util.concurrent.locks.ReentrantLock;
 
-// 💡 Import your server's remote service interface
 import Common.Interfaces.ClientInterface;
 
 public class ConnectionModel {
 
-    // Stores the remote service stub (the client's proxy for the server)
     private volatile ClientInterface remoteServiceStub;
+    private volatile ClientCallbackImplementation callback;
     private volatile String ip;
     private volatile int port;
     private volatile boolean connected;
     private final ReentrantLock connectionLock = new ReentrantLock();
 
-    // 💡 The binding name must be exactly what the server uses to bind its service
-    private static final String RMI_BINDING_NAME = "ChatServer"; // Adjust if your server uses a different name
+    private static final String RMI_BINDING_NAME = "ChatServer";
 
     public enum ConnectionStatus {
         SUCCESS,
@@ -26,8 +28,8 @@ public class ConnectionModel {
         INVALID_PORT_FORMAT,
         INVALID_IP_FORMAT,
         INVALID_PORT_RANGE,
-        CONNECTION_FAILED,      // For Registry connection or general RMI network errors
-        RMI_LOOKUP_FAILED       // For when the service name isn't found in the Registry
+        CONNECTION_FAILED,
+        RMI_LOOKUP_FAILED
     }
 
     public static class ConnectionResult {
@@ -47,7 +49,8 @@ public class ConnectionModel {
         connectionLock.lock();
         try {
             this.connected = false;
-            this.remoteServiceStub = null; // Reset stub
+            this.remoteServiceStub = null;
+            this.callback = null;
 
             // --- Input Validation ---
             if (ip == null || ip.trim().isEmpty() || portText == null || portText.trim().isEmpty()) {
@@ -69,7 +72,7 @@ public class ConnectionModel {
             }
 
             String ipv4Pattern = "^(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)){3}$";
-            if (!ip.matches(ipv4Pattern) && !ip.equalsIgnoreCase("localhost")) { // Allow 'localhost' too
+            if (!ip.matches(ipv4Pattern) && !ip.equalsIgnoreCase("localhost")) {
                 return new ConnectionResult(ConnectionStatus.INVALID_IP_FORMAT, "Invalid IP address format.");
             }
 
@@ -78,28 +81,33 @@ public class ConnectionModel {
                 // 1. Get the reference to the RMI Registry
                 Registry registry = LocateRegistry.getRegistry(ip, port);
 
-                // 2. Look up the remote object and cast it to the common interface
+                // 2. Look up the remote object
                 remoteServiceStub = (ClientInterface) registry.lookup(RMI_BINDING_NAME);
+
+                // 3. Create the callback implementation (ONCE per connection)
+                try {
+                    callback = new ClientCallbackImplementation();
+                    System.out.println("Callback created successfully!");
+                } catch (RemoteException e) {
+                    return new ConnectionResult(ConnectionStatus.CONNECTION_FAILED,
+                            "Failed to create callback: " + e.getMessage());
+                }
 
                 this.connected = true;
                 this.ip = ip;
                 this.port = port;
                 return new ConnectionResult(ConnectionStatus.SUCCESS, "RMI service successfully retrieved.");
 
-            } catch (java.rmi.ConnectException e) {
-                // Thrown if the Registry service is not running or network is unreachable
+            } catch (ConnectException e) {
                 return new ConnectionResult(ConnectionStatus.CONNECTION_FAILED,
                         "Failed to connect to RMI Registry: " + e.getMessage());
-            } catch (java.rmi.NotBoundException e) {
-                // Thrown if the binding name is incorrect or the service hasn't been started on the server
+            } catch (NotBoundException e) {
                 return new ConnectionResult(ConnectionStatus.RMI_LOOKUP_FAILED,
                         "Service '" + RMI_BINDING_NAME + "' not found in Registry.");
             } catch (RemoteException e) {
-                // General RMI communication error
                 return new ConnectionResult(ConnectionStatus.CONNECTION_FAILED,
                         "RMI Communication Error: " + e.getMessage());
             } catch (ClassCastException e) {
-                // Should only happen if the stub retrieved is not a ClientInterface
                 return new ConnectionResult(ConnectionStatus.RMI_LOOKUP_FAILED,
                         "RMI Service found but has wrong type (check stub versions).");
             }
@@ -109,11 +117,30 @@ public class ConnectionModel {
         }
     }
 
-    /** Returns the remote service stub. The caller (Controller) must use this to call remote methods. */
+    /** Returns the remote service stub */
     public ClientInterface getRemoteServiceStub() {
         connectionLock.lock();
         try {
             return remoteServiceStub;
+        } finally {
+            connectionLock.unlock();
+        }
+    }
+
+    /** Returns the callback implementation */
+    public ClientCallbackImplementation getCallback() {
+        connectionLock.lock();
+        try {
+            return callback;
+        } finally {
+            connectionLock.unlock();
+        }
+    }
+
+    public boolean isConnected() {
+        connectionLock.lock();
+        try {
+            return connected;
         } finally {
             connectionLock.unlock();
         }
