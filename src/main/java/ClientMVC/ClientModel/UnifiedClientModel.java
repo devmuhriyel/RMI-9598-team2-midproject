@@ -56,16 +56,27 @@ public class UnifiedClientModel {
     public void searchGroups(String jsonString) throws RemoteException{}
     //public void sendFriendRequest(String jsonString) throws RemoteException{}
     public void getOnlineFriends(String jsonString) throws RemoteException{}
+    public void getAllUsers() throws RemoteException{}
 
     //USER ACCOUNT SETTINGS UI METHODS
     public void changeUsername(String jsonString) throws RemoteException{}
     public void changePasswordWithOldPassword(String jsonString) throws RemoteException{}
 
     //USER FRIEND REQUESTS UI METHODS
+    public void sendFriendRequest(String jsonString) throws RemoteException{}
     public void cancelFriendRequest(String jsonString) throws RemoteException{}
     //public void acceptFriendRequest(String jsonString) throws RemoteException{}
     public void rejectFriendRequest(String jsonString) throws RemoteException{}
     public void removeFromFriendsList(String jsonString) throws RemoteException{}
+    public void getFriendRequests() throws RemoteException{};
+    public void acceptFriendRequest(String jsonString){
+        try {
+            String jsonPayload = "{\"requester\":\"" + jsonString + "\", \"target\":\"" + username + "\"}";
+            serverRMI.acceptFriendRequest(jsonPayload);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+    }
 
     //USER COMMON CHATTING METHODS
     public List<Conversation> getChatHistories(String jsonString, String sender) throws RemoteException{

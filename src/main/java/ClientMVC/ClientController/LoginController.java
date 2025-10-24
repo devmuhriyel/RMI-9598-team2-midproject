@@ -13,21 +13,21 @@ import javafx.scene.control.Alert;
 import javafx.stage.Stage;
 
 public class LoginController {
-//    private final LoginJFXController loginJFXController;
-//    private final LoginView view;
-//    private final UnifiedClientModel model;
-//    private UserXMLHandler userXMLHandler = new UserXMLHandler();
-//    private String currentPasswordResetUser = null;
-//
-//    public LoginController(LoginView loginView, UnifiedClientModel unifiedModel, LoginJFXController loginJFXController) {
-//        this.loginJFXController = loginJFXController;
-//        this.view = loginView;
-//        this.model = unifiedModel;
+    private final LoginJFXController loginJFXController;
+    private final LoginView view;
+    private final UnifiedClientModel model;
+    private UserXMLHandler userXMLHandler = new UserXMLHandler();
+    private String currentPasswordResetUser = null;
+
+    public LoginController(LoginView loginView, UnifiedClientModel unifiedModel, LoginJFXController loginJFXController) {
+        this.loginJFXController = loginJFXController;
+        this.view = loginView;
+        this.model = unifiedModel;
 //        model.setMessageListener(this::handleAllResponses);
 //        model.setGeneralNotificationCallback(this::handleGeneralNotification);
 //        model.setVerificationCodeValidListener(this::handleVerificationCodeValid);
 //        initialize();
-//    }
+    }
 //
 //    private void initialize() {
 //        loginJFXController.setLoginButtonListener(() -> {
