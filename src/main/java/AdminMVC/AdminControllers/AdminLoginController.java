@@ -10,13 +10,13 @@ import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.stage.Stage;
 
-public class LoginController {
+public class AdminLoginController {
     private final LoginJFXController loginJFXController;
     private final LoginView view;
     private final UnifiedAdminModel model;
     private String currentPasswordResetUser = null;
 
-    public LoginController(LoginView loginView, UnifiedAdminModel unifiedModel, LoginJFXController loginJFXController) {
+    public AdminLoginController(LoginView loginView, UnifiedAdminModel unifiedModel, LoginJFXController loginJFXController) {
         this.loginJFXController = loginJFXController;
         this.view = loginView;
         this.model = unifiedModel;

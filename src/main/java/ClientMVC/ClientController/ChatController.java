@@ -1,5 +1,6 @@
 package ClientMVC.ClientController;
 
+import ClientMVC.ClientCallbackImplementation;
 import ClientMVC.ClientModel.UnifiedClientModel;
 import ClientMVC.ClientView.Chat.ChatView;
 import ClientMVC.ClientView.Chat.ChatJFXController;
@@ -7,213 +8,52 @@ import ClientMVC.ClientView.Home.HomeView;
 import ClientMVC.UserXMLHandler;
 import java.io.File;
 
+import Common.Objects.ClientObjects.Message;
 import javafx.application.Platform;
 import javafx.stage.Stage;
 
+import java.rmi.RemoteException;
 import java.util.List;
 
 public class ChatController {
     private UnifiedClientModel model;
     private ChatView view;
     private ChatJFXController chatJFXController;
+    private ClientCallbackImplementation clientCallback;
     private String currentChatPartner;
     private boolean isGroupChat = false;
     private boolean isCommunityChat = false;
 
-    public ChatController(UnifiedClientModel model, ChatView view, ChatJFXController uiElements) {
+    public ChatController(UnifiedClientModel model, ChatView view, ChatJFXController uiElements, ClientCallbackImplementation callback) {
         this.model = model;
         this.view = view;
         this.chatJFXController = uiElements;
-
+        this.clientCallback = callback;
         setupListeners();
-        model.setChatHistoryListener(message -> {
-            if (message != null && !message.trim().isEmpty()) {
-                javafx.application.Platform.runLater(() -> {
-                    if (message.equals("MESSAGE_RECEIVED")) {
-                        refreshChatHistory();
-                    } else {
-                        handleIncomingMessage(message);
-                    }
-                });
-            }
-        });
-        model.setCommunityMessageListener(message -> {
-            if (message != null && !message.trim().isEmpty() && isCommunityChat) {
-                javafx.application.Platform.runLater(() -> {
-                    String[] parts = message.split(": ", 2);
-                    if (parts.length == 2) {
-                        String sender = parts[0];
-                        String msg = parts[1];
-                        chatJFXController.addChatMessage(sender, msg, model.getUsername());
-                    }
-                });
-            }
-        });
-        model.setFileReceivedListener(fileName -> {
-            Platform.runLater(this::refreshChatHistory);
-        });
-    }
-
-    private void handleIncomingMessage(String message) {
-        String[] parts = message.split(": ", 2);
-        if (parts.length == 2) {
-            String sender = parts[0];
-            String msg = parts[1];
-
-            if (shouldShowMessage(sender)) {
-                if (!sender.equals(model.getUsername())) {
-                    chatJFXController.addChatMessage(sender, msg, model.getUsername());
-                }
-            }
-        }
-    }
-
-    private boolean shouldShowMessage(String sender) {
-        if (currentChatPartner == null) return false;
-
-        if (isGroupChat) {
-            return true;
-        } else if (isCommunityChat) {
-            return true;
-        } else {
-            return sender.equals(currentChatPartner) || sender.equals(model.getUsername());
-        }
     }
 
     private void setupListeners() {
-        chatJFXController.setSendButtonListener(() -> sendMSG());
-        chatJFXController.setHomeButtonListener(() -> goToHome());
-        chatJFXController.setFileButtonListener(() -> {
-            handleFileSelection();
-        });
-        chatJFXController.setFileOpenListener(fileName -> {
-            handleFileOpen(fileName);
-        });
-        model.setFileStatusListener(status -> {
-            Platform.runLater(() -> {
-                if (status.startsWith("SUCCESS:")) {
-                } else if (status.startsWith("FAILURE:")) {
-                } else {
-                }
-            });
-        });
+        chatJFXController.setSendButtonListener(() -> {});
+        chatJFXController.setHomeButtonListener(() -> {});
+        chatJFXController.setFileButtonListener(() -> {});
+        chatJFXController.setFileOpenListener(fileName -> {});
     }
 
-    private void handleFileSelection() {
-        Platform.runLater(() -> {
-            try {
-                File selectedFile = chatJFXController.showFileChooser();
-                if (selectedFile != null) {
-                    String receiver = chatJFXController.getReceiver().getText();
-                    boolean success = false;
-                    if (receiver.equals("Community Chat")) {
-                        return;
-                    } else if (receiver.startsWith("Group: ")) {
-                        String groupName = receiver.substring(7);
-                        if (!model.canAccessGroup(groupName)) {
-                            return;
-                        }
-                        success = model.sendGroupFile(selectedFile.getAbsolutePath(), groupName);
-                    } else {
-                        success = model.sendFile(selectedFile.getAbsolutePath(), receiver);
-                    }
-                    if (success) {
-                        String fileMessage = "[FILE: " + selectedFile.getName() + "]";
-                        chatJFXController.addChatMessage(model.getUsername(), fileMessage, model.getUsername());
-                    } else {
-                    }
-                } else {
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
+    //Messaging Methods
+    public void sendPrivateMessage() throws RemoteException {
+        model.sendPrivateMessage(model.getUsername(), chatJFXController.getReceiver().getText(), chatJFXController.getMessageField().getText(), model.createJSONStringRequest("request", "SEND_MESSAGE", model.getUsername()));
+        chatJFXController.getMessageField().clear();
     }
 
-    private void handleFileOpen(String fileName) {
-        Platform.runLater(() -> {
-            model.openFile(fileName);
-        });
-    }
+    //Callback Methods
+    public void onPrivateMessageSent(Message message) throws RemoteException {
+        chatJFXController.addChatMessage(
+                message.getSender(),
+                message.getContent(),
+                model.getUsername()
+        );    }
 
-    private void goToHome() {
-        currentChatPartner = null;
-        isGroupChat = false;
-        isCommunityChat = false;
 
-        Platform.runLater(() -> {
-            try {
-                Stage currentStage = (Stage) chatJFXController.getHomeButton().getScene().getWindow();
-                currentStage.close();
-                HomeView homeView = new HomeView();
-                Stage homeStage = new Stage();
-                homeView.start(homeStage);
-                new HomeController(model, homeView, homeView.getFXController());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-    }
-
-    private void sendMSG() {
-        String textToSend = chatJFXController.getMessageField().getText().trim();
-        String receiver = chatJFXController.getReceiver().getText();
-        if (!textToSend.isEmpty() && receiver != null && !receiver.isEmpty()) {
-            if (receiver.equals("Community Chat")) {
-                model.sendCommunityMessage(textToSend);
-            } else if (receiver.startsWith("Group: ")) {
-                String groupName = receiver.substring(7);
-                chatJFXController.addChatMessage(model.getUsername(), textToSend, model.getUsername());
-                model.sendGroupMessage(textToSend, groupName);
-            } else {
-                chatJFXController.addChatMessage(model.getUsername(), textToSend, model.getUsername());
-                model.sendMessage(textToSend, receiver);
-            }
-
-            chatJFXController.getMessageField().clear();
-        }
-    }
-
-    public void refreshChatHistory() {
-        if (currentChatPartner != null && !isCommunityChat) {
-            String currentUser = model.getUsername();
-            if (isGroupChat) {
-                loadGroupChatHistory(currentUser, currentChatPartner);
-            } else {
-                loadChatHistory(currentUser, currentChatPartner);
-            }
-        }
-    }
-
-    public void loadChatHistory(String currentUser, String friend) {
-        this.currentChatPartner = friend;
-        this.isGroupChat = false;
-        this.isCommunityChat = false;
-        UserXMLHandler xmlHandler = new UserXMLHandler();
-        List<UserXMLHandler.ChatMessage> history = xmlHandler.getChatHistoryWithSenders(currentUser, friend);
-        chatJFXController.clearMessages();
-        for (UserXMLHandler.ChatMessage chatMsg : history) {
-            chatJFXController.addChatMessage(chatMsg.getSender(), chatMsg.getMessage(), currentUser);
-        }
-    }
-
-    public void loadGroupChatHistory(String currentUser, String groupName) {
-        this.currentChatPartner = groupName;
-        this.isGroupChat = true;
-        this.isCommunityChat = false;
-        UserXMLHandler xmlHandler = new UserXMLHandler();
-        List<UserXMLHandler.ChatMessage> history = xmlHandler.getGroupChatHistoryWithSenders(currentUser, groupName);
-        chatJFXController.clearMessages();
-        for (UserXMLHandler.ChatMessage chatMsg : history) {
-            chatJFXController.addChatMessage(chatMsg.getSender(), chatMsg.getMessage(), currentUser);
-        }
-    }
-
-    public void loadCommunityChatHistory(String currentUser) {
-        this.currentChatPartner = "Community Chat";
-        this.isGroupChat = false;
-        this.isCommunityChat = true;
-        chatJFXController.clearMessages();
-        chatJFXController.addChatMessage("System", "Welcome to Community Chat! Chat with the community", currentUser);
+    public void onPrivateMessageReceived(Message msg) {
     }
 }

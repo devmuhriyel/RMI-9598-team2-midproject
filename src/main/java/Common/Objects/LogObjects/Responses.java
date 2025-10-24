@@ -1,6 +1,8 @@
 package Common.Objects.LogObjects;
 
-public class Responses {
+import java.io.Serializable;
+
+public class Responses implements Serializable {
     //VARIABLES
     private String messageType;
     private String[] receiver;

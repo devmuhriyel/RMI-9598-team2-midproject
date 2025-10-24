@@ -1,6 +1,8 @@
 package Common.Objects.LogObjects;
 
-public class Receiver {
+import java.io.Serializable;
+
+public class Receiver implements Serializable {
     String name;
 
     public Receiver(String name) {

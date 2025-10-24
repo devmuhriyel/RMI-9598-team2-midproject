@@ -1,37 +1,51 @@
 package Common.Objects.ClientObjects;
 
-public class Message {
-    //VARIABLES
+import java.io.Serializable;
+
+public class Message implements Serializable {
     private String sender;
     private String receiver;
-    private String message;
+    private String content;  // Changed from "message" to "content"
 
-    //CONSTRUCTORS
-    public Message(String sndr, String rcvr, String msg) {
-        this.sender = sndr;
-        this.receiver = rcvr;
-        this.message = msg;
-    }
+    // No-arg constructor for Gson
+    public Message() {}
 
-    //SETTERS
-    public void setSender(String sndr) {
-        this.sender = sndr;
-    }
-    public void setReceiver(String rcvr) {
-        this.receiver = rcvr;
-    }
-    public void setContent(String msg) {
-        this.message = msg;
+    public Message(String sender, String receiver, String content) {
+        this.sender = sender;
+        this.receiver = receiver;
+        this.content = content;
     }
 
-    //GETTERS
     public String getSender() {
         return sender;
     }
+
+    public void setSender(String sender) {
+        this.sender = sender;
+    }
+
     public String getReceiver() {
         return receiver;
     }
+
+    public void setReceiver(String receiver) {
+        this.receiver = receiver;
+    }
+
     public String getContent() {
-        return message;
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+    @Override
+    public String toString() {
+        return "Message{" +
+                "sender='" + sender + '\'' +
+                ", receiver='" + receiver + '\'' +
+                ", content='" + content + '\'' +
+                '}';
     }
 }

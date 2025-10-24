@@ -1,7 +1,10 @@
 package Common.Interfaces;
 
+import Common.Objects.ClientObjects.Conversation;
+
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.List;
 
 public interface ClientCallbackInterface extends Remote {
 
@@ -36,13 +39,13 @@ public interface ClientCallbackInterface extends Remote {
     void onCancelFriendRequest() throws RemoteException;
 
     //USER COMMON CHATTING METHODS
-    void onGetChatHistories() throws RemoteException;
-    void onGetHistory() throws RemoteException;
+    void onGetChatHistories(List<Conversation> allChats) throws RemoteException;
+    void onGetChatHistoryWith(Conversation chatWith) throws RemoteException;
     void onGetUnreadMessages() throws RemoteException;
 
     //USER PRIVATE CHATTING METHODS
-    void onPrivateMessageSent(String msg, String jsonString) throws RemoteException;
-    void onPrivateMessageReceived(String msg, String jsonString) throws RemoteException;
+    void onPrivateMessageSent(String message, String jsonString) throws RemoteException;
+    void onPrivateMessageReceived(String message, String jsonString) throws RemoteException;
     void onPrivateFileSent() throws RemoteException;
     void onPrivateFileReceived() throws RemoteException;
 

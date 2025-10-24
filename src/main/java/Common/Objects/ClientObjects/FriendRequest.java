@@ -1,6 +1,8 @@
 package Common.Objects.ClientObjects;
 
-public class FriendRequest {
+import java.io.Serializable;
+
+public class FriendRequest implements Serializable {
     //VARIABLES
     private String requester;
     private String responder;

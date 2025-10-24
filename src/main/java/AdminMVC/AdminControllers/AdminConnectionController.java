@@ -38,7 +38,7 @@ public class AdminConnectionController {
                         Stage loginStage = new Stage();
                         loginView.start(loginStage);
                         UnifiedAdminModel unifiedModel = new UnifiedAdminModel(model.getSocket());
-                        new LoginController(loginView, unifiedModel, loginView.getFXController());
+                        new AdminLoginController(loginView, unifiedModel, loginView.getFXController());
                         new Thread(unifiedModel, "Admin Communication").start();
 
                     } catch (Exception e) {

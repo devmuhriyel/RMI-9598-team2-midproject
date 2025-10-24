@@ -1,6 +1,8 @@
 package Common.Objects.AdminObjects;
 
-public class Admin {
+import java.io.Serializable;
+
+public class Admin implements Serializable {
     //VARIABLES
     private String username;
     private String password;
@@ -8,7 +10,7 @@ public class Admin {
 
 
     //CONSTRUCTORS
-    public Admin(String uName, String pWord, String vCode) {
+    public Admin(String uName, String pWord, String vCode){
         this.username = uName;
         this.password = pWord;
         this.verificationCode = vCode;

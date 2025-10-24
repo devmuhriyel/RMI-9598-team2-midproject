@@ -4,6 +4,39 @@
       "username": "alice",
       "password": "alice123",
       "verificationCode": "superman",
+      "friends": [],
+      "conversations": [
+        {
+          "recipient": "gian",
+          "messages": [
+            {
+              "sender": "alice",
+              "receiver": "gian",
+              "content": "Hello from alice!"
+            },
+            {
+              "sender": "alice",
+              "receiver": "gian",
+              "content": "Hello from alice!"
+            },
+            {
+              "sender": "alice",
+              "receiver": "gian",
+              "content": "Hello from alice!"
+            },
+            {
+              "sender": "alice",
+              "receiver": "gian",
+              "content": "Hello from alice!"
+            },
+            {
+              "sender": "alice",
+              "receiver": "gian",
+              "content": "Hello from alice!"
+            }
+          ]
+        }
+      ],
       "incomingFriendRequests": [
         {
           "requester": "gian",
@@ -17,64 +50,83 @@
           "responder": "diana",
           "status": "pending"
         }
-      ],
-      "conversation": [
-        {
-          "recipient": "gian",
-          "messages": [
-            {
-              "sender": "alice",
-              "receiver": "gian",
-              "message": "hello gian"
-            },
-            {
-              "sender": "gian",
-              "receiver": "alice",
-              "message": "hello alice"
-            }
-          ]
-        },
-        {
-          "recipient": "diana",
-          "messages": [
-            {
-              "sender": "alice",
-              "receiver": "diana",
-              "message": "hello diana"
-            },
-            {
-              "sender": "diana",
-              "receiver": "alice",
-              "message": "hello alice"
-            }
-          ]
-        }
       ]
     },
     {
       "username": "gian",
       "password": "gian123",
-      "verificationCode": "batman"
+      "verificationCode": "batman",
+      "friends": [],
+      "conversations": [
+        {
+          "recipient": "alice",
+          "messages": [
+            {
+              "sender": "alice",
+              "receiver": "gian",
+              "content": "Hello from alice!"
+            },
+            {
+              "sender": "alice",
+              "receiver": "gian",
+              "content": "Hello from alice!"
+            },
+            {
+              "sender": "alice",
+              "receiver": "gian",
+              "content": "Hello from alice!"
+            },
+            {
+              "sender": "alice",
+              "receiver": "gian",
+              "content": "Hello from alice!"
+            },
+            {
+              "sender": "alice",
+              "receiver": "gian",
+              "content": "Hello from alice!"
+            }
+          ]
+        }
+      ],
+      "incomingFriendRequests": [],
+      "outgoingFriendRequests": []
     },
     {
       "username": "diana",
       "password": "diana123",
-      "verificationCode": "wonderwoman"
+      "verificationCode": "wonderwoman",
+      "friends": [],
+      "conversations": [],
+      "incomingFriendRequests": [],
+      "outgoingFriendRequests": []
     },
     {
       "username": "hal",
       "password": "jordan123",
-      "verificationCode": "greenlantern"
+      "verificationCode": "greenlantern",
+      "friends": [],
+      "conversations": [],
+      "incomingFriendRequests": [],
+      "outgoingFriendRequests": []
     },
     {
       "username": "Clark",
       "password": "Kent123",
-      "verificationCode": "Superman"
+      "verificationCode": "Superman",
+      "friends": [],
+      "conversations": [],
+      "incomingFriendRequests": [],
+      "outgoingFriendRequests": []
     },
     {
       "username": "wally",
       "password": "west123",
-      "verificationCode": "kidFlash"
+      "verificationCode": "kidFlash",
+      "friends": [],
+      "conversations": [],
+      "incomingFriendRequests": [],
+      "outgoingFriendRequests": []
     }
   ]
 }

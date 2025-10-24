@@ -1,31 +1,36 @@
 package Common.Objects.ClientObjects;
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
-public class Conversation {
-    //VARIABLES
-    private List<Message> messages;
+public class Conversation implements Serializable {
     private String recipient;
+    private List<Message> messages;
 
-    //CONSTRUCTORS
-    public Conversation(List<Message> messages, String recipient) {
-        this.messages = messages;
+    // No-arg constructor for Gson
+    public Conversation() {
+        this.messages = new ArrayList<>();
+    }
+
+    public Conversation(String recipient, List<Message> messages) {
         this.recipient = recipient;
+        this.messages = messages != null ? messages : new ArrayList<>();
     }
 
-    //SETTERS
-    public void setMessages(List<Message> messages) {
-        this.messages = messages;
+    public String getRecipient() {
+        return recipient;
     }
+
     public void setRecipient(String recipient) {
         this.recipient = recipient;
     }
 
-    //GETTERS
     public List<Message> getMessages() {
         return messages;
     }
-    public String getRecipient() {
-        return recipient;
+
+    public void setMessages(List<Message> messages) {
+        this.messages = messages;
     }
 }

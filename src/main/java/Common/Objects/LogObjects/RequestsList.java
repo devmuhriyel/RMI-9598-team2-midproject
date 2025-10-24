@@ -1,8 +1,9 @@
 package Common.Objects.LogObjects;
 
+import java.io.Serializable;
 import java.util.List;
 
-public class RequestsList {
+public class RequestsList implements Serializable {
     //VARIABLES
     private List<Requests> requestsList;
 

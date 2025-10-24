@@ -1,7 +1,10 @@
 package Common.Interfaces;
 
+import Common.Objects.ClientObjects.Conversation;
+
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.List;
 
 public interface ClientInterface extends Remote {
     //USER LOG IN, SIGN UP, AND OTHER RELATED METHODS
@@ -28,8 +31,8 @@ public interface ClientInterface extends Remote {
     void removeFromFriendsList(String jsonString) throws RemoteException;
 
     //USER COMMON CHATTING METHODS
-    String getChatHistories(String jsonString) throws RemoteException;
-    String getChatHistory(String jsonString) throws RemoteException;
+    List<Conversation> getChatHistories(String jsonString, String sender) throws RemoteException;
+    Conversation getChatHistoryWith(String jsonString, String sender, String receiver) throws RemoteException;
     void getUnreadMessages(String jsonString) throws RemoteException;
 
     //USER PRIVATE CHATTING METHODS
@@ -45,4 +48,7 @@ public interface ClientInterface extends Remote {
 
     //USER COMMUNITY CHATTING METHODS
     void sendCommunityMessage(String jsonString) throws RemoteException;
+
+    void registerClientCallback(String username, ClientCallbackInterface callback) throws RemoteException;
+    void unregisterClientCallback(String username) throws RemoteException;
 }

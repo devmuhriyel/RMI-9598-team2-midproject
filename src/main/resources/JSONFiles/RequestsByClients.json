@@ -18,7 +18,7 @@
         },
         {
           "logType": "response",
-          "messageType": "RECEIVED_MESSAG",
+          "messageType": "RECEIVED_MESSAGE",
           "receivers": "gian"
         }
       ]

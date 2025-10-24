@@ -5,10 +5,9 @@ import Common.Objects.AdminObjects.AdminAccountsList;
 import Common.Objects.ClientObjects.*;
 import Common.Objects.LogObjects.LogsList;
 import com.google.gson.Gson;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import com.google.gson.GsonBuilder;
+
+import java.io.*;
 import java.util.List;
 
 public class ServerJSONHandler {
@@ -16,17 +15,49 @@ public class ServerJSONHandler {
     private Gson gsonObject = new Gson();
 
     //CONSTRUCTORS
-    public ServerJSONHandler() {}
+    public ServerJSONHandler() {
+        // Use pretty printing for readable JSON
+        this.gsonObject = new GsonBuilder()
+                .setPrettyPrinting()
+                .create();
+    }
 
     //READER METHODS
+
     public ClientAccountsList readClientAccountFile(String fPath){
         FileReader jsonReader;
         ClientAccountsList accounts = null;
         try{
+            System.out.println("Attempting to read client accounts from: " + fPath);
+            File file = new File(fPath);
+
+            if (!file.exists()) {
+                System.err.println("ERROR: File does not exist: " + fPath);
+                System.err.println("Absolute path: " + file.getAbsolutePath());
+                return null;
+            }
+
+            System.out.println("File exists. Size: " + file.length() + " bytes");
+
             jsonReader = new FileReader(fPath);
             accounts = gsonObject.fromJson(jsonReader, ClientAccountsList.class);
+
+            if (accounts == null) {
+                System.err.println("ERROR: Gson returned null for ClientAccountsList");
+            } else if (accounts.getClients() == null) {
+                System.err.println("ERROR: ClientAccountsList.getClients() is null");
+            } else {
+                System.out.println("SUCCESS: Loaded " + accounts.getClients().size() + " clients");
+            }
+
+            jsonReader.close();
+
         } catch (FileNotFoundException e) {
-            System.out.println("File not found");
+            System.err.println("ERROR: File not found: " + fPath);
+            e.printStackTrace();
+        } catch (Exception e) {
+            System.err.println("ERROR: Exception while reading client accounts");
+            e.printStackTrace();
         }
         return accounts;
     }
@@ -35,20 +66,65 @@ public class ServerJSONHandler {
         FileReader jsonReader;
         AdminAccountsList accounts = null;
         try{
+            System.out.println("Attempting to read admin accounts from: " + fPath);
+            File file = new File(fPath);
+
+            if (!file.exists()) {
+                System.err.println("ERROR: File does not exist: " + fPath);
+                System.err.println("Absolute path: " + file.getAbsolutePath());
+                return null;
+            }
+
+            System.out.println("File exists. Size: " + file.length() + " bytes");
+
             jsonReader = new FileReader(fPath);
             accounts = gsonObject.fromJson(jsonReader, AdminAccountsList.class);
+
+            if (accounts == null) {
+                System.err.println("ERROR: Gson returned null for AdminAccountsList");
+            } else if (accounts.getAdmins() == null) {
+                System.err.println("ERROR: AdminAccountsList.getAdmins() is null");
+            } else {
+                System.out.println("SUCCESS: Loaded " + accounts.getAdmins().size() + " admins");
+            }
+
+            jsonReader.close();
+
         } catch (FileNotFoundException e) {
-            System.out.println("File not found");
+            System.err.println("ERROR: File not found: " + fPath);
+            e.printStackTrace();
+        } catch (Exception e) {
+            System.err.println("ERROR: Exception while reading admin accounts");
+            e.printStackTrace();
         }
         return accounts;
     }
 
     //UPDATE METHODS
     public void writeClientAccountFile(String fPath, ClientAccountsList accounts){
-        try(FileWriter writer = new FileWriter(fPath)){
-            gsonObject.toJson(accounts, writer);
+        try {
+            File file = new File(fPath);
+
+            // Create parent directories if they don't exist
+            File parentDir = file.getParentFile();
+            if (parentDir != null && !parentDir.exists()) {
+                parentDir.mkdirs();
+                System.out.println("Created directories: " + parentDir.getAbsolutePath());
+            }
+
+            // Use pretty printing for readable JSON
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+            try (FileWriter writer = new FileWriter(file)) {
+                gson.toJson(accounts, writer);
+                writer.flush();
+                System.out.println("✓ Successfully wrote to file: " + file.getAbsolutePath());
+            }
+
         } catch (IOException e) {
-            System.out.println("Error writing to file: " + e.getMessage());
+            System.err.println("ERROR writing to file: " + fPath);
+            System.err.println("Absolute path attempted: " + new File(fPath).getAbsolutePath());
+            e.printStackTrace();
         }
     }
 

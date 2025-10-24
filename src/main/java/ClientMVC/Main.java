@@ -11,24 +11,24 @@ import java.io.IOException;
 
 public class Main{
 
-    private static ClientInterface serverStub;
-    private static ClientCallbackImplementation callback;
-    private static String username;
-
-    public static void main(String[] args) throws IOException {
-        Platform.startup(() -> {
-            try {
-
-
-
-                ConnectionView view = new ConnectionView();
-                Stage stage = new Stage();
-                view.start(stage);
-                ConnectionModel model = new ConnectionModel();
-                new ConnectionController(model, view, view.getFXController());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-    }
+//    private static ClientInterface serverStub;
+//    private static ClientCallbackImplementation callback;
+//    private static String username;
+//
+//    public static void main(String[] args) throws IOException {
+//        Platform.startup(() -> {
+//            try {
+//
+//
+//
+//                ConnectionView view = new ConnectionView();
+//                Stage stage = new Stage();
+//                view.start(stage);
+//                ConnectionModel model = new ConnectionModel();
+//                new ConnectionController(model, view, view.getFXController());
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//        });
+//    }
 }

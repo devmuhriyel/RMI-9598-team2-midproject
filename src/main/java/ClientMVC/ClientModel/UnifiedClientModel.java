@@ -6,6 +6,7 @@ import ClientMVC.UserXMLHandler;
 import Common.Interfaces.ClientCallbackInterface;
 import Common.Objects.AdminObjects.AdminAccountsList;
 import Common.Objects.ClientObjects.Client;
+import Common.Objects.ClientObjects.Conversation;
 import javafx.application.Platform;
 
 import Common.Interfaces.ClientInterface;
@@ -67,16 +68,18 @@ public class UnifiedClientModel {
     public void removeFromFriendsList(String jsonString) throws RemoteException{}
 
     //USER COMMON CHATTING METHODS
-    public String getChatHistories(String jsonString) throws RemoteException{
-        return "";
+    public List<Conversation> getChatHistories(String jsonString, String sender) throws RemoteException{
+        return serverConnection.getChatHistories(jsonString, sender);
     }
-    public String getChatHistory(String jsonString) throws RemoteException{
-        return "";
+    public Conversation getChatHistoryWith(String jsonString, String sender, String receiver) throws RemoteException{
+        return serverConnection.getChatHistoryWith(jsonString, sender, receiver);
     }
     public void getUnreadMessages(String jsonString) throws RemoteException{}
 
     //USER PRIVATE CHATTING METHODS
-    public void sendPrivateMessage(String sender, String receiver, String message, String jsonString) throws RemoteException{}
+    public void sendPrivateMessage(String sender, String receiver, String message, String jsonString) throws RemoteException{
+        serverConnection.sendPrivateMessage(sender, receiver, message, jsonString);
+    }
     public void sendPrivateFile(String jsonString) throws RemoteException{}
 
     //USER GROUP CHATTING METHODS
@@ -92,5 +95,10 @@ public class UnifiedClientModel {
     // GETTERS
     public String getUsername() {
         return username;
+    }
+
+    //HELPER METHODS
+    public String createJSONStringRequest(String logType, String msgContent, String sender){
+        return jsonHandler.createJSONStringRequest(logType, msgContent, sender);
     }
 }

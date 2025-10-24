@@ -7,22 +7,22 @@ import Common.Interfaces.ClientInterface;
 import Common.Objects.AdminObjects.Admin;
 import Common.Objects.AdminObjects.AdminAccountsList;
 import Common.Objects.ClientObjects.*;
+import com.google.gson.Gson;
 import com.google.gson.JsonParser;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class ImplementationClass extends UnicastRemoteObject implements ClientInterface, AdminInterface {
+public class ClientAndAdminImplementation extends UnicastRemoteObject implements ClientInterface, AdminInterface {
     //VARIABLES
-    private ConcurrentHashMap<String, Client> onlineUsers;
     private ConcurrentHashMap<String, Client> allUsers;
-    private ConcurrentHashMap<String, Admin> onlineAdmins;
     private ConcurrentHashMap<String, Admin> allAdmins;
     private ConcurrentHashMap<String, ClientCallbackInterface> clientCallbacks;
     private ConcurrentHashMap<String, AdminCallbackInterface> adminCallbacks;
@@ -35,21 +35,58 @@ public class ImplementationClass extends UnicastRemoteObject implements ClientIn
     private ServerJSONHandler serverJSONHandler;
 
     //CONSTRUCTORS
-    public ImplementationClass() throws RemoteException {
+    public ClientAndAdminImplementation() throws RemoteException {
         super();
-        serverJSONHandler = new ServerJSONHandler();
-        adminAccountsList = serverJSONHandler.readAdminAccountFile("src/main/resources/JSONFiles/AdminAccountsList.json");
-        clientAccountsList = serverJSONHandler.readClientAccountFile("src/main/resources/JSONFiles/ClientAccountsList.json");
+
+        // Initialize all data structures FIRST
+        allUsers = new ConcurrentHashMap<>();
+        allAdmins = new ConcurrentHashMap<>();
         clientCallbacks = new ConcurrentHashMap<>();
         adminCallbacks = new ConcurrentHashMap<>();
-        callbackExecutor = Executors.newSingleThreadScheduledExecutor();
         conversationLocks = new ConcurrentHashMap<>();
-        onlineUsers = new ConcurrentHashMap<>();
-        onlineAdmins = new ConcurrentHashMap<>();
+        callbackExecutor = Executors.newSingleThreadScheduledExecutor();
         fileLock = new ReentrantReadWriteLock();
 
-        updateClientJSONFile("src/main/resources/JSONFiles/ClientAccountsList.json", clientAccountsList);
-        updateAdminJSONFile("src/main/resources/JSONFiles/AdminAccountsList.json", adminAccountsList);
+        // Initialize JSON handler
+        serverJSONHandler = new ServerJSONHandler();
+
+        // Read account files
+        adminAccountsList = serverJSONHandler.readAdminAccountFile("src/main/resources/JSONFiles/AdminAccounts.json");
+        clientAccountsList = serverJSONHandler.readClientAccountFile("src/main/resources/JSONFiles/ClientAccounts.json");
+
+        // Check if lists were loaded successfully
+        if (adminAccountsList == null) {
+            System.err.println("Warning: adminAccountsList is null, creating new one");
+            adminAccountsList = new AdminAccountsList();
+        }
+        if (clientAccountsList == null) {
+            System.err.println("Warning: clientAccountsList is null, creating new one");
+            clientAccountsList = new ClientAccountsList();
+        }
+
+        // Populate maps
+        List<Client> clients = clientAccountsList.getClients();
+        List<Admin> admins = adminAccountsList.getAdmins();
+
+        if (clients != null) {
+            for(Client client: clients) {
+                allUsers.put(client.getUsername(), client);
+                System.out.println("Loaded user: " + client.getUsername());
+            }
+        } else {
+            System.err.println("Warning: No clients loaded");
+        }
+
+        if (admins != null) {
+            for(Admin admin: admins) {
+                allAdmins.put(admin.getUsername(), admin);
+                System.out.println("Loaded admin: " + admin.getUsername());
+            }
+        } else {
+            System.err.println("Warning: No admins loaded");
+        }
+
+        System.out.println("Server initialized with " + allUsers.size() + " users and " + allAdmins.size() + " admins");
     }
 
     //USER/ADMIN LOG IN, SIGN UP, AND OTHER RELATED METHODS
@@ -322,13 +359,24 @@ public class ImplementationClass extends UnicastRemoteObject implements ClientIn
 
     //USER/ADMIN COMMON CHATTING METHODS
     @Override
-    public String getChatHistories(String jsonString) throws RemoteException{
-        return "";
+    public List<Conversation> getChatHistories(String jsonString, String sender) throws RemoteException{
+        Client client = allUsers.get(sender);
+        clientCallbacks.get(sender).onGetChatHistories(client.getConversations());
+        return client.getConversations();
     }
 
     @Override
-    public String getChatHistory(String jsonString) throws RemoteException{
-        return "";
+    public Conversation getChatHistoryWith(String jsonString, String sender, String receiver) throws RemoteException{
+        Client client = allUsers.get(sender);
+        List<Conversation> conversations = client.getConversations();
+        Conversation conversationWith = null;
+        for (Conversation conversation : conversations) {
+            if(conversation.getRecipient().equals(receiver)) {
+                conversationWith = conversation;
+            }
+        }
+        clientCallbacks.get(sender).onGetChatHistoryWith(conversationWith);
+        return conversationWith;
     }
     @Override
     public String getChatHistoryOfUser(String jsonString) throws RemoteException{
@@ -347,39 +395,65 @@ public class ImplementationClass extends UnicastRemoteObject implements ClientIn
 
     //USER/ADMIN PRIVATE CHATTING METHODS
     @Override
-    public void sendPrivateMessage(String sender, String receiver, String message, String jsonString) throws RemoteException{
-        /*
-            To append a new message record to the JSON file:
-            B.
-                1. Create a Message object using the variables the client sent
-                2. Get the Conversation object between the sender and the receiver
-                3. Get the LIST of Message objects in the Conversation objects of the sender and receiver
-                4. Append the newly created Message object to the list of Message objects of the sender and receiver
-                5. Update the JSON file
-                6. Append the changes to the JSON snippets of the sender and receiver
-            C.
-                1. Extract the JSON string for logType, messageType, and sender
-                2. Create a new Requests object with the extracted information
-                3. Get the LogsList object
-                4. Get the list of Requests objects from the LogsList object
-                5. Append the newly created Requests object to the LIST of Request objects
-                6. Set the updated LIST of Requests objects to the LogsList object
+    public void sendPrivateMessage(String sender, String receiver, String message, String jsonString) throws RemoteException {
 
-        */
+        Client senderClient = allUsers.get(sender);
+        Client receiverClient = allUsers.get(receiver);
+
         Message msg = new Message(sender, receiver, message);
-        Conversation receiverConvo = serverJSONHandler.getConversation(clientAccountsList, receiver, sender);
-        Conversation senderConvo = serverJSONHandler.getConversation(clientAccountsList, sender, receiver);
+
+        if (senderClient.getConversations() == null) {
+            senderClient.setConversations(new ArrayList<>());
+        }
+        if (receiverClient.getConversations() == null) {
+            receiverClient.setConversations(new ArrayList<>());
+        }
+
+        Conversation senderConvo = null;
+        Conversation receiverConvo = null;
+
+        for (Conversation conv : senderClient.getConversations()) {
+            if (conv.getRecipient() != null && conv.getRecipient().equals(receiver)) {
+                senderConvo = conv;
+                break;
+            }
+        }
+
+        for (Conversation conv : receiverClient.getConversations()) {
+            if (conv.getRecipient() != null && conv.getRecipient().equals(sender)) {
+                receiverConvo = conv;
+                break;
+            }
+        }
+
+        if (senderConvo == null) {
+            senderConvo = new Conversation(receiver, new ArrayList<>());
+            senderClient.getConversations().add(senderConvo);
+        }
+
+        if (receiverConvo == null) {
+            receiverConvo = new Conversation(sender, new ArrayList<>());
+            receiverClient.getConversations().add(receiverConvo);
+        }
+
+        if (senderConvo.getMessages() == null) {
+            senderConvo.setMessages(new ArrayList<>());
+        }
+        if (receiverConvo.getMessages() == null) {
+            receiverConvo.setMessages(new ArrayList<>());
+        }
 
         String conversationKey = serverJSONHandler.createConversationHashMapEntryString(sender, receiver);
-        ReadWriteLock convoLock = conversationLocks.computeIfAbsent(conversationKey, k-> new ReentrantReadWriteLock());
-        convoLock.writeLock().lock();
+        ReadWriteLock convoLock = conversationLocks.computeIfAbsent(conversationKey, k -> new ReentrantReadWriteLock());
 
+        convoLock.writeLock().lock();
         try {
-            receiverConvo.getMessages().add(msg);
             senderConvo.getMessages().add(msg);
+            receiverConvo.getMessages().add(msg);
             fileLock.writeLock().lock();
             try {
-                serverJSONHandler.writeClientAccountFile("src/main/resources/JSONFiles/ClientAccountsList.json", clientAccountsList);
+                serverJSONHandler.writeClientAccountFile("src/main/resources/JSONFiles/ClientAccounts.json", clientAccountsList);
+                System.out.println("Message saved to file");
             } finally {
                 fileLock.writeLock().unlock();
             }
@@ -387,27 +461,50 @@ public class ImplementationClass extends UnicastRemoteObject implements ClientIn
             convoLock.writeLock().unlock();
         }
 
-        ClientCallbackInterface senderCallback = clientCallbacks.get(sender);
-        callbackExecutor.execute(() -> {
-            try {
-                senderCallback.onPrivateMessageSent(senderConvo.getMessages().getLast().toString(), serverJSONHandler.createJSONStringResponse("response", "SENT_MESSAGE", sender));
-            } catch (RemoteException e) {
-                System.out.println("Failed to notify sender");
-                e.printStackTrace();
-            }
-        });
+        Gson gson = new Gson();
+        String messageJson = gson.toJson(msg);
+        System.out.println("Message JSON: " + messageJson);
 
-        ClientCallbackInterface receiverCallback = clientCallbacks.get(receiver);
-        if (clientCallbacks.get(receiver) != null) {
+        // Notify sender
+        ClientCallbackInterface senderCallback = clientCallbacks.get(sender);
+        if (senderCallback != null) {
+            final String finalMessageJson = messageJson;
             callbackExecutor.execute(() -> {
-                try{
-                    receiverCallback.onPrivateMessageReceived(receiverConvo.getMessages().getLast().toString(), serverJSONHandler.createJSONStringResponse("response", "RECEIVED_MESSAGE", receiver));
+                try {
+                    System.out.println("Notifying sender: " + sender);
+                    senderCallback.onPrivateMessageSent(
+                            finalMessageJson,
+                            serverJSONHandler.createJSONStringResponse("response", "SENT_MESSAGE", sender)
+                    );
                 } catch (RemoteException e) {
-                    System.out.println("Failed to notify receiver");
+                    System.out.println("Failed to notify sender: " + e.getMessage());
                     e.printStackTrace();
                 }
             });
+        } else {
+            System.out.println("Warning: Sender callback not registered for: " + sender);
         }
+
+        ClientCallbackInterface receiverCallback = clientCallbacks.get(receiver);
+        if (receiverCallback != null) {
+            final String finalMessageJson = messageJson;
+            callbackExecutor.execute(() -> {
+                try{
+                    System.out.println("Notifying receiver: " + receiver);
+                    receiverCallback.onPrivateMessageReceived(
+                            finalMessageJson,
+                            serverJSONHandler.createJSONStringResponse("response", "RECEIVED_MESSAGE", receiver)
+                    );
+                } catch (RemoteException e) {
+                    System.out.println("Failed to notify receiver: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            });
+        } else {
+            System.out.println("Receiver " + receiver + " is not online (no callback registered)");
+        }
+
+        System.out.println("Message processing completed successfully");
     }
 
     @Override
@@ -465,5 +562,23 @@ public class ImplementationClass extends UnicastRemoteObject implements ClientIn
     }
     private void updateAdminJSONFile(String filePath, AdminAccountsList fileUpdates) throws RemoteException{
 
+    }
+
+    @Override
+    public void registerClientCallback(String username, ClientCallbackInterface callback) throws RemoteException {
+        if (username == null || callback == null) {
+            throw new RemoteException("Username and callback cannot be null");
+        }
+        clientCallbacks.put(username, callback);
+        System.out.println("✓ Callback registered for user: " + username);
+    }
+
+    @Override
+    public void unregisterClientCallback(String username) throws RemoteException {
+        if (username == null) {
+            throw new RemoteException("Username cannot be null");
+        }
+        clientCallbacks.remove(username);
+        System.out.println("✓ Callback unregistered for user: " + username);
     }
 }

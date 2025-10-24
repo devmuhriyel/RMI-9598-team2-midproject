@@ -1,6 +1,8 @@
 package Common.Objects.LogObjects;
 
-public class Requests {
+import java.io.Serializable;
+
+public class Requests implements Serializable {
     //VARIABLES
     private String messageType;
     private String sender;

@@ -64,6 +64,10 @@ public class ClientJSONHandler {
         }
     }
 
+    public String createJSONStringRequest(String logType, String msgType, String sender){
+        return "{ \\n \" logType \": \"" + logType + "\", \n \" messageType \": \"" + msgType + "\", \n \" receiver \": \n " + sender + " \n}";
+    }
+
     //SETTERS AND GETTERS
     public static void setCurrentUser(String username) {
         currentUser = username;
