@@ -35,22 +35,34 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
 
     @Override
     public void onSuccessfulSignUp() throws RemoteException {
-
+        System.out.println("Client signup successful");
+        if (onSuccessfulSignUpListener != null) {
+            onSuccessfulSignUpListener.run();
+        }
     }
 
     @Override
     public void onFailedSignUp() throws RemoteException {
-
+        System.out.println("Client signup failed");
+        if (onFailedSignUpListener != null) {
+            onFailedSignUpListener.run();
+        }
     }
 
     @Override
     public void onSuccessfulLogin() throws RemoteException {
-
+        System.out.println("Client login successful");
+        if (onSuccessfulLoginListener != null) {
+            onSuccessfulLoginListener.run();
+        }
     }
 
     @Override
     public void onFailedLogin() throws RemoteException {
-
+        System.out.println("Client login failed");
+        if (onFailedLoginListener != null) {
+            onFailedLoginListener.run();
+        }
     }
 
     @Override
@@ -310,5 +322,27 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     //HELPER METHODS
     public Message messageStringToObject(String message) throws RemoteException {
         return null;
+    }
+    
+    // Listener setters for login and signup
+    private Runnable onSuccessfulLoginListener;
+    private Runnable onFailedLoginListener;
+    private Runnable onSuccessfulSignUpListener;
+    private Runnable onFailedSignUpListener;
+    
+    public void setOnSuccessfulLoginListener(Runnable listener) {
+        this.onSuccessfulLoginListener = listener;
+    }
+    
+    public void setOnFailedLoginListener(Runnable listener) {
+        this.onFailedLoginListener = listener;
+    }
+    
+    public void setOnSuccessfulSignUpListener(Runnable listener) {
+        this.onSuccessfulSignUpListener = listener;
+    }
+    
+    public void setOnFailedSignUpListener(Runnable listener) {
+        this.onFailedSignUpListener = listener;
     }
 }

@@ -23,12 +23,13 @@ public class LoginController {
         this.loginJFXController = loginJFXController;
         this.view = loginView;
         this.model = unifiedModel;
-//        model.setMessageListener(this::handleAllResponses);
+//          model.setMessageListener(this::handleAllResponses);
 //        model.setGeneralNotificationCallback(this::handleGeneralNotification);
 //        model.setVerificationCodeValidListener(this::handleVerificationCodeValid);
 //        initialize();
-    }
-//
+    //}
+
+        //
 //    private void initialize() {
 //        loginJFXController.setLoginButtonListener(() -> {
 //            String username = loginJFXController.getUsername();
@@ -168,4 +169,90 @@ public class LoginController {
 //            e.printStackTrace();
 //        }
 //    }
+        initialize();
+    }
+
+    private void initialize() {
+        loginJFXController.setLoginButtonListener(() -> {
+            String username = loginJFXController.getUsername();
+            String password = loginJFXController.getPassword();
+            
+            if (username == null || username.trim().isEmpty()) {
+                loginJFXController.showAlert(Alert.AlertType.ERROR, "Error", "Username is required");
+                return;
+            }
+            
+            if (password == null || password.trim().isEmpty()) {
+                loginJFXController.showAlert(Alert.AlertType.ERROR, "Error", "Password is required");
+                return;
+            }
+            
+            try {
+                // Use RMI to login
+                model.logIn(username, password, "{}", model.getCallback());
+            } catch (Exception e) {
+                loginJFXController.showAlert(Alert.AlertType.ERROR, "Login Error", "Failed to connect to server: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
+        
+        loginJFXController.setSignupLinkListener(() -> {
+            Platform.runLater(() -> {
+                try {
+                    LoginView.getPrimaryStage().close();
+                    SignupView signupView = new SignupView();
+                    new SignupController(model, signupView, signupView.getFxController());
+                    signupView.getStage().show();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            });
+        });
+        
+        loginJFXController.setForgotPasswordLinkListener(this::handleForgotPassword);
+        
+        // Set up callback listeners
+        setupCallbackListeners();
+    }
+
+    private void setupCallbackListeners() {
+        // Set up callback for successful login
+        model.getCallback().setOnSuccessfulLoginListener(() -> {
+            Platform.runLater(() -> {
+                view.login();
+                try {
+                    HomeView homeView = new HomeView();
+                    Stage stage1 = new Stage();
+                    homeView.start(stage1);
+                    new HomeController(model, homeView, homeView.getFXController(), model.getCallback());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+        });
+        
+        // Set up callback for failed login
+        model.getCallback().setOnFailedLoginListener(() -> {
+            Platform.runLater(() -> {
+                loginJFXController.showAlert(Alert.AlertType.ERROR,
+                        "Login Failed",
+                        "Invalid username or password. Please try again.");
+            });
+        });
+    }
+
+    private void handleForgotPassword() {
+        loginJFXController.showUsernameDialog(usernameAndCode -> {
+            if (usernameAndCode != null && usernameAndCode.contains("![]!")) {
+                String[] parts = usernameAndCode.split("!\\[]!");
+                if (parts.length >= 2) {
+                    String username = parts[0];
+                    String verificationCode = parts[1];
+                    currentPasswordResetUser = username;
+                    // TODO: Implement password reset with RMI
+                    // model.requestPasswordResetWithCode(username, verificationCode);
+                }
+            }
+        });
+    }
 }
