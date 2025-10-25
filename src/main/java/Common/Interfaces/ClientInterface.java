@@ -9,7 +9,7 @@ import java.util.List;
 public interface ClientInterface extends Remote {
     //USER LOG IN, SIGN UP, AND OTHER RELATED METHODS
     void signUp(String username, String password, String verificationCode, String jsonString, ClientCallbackInterface clientCallback) throws RemoteException;
-    void logIn(String username, String jsonString, ClientCallbackInterface clientCalllback) throws RemoteException;
+    void logIn(String username, String jsonString, ClientCallbackInterface clientCallback) throws RemoteException;
     void logOut(String username, String jsonString) throws RemoteException;
     void changePassword(String jsonString) throws RemoteException;
     void verifyCode(String jsonString) throws RemoteException;
