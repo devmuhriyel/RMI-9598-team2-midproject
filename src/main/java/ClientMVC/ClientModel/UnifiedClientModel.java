@@ -59,9 +59,30 @@ public class UnifiedClientModel {
     public void getAllUsers() throws RemoteException{}
 
     //USER ACCOUNT SETTINGS UI METHODS
-    public void changeUsername(String jsonString) throws RemoteException{}
-    public void changePasswordWithOldPassword(String jsonString) throws RemoteException{}
+    // -=-=-=-=-=Change Username=-=-=-=-=- \\
+    public void changeUsername(String newUsername) throws RemoteException {
+        String jsonRequest = String.format(
+                "{\"currentUsername\":\"%s\",\"newUsername\":\"%s\"}",
+                username,
+                newUsername
+        );
 
+        System.out.println("Model: Sending username change request to server");
+        serverConnection.changeUsername(jsonRequest);
+    }
+
+    // -=-=-=-=-=Change Password=-=-=-=-=- \\
+    public void changePassword(String oldPassword, String newPassword) throws RemoteException {
+        String jsonRequest = String.format(
+                "{\"username\":\"%s\",\"oldPassword\":\"%s\",\"newPassword\":\"%s\"}",
+                username,
+                oldPassword,
+                newPassword
+        );
+
+        System.out.println("Model: Sending password change request to server");
+        serverConnection.changePasswordWithOldPassword(jsonRequest);
+    }
     //USER FRIEND REQUESTS UI METHODS
     public void sendFriendRequest(String jsonString) throws RemoteException{}
     public void cancelFriendRequest(String jsonString) throws RemoteException{}
@@ -69,6 +90,8 @@ public class UnifiedClientModel {
     public void rejectFriendRequest(String jsonString) throws RemoteException{}
     public void removeFromFriendsList(String jsonString) throws RemoteException{}
     public void getFriendRequests() throws RemoteException{};
+
+    // -=-=-=-=-=Accept Friend Requests=-=-=-=-=- \\
     public void acceptFriendRequest(String jsonString){
         try {
             String jsonPayload = "{\"requester\":\"" + jsonString + "\", \"target\":\"" + username + "\"}";
