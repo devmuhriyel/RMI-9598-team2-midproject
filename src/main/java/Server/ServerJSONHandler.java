@@ -118,11 +118,38 @@ public class ServerJSONHandler {
             try (FileWriter writer = new FileWriter(file)) {
                 gson.toJson(accounts, writer);
                 writer.flush();
-                System.out.println("✓ Successfully wrote to file: " + file.getAbsolutePath());
+                System.out.println("✓ Successfully wrote client accounts to file: " + file.getAbsolutePath());
             }
 
         } catch (IOException e) {
-            System.err.println("ERROR writing to file: " + fPath);
+            System.err.println("ERROR writing client accounts to file: " + fPath);
+            System.err.println("Absolute path attempted: " + new File(fPath).getAbsolutePath());
+            e.printStackTrace();
+        }
+    }
+
+    public void writeAdminAccountFile(String fPath, AdminAccountsList accounts){
+        try {
+            File file = new File(fPath);
+
+            // Create parent directories if they don't exist
+            File parentDir = file.getParentFile();
+            if (parentDir != null && !parentDir.exists()) {
+                parentDir.mkdirs();
+                System.out.println("Created directories: " + parentDir.getAbsolutePath());
+            }
+
+            // Use pretty printing for readable JSON
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+            try (FileWriter writer = new FileWriter(file)) {
+                gson.toJson(accounts, writer);
+                writer.flush();
+                System.out.println("✓ Successfully wrote admin accounts to file: " + file.getAbsolutePath());
+            }
+
+        } catch (IOException e) {
+            System.err.println("ERROR writing admin accounts to file: " + fPath);
             System.err.println("Absolute path attempted: " + new File(fPath).getAbsolutePath());
             e.printStackTrace();
         }

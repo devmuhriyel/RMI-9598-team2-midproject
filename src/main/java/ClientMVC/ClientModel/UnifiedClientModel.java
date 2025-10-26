@@ -2,31 +2,17 @@ package ClientMVC.ClientModel;
 
 import ClientMVC.ClientCallbackImplementation;
 import ClientMVC.ClientJSONHandler;
-import ClientMVC.UserXMLHandler;
 import Common.Interfaces.ClientCallbackInterface;
-import Common.Objects.AdminObjects.AdminAccountsList;
 import Common.Objects.ClientObjects.Client;
 import Common.Objects.ClientObjects.Conversation;
-import javafx.application.Platform;
 
 import Common.Interfaces.ClientInterface;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.net.Socket;
-import java.util.Collections;
 import java.util.function.Consumer;
-import javafx.application.Platform;
 import java.rmi.RemoteException;
 
 import java.io.*;
-import java.net.Socket;
-import java.nio.file.Files;
-import java.util.Base64;
 import java.util.List;
-import java.util.function.Consumer;
 
 public class UnifiedClientModel {
     private final ClientInterface serverConnection;
@@ -43,13 +29,70 @@ public class UnifiedClientModel {
         this.callback = callback;
         this.jsonHandler = new ClientJSONHandler();
     }
+    
+    public ClientCallbackImplementation getCallback() {
+        return callback;
+    }
+
+//    //USER LOG IN, SIGN UP, AND OTHER RELATED METHODS
+//    public void signUp(String username, String password, String verificationCode, String jsonString, ClientCallbackInterface clientCallback) throws RemoteException{}
+//    public void logIn(String username, String jsonString, ClientCallbackInterface clientCalllback) throws RemoteException{}
+//    public void logOut(String username, String jsonString) throws RemoteException{}
+//    public void changePassword(String username, String password, String jsonString) throws RemoteException{}
+//    public void verifyCode(String username, String jsonString) throws RemoteException{}
 
     //USER LOG IN, SIGN UP, AND OTHER RELATED METHODS
-    public void signUp(String username, String password, String verificationCode, String jsonString, ClientCallbackInterface clientCallback) throws RemoteException{}
-    public void logIn(String username, String jsonString, ClientCallbackInterface clientCalllback) throws RemoteException{}
-    public void logOut(String username, String jsonString) throws RemoteException{}
-    public void changePassword(String username, String password, String jsonString) throws RemoteException{}
-    public void verifyCode(String username, String jsonString) throws RemoteException{}
+    public void signUp(String username, String password, String verificationCode, String jsonString, ClientCallbackInterface clientCallback) throws RemoteException {
+        try {
+            serverConnection.signUp(username, password, verificationCode, jsonString, clientCallback);
+        } catch (RemoteException e) {
+            System.err.println("Error during signup: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
+    
+    public void logIn(String username, String password, String jsonString, ClientCallbackInterface clientCallback) throws RemoteException {
+        try {
+            // Create JSON string with password
+            String loginJson = "{\"password\":\"" + password + "\"}";
+            serverConnection.logIn(username, loginJson, clientCallback);
+        } catch (RemoteException e) {
+            System.err.println("Error during login: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
+    
+    public void logOut(String username, String jsonString) throws RemoteException {
+        try {
+            serverConnection.logOut(username, jsonString);
+        } catch (RemoteException e) {
+            System.err.println("Error during logout: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
+    
+    public void changePassword(String username, String password, String jsonString) throws RemoteException {
+        try {
+            serverConnection.changePassword(jsonString);
+        } catch (RemoteException e) {
+            System.err.println("Error during password change: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
+    
+    public void verifyCode(String username, String jsonString) throws RemoteException {
+        try {
+            serverConnection.verifyCode(jsonString);
+        } catch (RemoteException e) {
+            System.err.println("Error during code verification: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
 
     //USER HOME UI METHODS
     public void searchUsers(String jsonString) throws RemoteException{}

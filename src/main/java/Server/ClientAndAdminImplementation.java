@@ -89,30 +89,102 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
         System.out.println("Server initialized with " + allUsers.size() + " users and " + allAdmins.size() + " admins");
     }
 
-    //USER/ADMIN LOG IN, SIGN UP, AND OTHER RELATED METHODS
+    //USER LOG IN, SIGN UP, AND OTHER RELATED METHODS
     @Override
     public void signUp(String username, String password, String verificationCode, String jsonString, AdminCallbackInterface adminCallback) throws RemoteException {
-
+        // Admin signup not implemented - Admin MVC remains unchanged
     }
 
     @Override
     public void logIn(String username, String jsonString, AdminCallbackInterface adminCallback) throws RemoteException {
-
+        // Admin login not implemented - Admin MVC remains unchanged
     }
 
     @Override
     public void signUp(String username, String password, String verificationCode, String jsonString, ClientCallbackInterface clientCallback) throws RemoteException {
-
+        System.out.println("Client signup attempt for: " + username);
+        
+        fileLock.writeLock().lock();
+        try {
+            // Check if client already exists
+            if (allUsers.containsKey(username)) {
+                System.out.println("Client signup failed: Username already exists - " + username);
+                clientCallback.onFailedSignUp();
+                return;
+            }
+            
+            // Create new client
+            Client newClient = new Client(username, password, verificationCode);
+            allUsers.put(username, newClient);
+            
+            // Add to client accounts list
+            if (clientAccountsList.getClients() == null) {
+                clientAccountsList.setClients(new ArrayList<>());
+            }
+            clientAccountsList.getClients().add(newClient);
+            
+            // Save to file
+            serverJSONHandler.writeClientAccountFile("src/main/resources/JSONFiles/ClientAccounts.json", clientAccountsList);
+            
+            System.out.println("Client signup successful: " + username);
+            clientCallback.onSuccessfulSignUp();
+            
+        } catch (Exception e) {
+            System.err.println("Error during client signup: " + e.getMessage());
+            e.printStackTrace();
+            clientCallback.onFailedSignUp();
+        } finally {
+            fileLock.writeLock().unlock();
+        }
     }
 
     @Override
     public void logIn(String username, String jsonString, ClientCallbackInterface clientCallback) throws RemoteException {
-
+        System.out.println("Client login attempt for: " + username);
+        
+        try {
+            // Parse JSON to get password
+            com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(jsonString).getAsJsonObject();
+            String password = jsonObject.get("password").getAsString();
+            
+            // Check if client exists and password matches
+            Client client = allUsers.get(username);
+            if (client != null && client.getPassword().equals(password)) {
+                System.out.println("Client login successful: " + username);
+                
+                // Register callback for this client
+                clientCallbacks.put(username, clientCallback);
+                
+                clientCallback.onSuccessfulLogin();
+            } else {
+                System.out.println("Client login failed: Invalid credentials - " + username);
+                clientCallback.onFailedLogin();
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Error during client login: " + e.getMessage());
+            e.printStackTrace();
+            clientCallback.onFailedLogin();
+        }
     }
 
     @Override
-    public void logOut(String username, String jsonString) throws RemoteException{
-
+    public void logOut(String username, String jsonString) throws RemoteException {
+        System.out.println("Client logout attempt for: " + username);
+        
+        try {
+            // Unregister client callback if it exists
+            if (clientCallbacks.containsKey(username)) {
+                clientCallbacks.remove(username);
+                System.out.println("Client callback unregistered for: " + username);
+            }
+            
+            System.out.println("Client logout successful for: " + username);
+            
+        } catch (Exception e) {
+            System.err.println("Error during client logout: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -178,7 +250,6 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
                 );
                 System.out.println("Friend request saved: " + requesterUsername + " -> " + targetUsername);
 
-                // TODO: Implement RMI Callback to notify the target user (targetUsername) immediately.
             } else {
                 System.err.println("Friend request failed for logic: " + requesterUsername + " -> " + targetUsername);
             }

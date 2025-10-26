@@ -1,28 +1,37 @@
 package ClientMVC;
 
-import ClientMVC.ClientController.LoginController;
+import AdminMVC.AdminControllers.AdminConnectionController;
+import AdminMVC.AdminControllers.AdminController;
+import ClientMVC.ClientController.*;
+import AdminMVC.AdminControllers.AdminLoginController;
 import Common.Interfaces.ClientCallbackInterface;
 import Common.Objects.ClientObjects.Conversation;
+import Common.Objects.ClientObjects.Message;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.List;
 
 public class ClientCallbackImplementation extends UnicastRemoteObject implements ClientCallbackInterface {
-    private LoginController loginController;
-    private String username;
+    private String name;
+
+    //Admin Controllers
+    private AdminLoginController adminLoginController;
+    private AdminController adminController;
+    private AdminConnectionController adminConnectionController;
+
+    //Client Controllers
+    private LoginController clientLoginController;
+    private SignupController clientSignupController;
+    private AccountController clientAccountController;
+    private ChatController clientChatController;
+    private ConnectionController clientConnectionController;
+    private HomeController clientHomeController;
 
     public ClientCallbackImplementation() throws RemoteException {
         super();
     }
 
-    public void setLoginController(LoginController controller) {
-        this.loginController = controller;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
 
     @Override
     public void onSuccessfulSignUp() throws RemoteException {
@@ -36,20 +45,12 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
 
     @Override
     public void onSuccessfulLogin() throws RemoteException {
-        // Store session
-        ClientJSONHandler.setCurrentUser(username);
 
-        // Notify controller if set
-        if (loginController != null) {
-            loginController.onSuccessfulLoginFromRemote();
-        }
     }
 
     @Override
     public void onFailedLogin() throws RemoteException {
-        if (loginController != null) {
-            loginController.onFailedLoginFromRemote();
-        }
+
     }
 
     @Override
@@ -152,6 +153,7 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
 
     }
 
+
     @Override
     public void onGetUnreadMessages() throws RemoteException {
 
@@ -241,5 +243,72 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     @Override
     public void onCommunityMessageReceived() throws RemoteException {
 
+    }
+
+    public String getName(){
+        return name;
+    }
+
+    //ADMIN CONTROLLER SETUP
+    public void setAdminConnectionController(AdminConnectionController adminConnectionController){
+        this.adminConnectionController = adminConnectionController;
+    }
+    public void unsetAdminConnectionController(){
+        this.adminConnectionController = null;
+    }
+    public void setAdminLoginController(AdminLoginController adminLoginController){
+        this.adminLoginController = adminLoginController;
+    }
+    public void unsetAdminLoginController(){
+        this.adminLoginController = null;
+    }
+    public void setAdminController(AdminController adminController){
+        this.adminController = adminController;
+    }
+    public void unsetAdminController(){
+        this.adminController = null;
+    }
+
+    //CLIENT CONTROLLER SETUP
+    public void setClientConnectionController(ConnectionController clientConnectionController){
+        this.clientConnectionController = clientConnectionController;
+    }
+    public void unsetClientConnectionController(){
+        this.clientConnectionController = null;
+    }
+    public void setClientLoginController(LoginController clientLoginController){
+        this.clientLoginController = clientLoginController;
+    }
+    public void unsetClientLoginController(){
+        this.clientLoginController = null;
+    }
+    public void setClientSignupController(SignupController clientSignupController){
+        this.clientSignupController = clientSignupController;
+    }
+    public void unsetClientSignupController(){
+        this.clientSignupController = null;
+    }
+    public void setClientAccountController(AccountController clientAccountController){
+        this.clientAccountController = clientAccountController;
+    }
+    public void unsetClientAccountController(){
+        this.clientAccountController = null;
+    }
+    public void setClientHomeController(HomeController clientHomeController){
+        this.clientHomeController = clientHomeController;
+    }
+    public void unsetClientHomeController(){
+        this.clientHomeController = null;
+    }
+    public void setClientChatController(ChatController clientChatController){
+        this.clientChatController = clientChatController;
+    }
+    public void unsetClientChatController(){
+        this.clientChatController = null;
+    }
+
+    //HELPER METHODS
+    public Message messageStringToObject(String message) throws RemoteException {
+        return null;
     }
 }
