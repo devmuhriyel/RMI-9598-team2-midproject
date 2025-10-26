@@ -49,7 +49,7 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     @Override
     public void onSuccessfulLogin() throws RemoteException {
         ClientJSONHandler.setCurrentUser(name);
-
+        System.out.println("Server says login success!");
         if(clientLoginController != null){
             clientLoginController.onSuccessfulLoginFromRemote();
         }

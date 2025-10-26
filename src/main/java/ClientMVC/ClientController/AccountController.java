@@ -67,7 +67,8 @@ public class AccountController {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-            new LoginController(loginView, (ClientInterface) clientCallback, loginView.getFXController());
+            //new LoginController(loginView, clientService, loginView.getFXController(), clientCallback);
+
         });
         accountJFXController.setUsernameChangeListener(this::handleUsernameChange);
 //        accountJFXController.setPasswordChangeListener(this::handlePasswordChange);
