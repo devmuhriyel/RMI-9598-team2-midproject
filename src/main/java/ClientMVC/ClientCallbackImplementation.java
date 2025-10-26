@@ -32,6 +32,9 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
         super();
     }
 
+    public void setName(String name){
+        this.name = name;
+    }
 
     @Override
     public void onSuccessfulSignUp() throws RemoteException {
@@ -45,12 +48,18 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
 
     @Override
     public void onSuccessfulLogin() throws RemoteException {
+        ClientJSONHandler.setCurrentUser(name);
 
+        if(clientLoginController != null){
+            clientLoginController.onSuccessfulLoginFromRemote();
+        }
     }
 
     @Override
     public void onFailedLogin() throws RemoteException {
-
+        if(clientLoginController != null){
+            clientLoginController.onFailedLoginFromRemote();
+        }
     }
 
     @Override
