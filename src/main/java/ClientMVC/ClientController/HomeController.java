@@ -28,79 +28,79 @@ public class HomeController {
         this.ui = ui;
         this.clientCallback = callback;
         callback.setClientHomeController(this);
-        initialize();
+//        initialize();
     }
 
-    private void initialize() {
-        ui.setAccountButtonListener(() -> {
-            Platform.runLater(() -> {
-                try {
-                    view.getStage().close();
-                    AccountView accountView = new AccountView();
-                    Stage accountStage = new Stage();
-                    accountView.start(accountStage);
-                    new AccountController(model, accountView, accountView.getFXController(), clientCallback);
-
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-            });
-        });
-        if (model.getUsername() != null) {
-            ui.setUserLabel(model.getUsername());
-        }
-        ui.setSearchListener(queryText -> {
-            String q = (queryText == null) ? "" : queryText.trim().toLowerCase();
-            if (q.isEmpty()) {
-                ui.renderFriends(ui.getOriginalFriends());
-                ui.renderGroups(ui.getOriginalGroups());
-                return;
-            }
-            List<String> allUsers = null;
-            try {
-                model.getAllUsers();
-            } catch (RemoteException e) {
-                throw new RuntimeException(e);
-            }
-            List<String> matchedUsers = filterList(allUsers, q);
-            ui.renderFriends(matchedUsers);
-            ui.renderGroups(filterList(ui.getOriginalGroups(), q));
-        });
-        ui.setFriendClickListener(friendName -> {
-            try {
-                openChatWithFriend(friendName);
-                view.openChatWithFriend();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
-        ui.setGroupClickListener(groupName -> {
-            try {
-                if (groupName.equals("Community Chat")) {
-                    openCommunityChat();
-                } else {
-                    openGroupChat(groupName);
-                }
-                view.openChatWithFriend();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
-        ui.setAddFriendListener(username -> {
-            System.out.println("HomeController: addFriend called with username: " + username);
-            try {
-                sendFriendRequest(username);
-            } catch (RemoteException e) {
-                throw new RuntimeException(e);
-            }
-        });
-        ui.setCreateGroupListener(this::createGroup);
-        refreshUserData();
-    }
-
-    private void sendFriendRequest(String username) throws RemoteException {
-        model.sendFriendRequest(username);
-    }
+//    private void initialize() {
+//        ui.setAccountButtonListener(() -> {
+//            Platform.runLater(() -> {
+//                try {
+//                    view.getStage().close();
+//                    AccountView accountView = new AccountView();
+//                    Stage accountStage = new Stage();
+//                    accountView.start(accountStage);
+//                    new AccountController(model, accountView, accountView.getFXController(), clientCallback);
+//
+//                } catch (Exception ex) {
+//                    ex.printStackTrace();
+//                }
+//            });
+//        });
+//        if (model.getUsername() != null) {
+//            ui.setUserLabel(model.getUsername());
+//        }
+//        ui.setSearchListener(queryText -> {
+//            String q = (queryText == null) ? "" : queryText.trim().toLowerCase();
+//            if (q.isEmpty()) {
+//                ui.renderFriends(ui.getOriginalFriends());
+//                ui.renderGroups(ui.getOriginalGroups());
+//                return;
+//            }
+//            List<String> allUsers = null;
+//            try {
+//                model.getAllUsers();
+//            } catch (RemoteException e) {
+//                throw new RuntimeException(e);
+//            }
+//            List<String> matchedUsers = filterList(allUsers, q);
+//            ui.renderFriends(matchedUsers);
+//            ui.renderGroups(filterList(ui.getOriginalGroups(), q));
+//        });
+//        ui.setFriendClickListener(friendName -> {
+//            try {
+//                openChatWithFriend(friendName);
+//                view.openChatWithFriend();
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
+//        });
+//        ui.setGroupClickListener(groupName -> {
+//            try {
+//                if (groupName.equals("Community Chat")) {
+//                    openCommunityChat();
+//                } else {
+//                    openGroupChat(groupName);
+//                }
+//                view.openChatWithFriend();
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
+//        });
+//        ui.setAddFriendListener(username -> {
+//            System.out.println("HomeController: addFriend called with username: " + username);
+//            try {
+//                sendFriendRequest(username);
+//            } catch (RemoteException e) {
+//                throw new RuntimeException(e);
+//            }
+//        });
+//        ui.setCreateGroupListener(this::createGroup);
+//        refreshUserData();
+//    }
+//
+//    private void sendFriendRequest(String username) throws RemoteException {
+//        model.sendFriendRequest(username);
+//    }
 
     private void createGroup(String groupName) {
         // Show a dialog to select members for the group

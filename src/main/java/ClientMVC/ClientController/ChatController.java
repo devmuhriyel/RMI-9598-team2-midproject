@@ -4,14 +4,12 @@ import ClientMVC.ClientCallbackImplementation;
 import ClientMVC.ClientModel.UnifiedClientModel;
 import ClientMVC.ClientView.Chat.ChatView;
 import ClientMVC.ClientView.Chat.ChatJFXController;
-import ClientMVC.ClientView.Home.HomeView;
-import ClientMVC.UserXMLHandler;
-import java.io.File;
-
+import Common.Objects.ClientObjects.Conversation;
+import Common.Objects.ClientObjects.GroupChat;
 import Common.Objects.ClientObjects.Message;
 import javafx.application.Platform;
-import javafx.stage.Stage;
 
+import java.io.File;
 import java.rmi.RemoteException;
 import java.util.List;
 
@@ -21,8 +19,8 @@ public class ChatController {
     private ChatJFXController chatJFXController;
     private ClientCallbackImplementation clientCallback;
     private String currentChatPartner;
+    private String currentGroupID;
     private boolean isGroupChat = false;
-    private boolean isCommunityChat = false;
 
     public ChatController(UnifiedClientModel model, ChatView view, ChatJFXController uiElements, ClientCallbackImplementation callback) {
         this.model = model;
@@ -33,27 +31,315 @@ public class ChatController {
     }
 
     private void setupListeners() {
-        chatJFXController.setSendButtonListener(() -> {});
-        chatJFXController.setHomeButtonListener(() -> {});
-        chatJFXController.setFileButtonListener(() -> {});
-        chatJFXController.setFileOpenListener(fileName -> {});
+        chatJFXController.setSendButtonListener(() -> {
+            try {
+                if (isGroupChat) {
+                    sendGroupMessage();
+                } else {
+                    sendPrivateMessage();
+                }
+            } catch (RemoteException e) {
+                System.err.println("Error sending message: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
+
+        chatJFXController.setHomeButtonListener(() -> {
+            // Handle home button click
+        });
+
+        chatJFXController.setFileButtonListener(() -> {
+            try {
+                if (isGroupChat) {
+                    sendGroupFile();
+                } else {
+                    sendPrivateFile();
+                }
+            } catch (RemoteException e) {
+                System.err.println("Error sending file: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
+
+        chatJFXController.setFileOpenListener(fileName -> {
+            // Handle file open - implement file download/open logic
+        });
     }
 
-    //Messaging Methods
+    //Private Messaging Methods
     public void sendPrivateMessage() throws RemoteException {
-        model.sendPrivateMessage(model.getUsername(), chatJFXController.getReceiver().getText(), chatJFXController.getMessageField().getText(), model.createJSONStringRequest("request", "SEND_MESSAGE", model.getUsername()));
-        chatJFXController.getMessageField().clear();
+        String messageText = chatJFXController.getMessageField().getText();
+        String receiver = chatJFXController.getReceiver().getText();
+
+        if (messageText == null || messageText.trim().isEmpty()) {
+            System.out.println("Cannot send empty message");
+            return;
+        }
+
+        if (receiver == null || receiver.trim().isEmpty()) {
+            System.out.println("No receiver selected");
+            return;
+        }
+
+        System.out.println("Sending message from " + model.getUsername() + " to " + receiver + ": " + messageText);
+
+        model.sendPrivateMessage(
+                model.getUsername(),
+                receiver,
+                messageText,
+                model.createJSONStringRequest("request", "SEND_MESSAGE", model.getUsername())
+        );
+
+        Platform.runLater(() -> chatJFXController.getMessageField().clear());
     }
 
-    //Callback Methods
+    public void sendPrivateFile() throws RemoteException {
+        File file = chatJFXController.showFileChooser();
+        if (file != null) {
+            String receiver = chatJFXController.getReceiver().getText();
+
+            if (receiver == null || receiver.trim().isEmpty()) {
+                System.out.println("No receiver selected");
+                return;
+            }
+
+            System.out.println("Sending file from " + model.getUsername() + " to " + receiver + ": " + file.getName());
+
+            model.sendPrivateFile(
+                    model.getUsername(),
+                    receiver,
+                    file,
+                    model.createJSONStringRequest("request", "SEND_FILE", model.getUsername())
+            );
+        }
+    }
+
+    //Group Messaging Methods
+    public void sendGroupMessage() throws RemoteException {
+        String messageText = chatJFXController.getMessageField().getText();
+
+        if (messageText == null || messageText.trim().isEmpty()) {
+            System.out.println("Cannot send empty message");
+            return;
+        }
+
+        if (currentGroupID == null || currentGroupID.trim().isEmpty()) {
+            System.out.println("No group selected");
+            return;
+        }
+
+        System.out.println("Sending group message from " + model.getUsername() + " to group " + currentGroupID + ": " + messageText);
+
+        model.sendGroupMessage(
+                model.getUsername(),
+                currentGroupID,
+                messageText,
+                model.createJSONStringRequest("request", "SEND_GROUP_MESSAGE", model.getUsername())
+        );
+
+        Platform.runLater(() -> chatJFXController.getMessageField().clear());
+    }
+
+    public void sendGroupFile() throws RemoteException {
+        File file = chatJFXController.showFileChooser();
+        if (file != null) {
+            if (currentGroupID == null || currentGroupID.trim().isEmpty()) {
+                System.out.println("No group selected");
+                return;
+            }
+
+            System.out.println("Sending file to group " + currentGroupID + ": " + file.getName());
+
+            model.sendGroupFile(
+                    model.getUsername(),
+                    currentGroupID,
+                    file,
+                    model.createJSONStringRequest("request", "SEND_GROUP_FILE", model.getUsername())
+            );
+        }
+    }
+
+    //Private Message Callback Methods
     public void onPrivateMessageSent(Message message) throws RemoteException {
-        chatJFXController.addChatMessage(
-                message.getSender(),
-                message.getContent(),
-                model.getUsername()
-        );    }
+        Platform.runLater(() -> {
+            chatJFXController.addChatMessage(
+                    message.getSender(),
+                    message.getContent(),
+                    model.getUsername()
+            );
+        });
+        System.out.println("Message sent successfully: " + message.getContent());
+    }
+
+    public void onPrivateMessageReceived(Message message) throws RemoteException {
+        Platform.runLater(() -> {
+            chatJFXController.addChatMessage(
+                    message.getSender(),
+                    message.getContent(),
+                    model.getUsername()
+            );
+        });
+        System.out.println("Message received from " + message.getSender() + ": " + message.getContent());
+    }
+
+    public void onPrivateFileSent(Message message) throws RemoteException {
+        Platform.runLater(() -> {
+            chatJFXController.addChatMessage(
+                    message.getSender(),
+                    "[FILE: " + message.getFileName() + "]",
+                    model.getUsername()
+            );
+        });
+        System.out.println("File sent successfully: " + message.getFileName());
+    }
+
+    public void onPrivateFileReceived(Message message) throws RemoteException {
+        Platform.runLater(() -> {
+            chatJFXController.addChatMessage(
+                    message.getSender(),
+                    "[FILE: " + message.getFileName() + "]",
+                    model.getUsername()
+            );
+        });
+        System.out.println("File received from " + message.getSender() + ": " + message.getFileName());
+    }
+
+    //Group Message Callback Methods
+    public void onGroupMessageSent(Message message) throws RemoteException {
+        Platform.runLater(() -> {
+            chatJFXController.addChatMessage(
+                    message.getSender(),
+                    message.getContent(),
+                    model.getUsername()
+            );
+        });
+        System.out.println("Group message sent successfully: " + message.getContent());
+    }
+
+    public void onGroupMessageReceived(Message message) throws RemoteException {
+        Platform.runLater(() -> {
+            chatJFXController.addChatMessage(
+                    message.getSender(),
+                    message.getContent(),
+                    model.getUsername()
+            );
+        });
+        System.out.println("Group message received from " + message.getSender() + ": " + message.getContent());
+    }
+
+    public void onGroupFileSent(Message message) throws RemoteException {
+        Platform.runLater(() -> {
+            chatJFXController.addChatMessage(
+                    message.getSender(),
+                    "[FILE: " + message.getFileName() + "]",
+                    model.getUsername()
+            );
+        });
+        System.out.println("Group file sent successfully: " + message.getFileName());
+    }
+
+    public void onGroupFileReceived(Message message) throws RemoteException {
+        Platform.runLater(() -> {
+            chatJFXController.addChatMessage(
+                    message.getSender(),
+                    "[FILE: " + message.getFileName() + "]",
+                    model.getUsername()
+            );
+        });
+        System.out.println("Group file received from " + message.getSender() + ": " + message.getFileName());
+    }
+
+    //History Methods
+    public void loadChatHistory(String receiver) throws RemoteException {
+        chatJFXController.clearMessages();
+        model.getChatHistoryWith(
+                model.createJSONStringRequest("request", "GET_CHAT_HISTORY", model.getUsername()),
+                model.getUsername(),
+                receiver
+        );
+    }
+
+    public void loadGroupChatHistory(String groupID) throws RemoteException {
+        chatJFXController.clearMessages();
+        model.getGroupChatHistoryWith(
+                model.createJSONStringRequest("request", "GET_GROUP_CHAT_HISTORY", model.getUsername()),
+                model.getUsername(),
+                groupID
+        );
+    }
+
+    //Callback methods for history
+    public void onGetChatHistories(List<Conversation> allChats) throws RemoteException {
+        System.out.println("Received all chat histories: " + allChats.size());
+        // Handle displaying list of all conversations in UI
+    }
+
+    public void onGetChatHistoryWith(Conversation chatWith) throws RemoteException {
+        Platform.runLater(() -> {
+            chatJFXController.clearMessages();
+            if (chatWith != null && chatWith.getMessages() != null) {
+                for (Message msg : chatWith.getMessages()) {
+                    if (msg.isFile()) {
+                        chatJFXController.addChatMessage(
+                                msg.getSender(),
+                                "[FILE: " + msg.getFileName() + "]",
+                                model.getUsername()
+                        );
+                    } else {
+                        chatJFXController.addChatMessage(
+                                msg.getSender(),
+                                msg.getContent(),
+                                model.getUsername()
+                        );
+                    }
+                }
+            }
+        });
+        System.out.println("Loaded chat history with " + chatWith.getRecipient());
+    }
 
 
-    public void onPrivateMessageReceived(Message msg) {
+    public void onGetGroupChatHistories(List<GroupChat> allGroupChats) throws RemoteException {
+        System.out.println("Received all group chat histories: " + allGroupChats.size());
+        // Handle displaying list of all group chats in UI
+    }
+
+    public void onGetGroupChatHistoryWith(GroupChat groupChatWith) throws RemoteException {
+        Platform.runLater(() -> {
+            chatJFXController.clearMessages();
+            if (groupChatWith != null && groupChatWith.getMessages() != null) {
+                for (Message msg : groupChatWith.getMessages()) {
+                    if (msg.isFile()) {
+                        chatJFXController.addChatMessage(
+                                msg.getSender(),
+                                "[FILE: " + msg.getFileName() + "]",
+                                model.getUsername()
+                        );
+                    } else {
+                        chatJFXController.addChatMessage(
+                                msg.getSender(),
+                                msg.getContent(),
+                                model.getUsername()
+                        );
+                    }
+                }
+            }
+        });
+        System.out.println("Loaded group chat history for " + groupChatWith.getGroupName());
+    }
+
+    //Setup Methods
+    public void setCurrentChatPartner(String username) {
+        this.currentChatPartner = username;
+        this.isGroupChat = false;
+        this.currentGroupID = null;
+        chatJFXController.setLabel(username);
+    }
+
+    public void setCurrentGroupChat(String groupID, String groupName) {
+        this.currentGroupID = groupID;
+        this.isGroupChat = true;
+        this.currentChatPartner = null;
+        chatJFXController.setLabel(groupName);
     }
 }

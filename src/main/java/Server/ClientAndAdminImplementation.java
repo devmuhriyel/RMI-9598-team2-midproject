@@ -430,24 +430,207 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
 
     //USER/ADMIN COMMON CHATTING METHODS
     @Override
-    public List<Conversation> getChatHistories(String jsonString, String sender) throws RemoteException{
-        Client client = allUsers.get(sender);
-        clientCallbacks.get(sender).onGetChatHistories(client.getConversations());
-        return client.getConversations();
+    public List<GroupChat> getGroupChatHistories(String jsonString, String username) throws RemoteException {
+        System.out.println("getGroupChatHistories called for: " + username);
+
+        // Validation
+        if (username == null || username.trim().isEmpty()) {
+            throw new RemoteException("Username cannot be null or empty");
+        }
+
+        Client client = allUsers.get(username);
+        if (client == null) {
+            throw new RemoteException("User not found: " + username);
+        }
+
+        // Initialize group chats if null
+        if (client.getGroupChats() == null) {
+            client.setGroupChats(new ArrayList<>());
+        }
+
+        // Get callback
+        ClientCallbackInterface callback = clientCallbacks.get(username);
+        if (callback == null) {
+            System.out.println("Warning: No callback registered for user: " + username);
+            return client.getGroupChats();
+        }
+
+        // Notify client with group chat histories
+        List<GroupChat> groupChats = client.getGroupChats();
+        callbackExecutor.execute(() -> {
+            try {
+                callback.onGetGroupChatHistories(groupChats);
+                System.out.println("✓ Group chat histories sent to " + username + ": " + groupChats.size() + " groups");
+            } catch (RemoteException e) {
+                System.err.println("Failed to send group chat histories to " + username + ": " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
+
+        return groupChats;
     }
 
     @Override
-    public Conversation getChatHistoryWith(String jsonString, String sender, String receiver) throws RemoteException{
+    public void getChatHistories(String jsonString, String sender) throws RemoteException {
+        System.out.println("getChatHistories called for: " + sender);
+
+        // Validation
+        if (sender == null || sender.trim().isEmpty()) {
+            throw new RemoteException("Sender cannot be null or empty");
+        }
+
         Client client = allUsers.get(sender);
+        if (client == null) {
+            throw new RemoteException("User not found: " + sender);
+        }
+
+        // Initialize conversations if null
+        if (client.getConversations() == null) {
+            client.setConversations(new ArrayList<>());
+        }
+
+        // Get callback
+        ClientCallbackInterface callback = clientCallbacks.get(sender);
+        if (callback == null) {
+            System.out.println("Warning: No callback registered for user: " + sender);
+            return;
+        }
+
+        // Notify client with chat histories
+        List<Conversation> conversations = client.getConversations();
+        callbackExecutor.execute(() -> {
+            try {
+                callback.onGetChatHistories(conversations);
+                System.out.println("✓ Chat histories sent to " + sender + ": " + conversations.size() + " conversations");
+            } catch (RemoteException e) {
+                System.err.println("Failed to send chat histories to " + sender + ": " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
+    }
+
+    @Override
+    public void getChatHistoryWith(String jsonString, String sender, String receiver) throws RemoteException {
+        System.out.println("getChatHistoryWith called: " + sender + " with " + receiver);
+
+        // Validation
+        if (sender == null || sender.trim().isEmpty()) {
+            throw new RemoteException("Sender cannot be null or empty");
+        }
+
+        if (receiver == null || receiver.trim().isEmpty()) {
+            throw new RemoteException("Receiver cannot be null or empty");
+        }
+
+        Client client = allUsers.get(sender);
+        if (client == null) {
+            throw new RemoteException("User not found: " + sender);
+        }
+
+        // Initialize conversations if null
+        if (client.getConversations() == null) {
+            client.setConversations(new ArrayList<>());
+        }
+
+        // Find conversation with specific receiver
         List<Conversation> conversations = client.getConversations();
         Conversation conversationWith = null;
+
         for (Conversation conversation : conversations) {
-            if(conversation.getRecipient().equals(receiver)) {
+            if (conversation.getRecipient() != null && conversation.getRecipient().equals(receiver)) {
                 conversationWith = conversation;
+                break;
             }
         }
-        clientCallbacks.get(sender).onGetChatHistoryWith(conversationWith);
-        return conversationWith;
+
+        // If no conversation exists, create an empty one
+        if (conversationWith == null) {
+            System.out.println("No existing conversation found between " + sender + " and " + receiver);
+            conversationWith = new Conversation(receiver, new ArrayList<>());
+        }
+
+        // Get callback
+        ClientCallbackInterface callback = clientCallbacks.get(sender);
+        if (callback == null) {
+            System.out.println("Warning: No callback registered for user: " + sender);
+            return;
+        }
+
+        // Notify client with specific chat history
+        Conversation finalConversationWith = conversationWith;
+        callbackExecutor.execute(() -> {
+            try {
+                callback.onGetChatHistoryWith(finalConversationWith);
+                int messageCount = finalConversationWith.getMessages() != null ? finalConversationWith.getMessages().size() : 0;
+                System.out.println("✓ Chat history sent to " + sender + " for conversation with " + receiver + ": " + messageCount + " messages");
+            } catch (RemoteException e) {
+                System.err.println("Failed to send chat history to " + sender + ": " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
+    }
+
+    @Override
+    public GroupChat getGroupChatHistoryWith(String jsonString, String username, String groupID) throws RemoteException {
+        System.out.println("getGroupChatHistoryWith called: " + username + " for group " + groupID);
+
+        // Validation
+        if (username == null || username.trim().isEmpty()) {
+            throw new RemoteException("Username cannot be null or empty");
+        }
+
+        if (groupID == null || groupID.trim().isEmpty()) {
+            throw new RemoteException("GroupID cannot be null or empty");
+        }
+
+        Client client = allUsers.get(username);
+        if (client == null) {
+            throw new RemoteException("User not found: " + username);
+        }
+
+        // Initialize group chats if null
+        if (client.getGroupChats() == null) {
+            client.setGroupChats(new ArrayList<>());
+        }
+
+        // Find group chat with specific groupID
+        List<GroupChat> groupChats = client.getGroupChats();
+        GroupChat groupChatWith = null;
+
+        for (GroupChat groupChat : groupChats) {
+            if (groupChat.getGroupID() != null && groupChat.getGroupID().equals(groupID)) {
+                groupChatWith = groupChat;
+                break;
+            }
+        }
+
+        // If no group chat exists
+        if (groupChatWith == null) {
+            System.out.println("No group chat found for " + username + " with groupID: " + groupID);
+            throw new RemoteException("Group chat not found: " + groupID);
+        }
+
+        // Get callback
+        ClientCallbackInterface callback = clientCallbacks.get(username);
+        if (callback == null) {
+            System.out.println("Warning: No callback registered for user: " + username);
+            return groupChatWith;
+        }
+
+        // Notify client with specific group chat history
+        GroupChat finalGroupChatWith = groupChatWith;
+        callbackExecutor.execute(() -> {
+            try {
+                callback.onGetGroupChatHistoryWith(finalGroupChatWith);
+                int messageCount = finalGroupChatWith.getMessages() != null ? finalGroupChatWith.getMessages().size() : 0;
+                System.out.println("✓ Group chat history sent to " + username + " for group " + groupID + ": " + messageCount + " messages");
+            } catch (RemoteException e) {
+                System.err.println("Failed to send group chat history to " + username + ": " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
+
+        return groupChatWith;
     }
     @Override
     public String getChatHistoryOfUser(String jsonString) throws RemoteException{
@@ -579,19 +762,300 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
     }
 
     @Override
-    public void sendPrivateFile(String jsonString) throws RemoteException{
+    public void sendPrivateFile(String sender, String receiver, String fileName, String fileData, String jsonString) throws RemoteException {
+        System.out.println("sendPrivateFile called: " + sender + " -> " + receiver + ": " + fileName);
 
+        // Validation
+        if (sender == null || receiver == null || fileName == null || fileData == null) {
+            throw new RemoteException("Sender, receiver, fileName, or fileData cannot be null");
+        }
+
+        Client senderClient = allUsers.get(sender);
+        Client receiverClient = allUsers.get(receiver);
+
+        if (senderClient == null) {
+            throw new RemoteException("Sender user not found: " + sender);
+        }
+
+        if (receiverClient == null) {
+            throw new RemoteException("Receiver user not found: " + receiver);
+        }
+
+        // Create file message
+        Message fileMsg = new Message(sender, receiver, fileName, fileData, true);
+
+        // Initialize conversations if needed
+        if (senderClient.getConversations() == null) {
+            senderClient.setConversations(new ArrayList<>());
+        }
+        if (receiverClient.getConversations() == null) {
+            receiverClient.setConversations(new ArrayList<>());
+        }
+
+        // Find or create conversations
+        Conversation senderConvo = null;
+        Conversation receiverConvo = null;
+
+        for (Conversation conv : senderClient.getConversations()) {
+            if (conv.getRecipient() != null && conv.getRecipient().equals(receiver)) {
+                senderConvo = conv;
+                break;
+            }
+        }
+
+        for (Conversation conv : receiverClient.getConversations()) {
+            if (conv.getRecipient() != null && conv.getRecipient().equals(sender)) {
+                receiverConvo = conv;
+                break;
+            }
+        }
+
+        if (senderConvo == null) {
+            senderConvo = new Conversation(receiver, new ArrayList<>());
+            senderClient.getConversations().add(senderConvo);
+        }
+
+        if (receiverConvo == null) {
+            receiverConvo = new Conversation(sender, new ArrayList<>());
+            receiverClient.getConversations().add(receiverConvo);
+        }
+
+        if (senderConvo.getMessages() == null) {
+            senderConvo.setMessages(new ArrayList<>());
+        }
+        if (receiverConvo.getMessages() == null) {
+            receiverConvo.setMessages(new ArrayList<>());
+        }
+
+        String conversationKey = serverJSONHandler.createConversationHashMapEntryString(sender, receiver);
+        ReadWriteLock convoLock = conversationLocks.computeIfAbsent(conversationKey, k -> new ReentrantReadWriteLock());
+
+        convoLock.writeLock().lock();
+        try {
+            senderConvo.getMessages().add(fileMsg);
+            receiverConvo.getMessages().add(fileMsg);
+
+            fileLock.writeLock().lock();
+            try {
+                serverJSONHandler.writeClientAccountFile("src/main/resources/JSONFiles/ClientAccounts.json", clientAccountsList);
+                System.out.println("File message saved to file");
+            } finally {
+                fileLock.writeLock().unlock();
+            }
+        } finally {
+            convoLock.writeLock().unlock();
+        }
+
+        // Serialize message to JSON
+        Gson gson = new Gson();
+        String messageJson = gson.toJson(fileMsg);
+
+        // Notify sender
+        ClientCallbackInterface senderCallback = clientCallbacks.get(sender);
+        if (senderCallback != null) {
+            final String finalMessageJson = messageJson;
+            callbackExecutor.execute(() -> {
+                try {
+                    senderCallback.onPrivateFileSent(finalMessageJson, jsonString);
+                } catch (RemoteException e) {
+                    System.out.println("Failed to notify sender: " + e.getMessage());
+                }
+            });
+        }
+
+        // Notify receiver
+        ClientCallbackInterface receiverCallback = clientCallbacks.get(receiver);
+        if (receiverCallback != null) {
+            final String finalMessageJson = messageJson;
+            callbackExecutor.execute(() -> {
+                try{
+                    receiverCallback.onPrivateFileReceived(finalMessageJson, jsonString);
+                } catch (RemoteException e) {
+                    System.out.println("Failed to notify receiver: " + e.getMessage());
+                }
+            });
+        }
+
+        System.out.println("File message processing completed successfully");
     }
 
     //USER/ADMIN GROUP CHATTING METHODS
     @Override
-    public void sendGroupMessage(String jsonString) throws RemoteException{
+    public void sendGroupMessage(String sender, String groupID, String message, String jsonString) throws RemoteException {
+        System.out.println("sendGroupMessage called: " + sender + " -> group " + groupID + ": " + message);
 
+        // Validation
+        if (sender == null || groupID == null || message == null) {
+            throw new RemoteException("Sender, groupID, or message cannot be null");
+        }
+
+        Client senderClient = allUsers.get(sender);
+        if (senderClient == null) {
+            throw new RemoteException("Sender user not found: " + sender);
+        }
+
+        // Find the group in sender's groupChats
+        GroupChat senderGroup = null;
+        for (GroupChat gc : senderClient.getGroupChats()) {
+            if (gc.getGroupID().equals(groupID)) {
+                senderGroup = gc;
+                break;
+            }
+        }
+
+        if (senderGroup == null) {
+            throw new RemoteException("Group not found: " + groupID);
+        }
+
+        // Check if sender is a member
+        if (!senderGroup.isMember(sender)) {
+            throw new RemoteException("User " + sender + " is not a member of group " + groupID);
+        }
+
+        // Get list of receivers
+        List<String> receivers = new ArrayList<>(senderGroup.getReceivers());
+
+        // Create group message
+        Message msg = new Message(sender, receivers, message);
+
+        fileLock.writeLock().lock();
+        try {
+            // Add message to all members' group chats
+            for (String memberUsername : receivers) {
+                Client memberClient = allUsers.get(memberUsername);
+                if (memberClient != null && memberClient.getGroupChats() != null) {
+                    // Find the group in this member's groupChats
+                    for (GroupChat memberGroup : memberClient.getGroupChats()) {
+                        if (memberGroup.getGroupID().equals(groupID)) {
+                            if (memberGroup.getMessages() == null) {
+                                memberGroup.setMessages(new ArrayList<>());
+                            }
+                            memberGroup.getMessages().add(msg);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Save to file
+            serverJSONHandler.writeClientAccountFile("src/main/resources/JSONFiles/ClientAccounts.json", clientAccountsList);
+            System.out.println("Group message saved to file");
+
+        } finally {
+            fileLock.writeLock().unlock();
+        }
+
+        // Serialize message to JSON
+        Gson gson = new Gson();
+        String messageJson = gson.toJson(msg);
+
+        // Notify all online members
+        for (String memberUsername : receivers) {
+            ClientCallbackInterface memberCallback = clientCallbacks.get(memberUsername);
+            if (memberCallback != null) {
+                final String finalMessageJson = messageJson;
+                callbackExecutor.execute(() -> {
+                    try {
+                        if (memberUsername.equals(sender)) {
+                            memberCallback.onGroupMessageSent(finalMessageJson, jsonString);
+                        } else {
+                            memberCallback.onGroupMessageReceived(finalMessageJson, jsonString);
+                        }
+                    } catch (RemoteException e) {
+                        System.out.println("Failed to notify member " + memberUsername + ": " + e.getMessage());
+                    }
+                });
+            }
+        }
+
+        System.out.println("Group message processing completed successfully");
     }
 
     @Override
-    public void sendGroupFile(String jsonString) throws RemoteException{
+    public void sendGroupFile(String sender, String groupID, String fileName, String fileData, String jsonString) throws RemoteException {
+        System.out.println("sendGroupFile called: " + sender + " -> group " + groupID + ": " + fileName);
 
+        // Validation
+        if (sender == null || groupID == null || fileName == null || fileData == null) {
+            throw new RemoteException("Sender, groupID, fileName, or fileData cannot be null");
+        }
+
+        Client senderClient = allUsers.get(sender);
+        if (senderClient == null) {
+            throw new RemoteException("Sender user not found: " + sender);
+        }
+
+        // Find the group
+        GroupChat senderGroup = null;
+        for (GroupChat gc : senderClient.getGroupChats()) {
+            if (gc.getGroupID().equals(groupID)) {
+                senderGroup = gc;
+                break;
+            }
+        }
+
+        if (senderGroup == null) {
+            throw new RemoteException("Group not found: " + groupID);
+        }
+
+        if (!senderGroup.isMember(sender)) {
+            throw new RemoteException("User " + sender + " is not a member of group " + groupID);
+        }
+
+        List<String> receivers = new ArrayList<>(senderGroup.getReceivers());
+
+        // Create group file message
+        Message fileMsg = new Message(sender, receivers, fileName, fileData, true);
+
+        fileLock.writeLock().lock();
+        try {
+            // Add file message to all members' group chats
+            for (String memberUsername : receivers) {
+                Client memberClient = allUsers.get(memberUsername);
+                if (memberClient != null && memberClient.getGroupChats() != null) {
+                    for (GroupChat memberGroup : memberClient.getGroupChats()) {
+                        if (memberGroup.getGroupID().equals(groupID)) {
+                            if (memberGroup.getMessages() == null) {
+                                memberGroup.setMessages(new ArrayList<>());
+                            }
+                            memberGroup.getMessages().add(fileMsg);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            serverJSONHandler.writeClientAccountFile("src/main/resources/JSONFiles/ClientAccounts.json", clientAccountsList);
+            System.out.println("Group file saved to file");
+
+        } finally {
+            fileLock.writeLock().unlock();
+        }
+
+        // Serialize message to JSON
+        Gson gson = new Gson();
+        String messageJson = gson.toJson(fileMsg);
+
+        // Notify all online members
+        for (String memberUsername : receivers) {
+            ClientCallbackInterface memberCallback = clientCallbacks.get(memberUsername);
+            if (memberCallback != null) {
+                final String finalMessageJson = messageJson;
+                callbackExecutor.execute(() -> {
+                    try {
+                        if (memberUsername.equals(sender)) {
+                            memberCallback.onGroupFileSent(finalMessageJson, jsonString);
+                        } else {
+                            memberCallback.onGroupFileReceived(finalMessageJson, jsonString);
+                        }
+                    } catch (RemoteException e) {
+                        System.out.println("Failed to notify member: " + e.getMessage());
+                    }
+                });
+            }
+        }
+
+        System.out.println("Group file processing completed successfully");
     }
 
     @Override

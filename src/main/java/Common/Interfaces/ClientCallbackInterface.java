@@ -1,6 +1,7 @@
 package Common.Interfaces;
 
 import Common.Objects.ClientObjects.Conversation;
+import Common.Objects.ClientObjects.GroupChat;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
@@ -41,19 +42,21 @@ public interface ClientCallbackInterface extends Remote {
     //USER COMMON CHATTING METHODS
     void onGetChatHistories(List<Conversation> allChats) throws RemoteException;
     void onGetChatHistoryWith(Conversation chatWith) throws RemoteException;
+    void onGetGroupChatHistories(List<GroupChat> allGroupChats) throws RemoteException;
+    void onGetGroupChatHistoryWith(GroupChat groupChatWith) throws RemoteException;
     void onGetUnreadMessages() throws RemoteException;
 
     //USER PRIVATE CHATTING METHODS
     void onPrivateMessageSent(String message, String jsonString) throws RemoteException;
     void onPrivateMessageReceived(String message, String jsonString) throws RemoteException;
-    void onPrivateFileSent() throws RemoteException;
-    void onPrivateFileReceived() throws RemoteException;
+    void onPrivateFileSent(String message, String jsonString) throws RemoteException;
+    void onPrivateFileReceived(String message, String jsonString) throws RemoteException;
 
     //USER GROUP CHATTING METHODS
-    void onGroupMessageSent() throws RemoteException;
-    void onGroupMessageReceived() throws RemoteException;
-    void onGroupFileSent() throws RemoteException;
-    void onGroupFileReceived() throws RemoteException;
+    void onGroupMessageSent(String message, String jsonString) throws RemoteException;
+    void onGroupMessageReceived(String message, String jsonString) throws RemoteException;
+    void onGroupFileSent(String message, String jsonString) throws RemoteException;
+    void onGroupFileReceived(String message, String jsonString) throws RemoteException;
     void onSuccessfulGroupCreation() throws RemoteException;
     void onFailedGroupCreation() throws RemoteException;
     void onSuccessfulMemberAdded() throws RemoteException;
@@ -64,6 +67,4 @@ public interface ClientCallbackInterface extends Remote {
     //USER COMMUNITY CHATTING METHODS
     void onCommunityMessageSent() throws RemoteException;
     void onCommunityMessageReceived() throws RemoteException;
-
-
 }

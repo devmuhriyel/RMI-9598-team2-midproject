@@ -26,57 +26,57 @@ public class AccountController {
         this.accountJFXController = accountJFXController;
         this.clientCallback = callback;
         callback.setClientAccountController(this);
-        initialize();
+//        initialize();
     }
 
-    private void initialize() {
-        accountJFXController.updateDisplayedUsername(model.getUsername());
-        accountJFXController.setSentRequestButtonListener(() -> {
-            try {
-                model.getFriendRequests();
-            } catch (RemoteException e) {
-                throw new RuntimeException(e);
-            }
-        });
-        accountJFXController.setAcceptRequestListener(friendName -> {
-            model.acceptFriendRequest(friendName);
-        });
-        accountJFXController.setDeclineRequestListener(friendName -> {
-            try {
-                model.rejectFriendRequest(friendName);
-            } catch (RemoteException e) {
-                throw new RuntimeException(e);
-            }
-        });
-
-        accountJFXController.setBackButtonListener(() -> {
-            view.getStage().close();
-            HomeView homeView = new HomeView();
-            Stage homeStage = new Stage();
-            homeView.start(homeStage);
-            new HomeController(model, homeView, homeView.getFXController(), clientCallback);
-        });
-
-        accountJFXController.setLogoutAccountButtonListener(() -> {
-            view.getStage().close();
-            LoginView loginView = new LoginView();
-            Stage loginStage = new Stage();
-            try {
-                loginView.start(loginStage);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-            new LoginController(loginView, model, loginView.getFXController());
-        });
-        accountJFXController.setUsernameChangeListener(this::handleUsernameChange);
-//        accountJFXController.setPasswordChangeListener(this::handlePasswordChange);
-        try {
-            accountJFXController.showProfile();
-        } catch (Exception e) {
-            System.err.println("Error loading profile view: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
+//    private void initialize() {
+//        accountJFXController.updateDisplayedUsername(model.getUsername());
+//        accountJFXController.setSentRequestButtonListener(() -> {
+//            try {
+//                model.getFriendRequests();
+//            } catch (RemoteException e) {
+//                throw new RuntimeException(e);
+//            }
+//        });
+//        accountJFXController.setAcceptRequestListener(friendName -> {
+//            model.acceptFriendRequest(friendName);
+//        });
+//        accountJFXController.setDeclineRequestListener(friendName -> {
+//            try {
+//                model.rejectFriendRequest(friendName);
+//            } catch (RemoteException e) {
+//                throw new RuntimeException(e);
+//            }
+//        });
+//
+//        accountJFXController.setBackButtonListener(() -> {
+//            view.getStage().close();
+//            HomeView homeView = new HomeView();
+//            Stage homeStage = new Stage();
+//            homeView.start(homeStage);
+//            new HomeController(model, homeView, homeView.getFXController(), clientCallback);
+//        });
+//
+//        accountJFXController.setLogoutAccountButtonListener(() -> {
+//            view.getStage().close();
+//            LoginView loginView = new LoginView();
+//            Stage loginStage = new Stage();
+//            try {
+//                loginView.start(loginStage);
+//            } catch (Exception e) {
+//                throw new RuntimeException(e);
+//            }
+//            new LoginController(loginView, model, loginView.getFXController());
+//        });
+//        accountJFXController.setUsernameChangeListener(this::handleUsernameChange);
+////        accountJFXController.setPasswordChangeListener(this::handlePasswordChange);
+//        try {
+//            accountJFXController.showProfile();
+//        } catch (Exception e) {
+//            System.err.println("Error loading profile view: " + e.getMessage());
+//            e.printStackTrace();
+//        }
+//    }
 
 //    private void setupAccountUpdateHandling() {
 //        model.setAccountUpdateListener(response -> {

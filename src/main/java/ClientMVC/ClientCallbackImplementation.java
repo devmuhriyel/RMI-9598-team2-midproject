@@ -6,14 +6,17 @@ import ClientMVC.ClientController.*;
 import AdminMVC.AdminControllers.AdminLoginController;
 import Common.Interfaces.ClientCallbackInterface;
 import Common.Objects.ClientObjects.Conversation;
+import Common.Objects.ClientObjects.GroupChat;
 import Common.Objects.ClientObjects.Message;
+import com.google.gson.Gson;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.List;
 
 public class ClientCallbackImplementation extends UnicastRemoteObject implements ClientCallbackInterface {
-    private String name;
+    private String username;
+    private Gson gson;
 
     //Admin Controllers
     private AdminLoginController adminLoginController;
@@ -30,134 +33,111 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
 
     public ClientCallbackImplementation() throws RemoteException {
         super();
-    }
-
-
-    @Override
-    public void onSuccessfulSignUp() throws RemoteException {
-
+        this.gson = new Gson();
     }
 
     @Override
-    public void onFailedSignUp() throws RemoteException {
-
-    }
+    public void onSuccessfulSignUp() throws RemoteException {}
 
     @Override
-    public void onSuccessfulLogin() throws RemoteException {
-
-    }
+    public void onFailedSignUp() throws RemoteException {}
 
     @Override
-    public void onFailedLogin() throws RemoteException {
-
-    }
+    public void onSuccessfulLogin() throws RemoteException {}
 
     @Override
-    public void onSuccessfulLogout() throws RemoteException {
-
-    }
+    public void onFailedLogin() throws RemoteException {}
 
     @Override
-    public void onSuccessfulPasswordChange() throws RemoteException {
-
-    }
+    public void onSuccessfulLogout() throws RemoteException {}
 
     @Override
-    public void onFailedPasswordChange() throws RemoteException {
-
-    }
+    public void onSuccessfulPasswordChange() throws RemoteException {}
 
     @Override
-    public void onSuccessfulCodeVerification() throws RemoteException {
-
-    }
+    public void onFailedPasswordChange() throws RemoteException {}
 
     @Override
-    public void onFailedCodeVerification() throws RemoteException {
-
-    }
+    public void onSuccessfulCodeVerification() throws RemoteException {}
 
     @Override
-    public void onSearchUserResults() throws RemoteException {
-
-    }
+    public void onFailedCodeVerification() throws RemoteException {}
 
     @Override
-    public void onSearchGroupResults() throws RemoteException {
-
-    }
+    public void onSearchUserResults() throws RemoteException {}
 
     @Override
-    public void onFriendRequestSent() throws RemoteException {
-
-    }
+    public void onSearchGroupResults() throws RemoteException {}
 
     @Override
-    public void onGetOnlineFriends() throws RemoteException {
-
-    }
+    public void onFriendRequestSent() throws RemoteException {}
 
     @Override
-    public void onSuccessfulUsernameChange() throws RemoteException {
-
-    }
+    public void onGetOnlineFriends() throws RemoteException {}
 
     @Override
-    public void onFailedUsernameChange() throws RemoteException {
-
-    }
+    public void onSuccessfulUsernameChange() throws RemoteException {}
 
     @Override
-    public void onSuccessfulPasswordChangeWithOldPassword() throws RemoteException {
-
-    }
+    public void onFailedUsernameChange() throws RemoteException {}
 
     @Override
-    public void onFailedPasswordChangeWithOldPassword() throws RemoteException {
-
-    }
+    public void onSuccessfulPasswordChangeWithOldPassword() throws RemoteException {}
 
     @Override
-    public void onFriendRequestReceived() throws RemoteException {
-
-    }
+    public void onFailedPasswordChangeWithOldPassword() throws RemoteException {}
 
     @Override
-    public void onFriendAccepted() throws RemoteException {
-
-    }
+    public void onFriendRequestReceived() throws RemoteException {}
 
     @Override
-    public void onFriendDeclined() throws RemoteException {
-
-    }
+    public void onFriendAccepted() throws RemoteException {}
 
     @Override
-    public void onFriendDeleted() throws RemoteException {
-
-    }
+    public void onFriendDeclined() throws RemoteException {}
 
     @Override
-    public void onCancelFriendRequest() throws RemoteException {
+    public void onFriendDeleted() throws RemoteException {}
 
-    }
+    @Override
+    public void onCancelFriendRequest() throws RemoteException {}
 
     @Override
     public void onGetChatHistories(List<Conversation> allChats) throws RemoteException {
-
+        if (clientChatController != null) {
+            System.out.println("Received " + allChats.size() + " conversations");
+            clientChatController.onGetChatHistories(allChats);
+        }
     }
 
     @Override
     public void onGetChatHistoryWith(Conversation chatWith) throws RemoteException {
-
+        if (clientChatController != null) {
+            int messageCount = chatWith.getMessages() != null ? chatWith.getMessages().size() : 0;
+            System.out.println("Received conversation with " + chatWith.getRecipient() + ": " + messageCount + " messages");
+            clientChatController.onGetChatHistoryWith(chatWith);
+        }
     }
-
 
     @Override
-    public void onGetUnreadMessages() throws RemoteException {
-
+    public void onGetGroupChatHistories(List<GroupChat> allGroupChats) throws RemoteException {
+        if (clientChatController != null) {
+            System.out.println("Received " + allGroupChats.size() + " group chats");
+            clientChatController.onGetGroupChatHistories(allGroupChats);
+        }
     }
+
+    @Override
+    public void onGetGroupChatHistoryWith(GroupChat groupChatWith) throws RemoteException {
+        if (clientChatController != null) {
+            int messageCount = groupChatWith.getMessages() != null ? groupChatWith.getMessages().size() : 0;
+            System.out.println("Received group chat " + groupChatWith.getGroupName() + ": " + messageCount + " messages");
+            clientChatController.onGetGroupChatHistoryWith(groupChatWith);
+        }
+    }
+
+    @Override
+    public void onGetUnreadMessages() throws RemoteException {}
 
     @Override
     public void onPrivateMessageSent(String message, String jsonString) throws RemoteException {
@@ -176,77 +156,83 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     }
 
     @Override
-    public void onPrivateFileSent() throws RemoteException {
-
+    public void onPrivateFileSent(String message, String jsonString) throws RemoteException {
+        if (clientChatController != null) {
+            Message msg = messageStringToObject(message);
+            clientChatController.onPrivateFileSent(msg);
+        }
     }
 
     @Override
-    public void onPrivateFileReceived() throws RemoteException {
-
+    public void onPrivateFileReceived(String message, String jsonString) throws RemoteException {
+        if (clientChatController != null) {
+            Message msg = messageStringToObject(message);
+            clientChatController.onPrivateFileReceived(msg);
+        }
     }
 
     @Override
-    public void onGroupMessageSent() throws RemoteException {
-
+    public void onGroupMessageSent(String message, String jsonString) throws RemoteException {
+        if (clientChatController != null) {
+            Message msg = messageStringToObject(message);
+            clientChatController.onGroupMessageSent(msg);
+        }
     }
 
     @Override
-    public void onGroupMessageReceived() throws RemoteException {
-
+    public void onGroupMessageReceived(String message, String jsonString) throws RemoteException {
+        if (clientChatController != null) {
+            Message msg = messageStringToObject(message);
+            clientChatController.onGroupMessageReceived(msg);
+        }
     }
 
     @Override
-    public void onGroupFileSent() throws RemoteException {
-
+    public void onGroupFileSent(String message, String jsonString) throws RemoteException {
+        if (clientChatController != null) {
+            Message msg = messageStringToObject(message);
+            clientChatController.onGroupFileSent(msg);
+        }
     }
 
     @Override
-    public void onGroupFileReceived() throws RemoteException {
-
+    public void onGroupFileReceived(String message, String jsonString) throws RemoteException {
+        if (clientChatController != null) {
+            Message msg = messageStringToObject(message);
+            clientChatController.onGroupFileReceived(msg);
+        }
     }
 
     @Override
-    public void onSuccessfulGroupCreation() throws RemoteException {
-
-    }
+    public void onSuccessfulGroupCreation() throws RemoteException {}
 
     @Override
-    public void onFailedGroupCreation() throws RemoteException {
-
-    }
+    public void onFailedGroupCreation() throws RemoteException {}
 
     @Override
-    public void onSuccessfulMemberAdded() throws RemoteException {
-
-    }
+    public void onSuccessfulMemberAdded() throws RemoteException {}
 
     @Override
-    public void onFailedMemberAdded() throws RemoteException {
-
-    }
+    public void onFailedMemberAdded() throws RemoteException {}
 
     @Override
-    public void onSuccessfulMemberRemoved() throws RemoteException {
-
-    }
+    public void onSuccessfulMemberRemoved() throws RemoteException {}
 
     @Override
-    public void onFailedMemberRemoved() throws RemoteException {
-
-    }
+    public void onFailedMemberRemoved() throws RemoteException {}
 
     @Override
-    public void onCommunityMessageSent() throws RemoteException {
-
-    }
+    public void onCommunityMessageSent() throws RemoteException {}
 
     @Override
-    public void onCommunityMessageReceived() throws RemoteException {
+    public void onCommunityMessageReceived() throws RemoteException {}
 
+    public String getUsername(){
+        return username;
     }
 
-    public String getName(){
-        return name;
+    public void setUsername(String username){
+        this.username = username;
     }
 
     //ADMIN CONTROLLER SETUP
@@ -309,6 +295,11 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
 
     //HELPER METHODS
     public Message messageStringToObject(String message) throws RemoteException {
-        return null;
+        try {
+            return gson.fromJson(message, Message.class);
+        } catch (Exception e) {
+            System.err.println("Error parsing message: " + e.getMessage());
+            throw new RemoteException("Failed to parse message", e);
+        }
     }
 }

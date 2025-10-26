@@ -1,5 +1,6 @@
 package Common.Objects.ClientObjects;
 
+import com.google.gson.annotations.SerializedName;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,6 +11,10 @@ public class Client implements Serializable {
     private String verificationCode;
     private List<String> friends;
     private List<Conversation> conversations;
+
+    @SerializedName("groupchats")  // Match your JSON field name
+    private List<GroupChat> groupChats;
+
     private List<FriendRequest> incomingFriendRequests;
     private List<FriendRequest> outgoingFriendRequests;
 
@@ -17,6 +22,7 @@ public class Client implements Serializable {
     public Client() {
         this.friends = new ArrayList<>();
         this.conversations = new ArrayList<>();
+        this.groupChats = new ArrayList<>();
         this.incomingFriendRequests = new ArrayList<>();
         this.outgoingFriendRequests = new ArrayList<>();
     }
@@ -28,7 +34,7 @@ public class Client implements Serializable {
         this.verificationCode = verificationCode;
     }
 
-    // Getters and setters for all fields...
+    // Getters and setters
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
 
@@ -44,6 +50,9 @@ public class Client implements Serializable {
     public List<Conversation> getConversations() { return conversations; }
     public void setConversations(List<Conversation> conversations) { this.conversations = conversations; }
 
+    public List<GroupChat> getGroupChats() { return groupChats; }
+    public void setGroupChats(List<GroupChat> groupChats) { this.groupChats = groupChats; }
+
     public List<FriendRequest> getIncomingFriendRequests() { return incomingFriendRequests; }
     public void setIncomingFriendRequests(List<FriendRequest> incomingFriendRequests) {
         this.incomingFriendRequests = incomingFriendRequests;
@@ -51,6 +60,5 @@ public class Client implements Serializable {
 
     public List<FriendRequest> getOutgoingFriendRequests() { return outgoingFriendRequests; }
     public void setOutgoingFriendRequests(List<FriendRequest> outgoingFriendRequests) {
-        this.outgoingFriendRequests = outgoingFriendRequests;
-    }
+        this.outgoingFriendRequests = outgoingFriendRequests; }
 }
