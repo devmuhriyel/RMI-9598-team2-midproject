@@ -6,6 +6,7 @@ import ClientMVC.ClientView.Account.AccountView;
 import ClientMVC.ClientView.Account.AccountJFXController;
 import ClientMVC.ClientView.Home.HomeView;
 import ClientMVC.ClientView.Login.LoginView;
+import Common.Interfaces.ClientInterface;
 import javafx.application.Platform;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -66,7 +67,7 @@ public class AccountController {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-            new LoginController(loginView, model, loginView.getFXController());
+            new LoginController(loginView, (ClientInterface) clientCallback, loginView.getFXController());
         });
         accountJFXController.setUsernameChangeListener(this::handleUsernameChange);
 //        accountJFXController.setPasswordChangeListener(this::handlePasswordChange);
