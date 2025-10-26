@@ -37,70 +37,120 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     }
 
     @Override
-    public void onSuccessfulSignUp() throws RemoteException {}
+    public void onSuccessfulSignUp() throws RemoteException {
+
+    }
 
     @Override
-    public void onFailedSignUp() throws RemoteException {}
+    public void onFailedSignUp() throws RemoteException {
+
+    }
 
     @Override
-    public void onSuccessfulLogin() throws RemoteException {}
+    public void onSuccessfulLogin() throws RemoteException {
+        ClientJSONHandler.setCurrentUser(name);
+        System.out.println("Server says login success!");
+        if(clientLoginController != null){
+            clientLoginController.onSuccessfulLoginFromRemote();
+        }
+    }
 
     @Override
-    public void onFailedLogin() throws RemoteException {}
+    public void onFailedLogin() throws RemoteException {
+        if(clientLoginController != null){
+            clientLoginController.onFailedLoginFromRemote();
+        }
+    }
 
     @Override
-    public void onSuccessfulLogout() throws RemoteException {}
+    public void onSuccessfulLogout() throws RemoteException {
+
+    }
 
     @Override
-    public void onSuccessfulPasswordChange() throws RemoteException {}
+    public void onSuccessfulPasswordChange() throws RemoteException {
+
+    }
 
     @Override
-    public void onFailedPasswordChange() throws RemoteException {}
+    public void onFailedPasswordChange() throws RemoteException {
+
+    }
 
     @Override
-    public void onSuccessfulCodeVerification() throws RemoteException {}
+    public void onSuccessfulCodeVerification() throws RemoteException {
+
+    }
 
     @Override
-    public void onFailedCodeVerification() throws RemoteException {}
+    public void onFailedCodeVerification() throws RemoteException {
+
+    }
 
     @Override
-    public void onSearchUserResults() throws RemoteException {}
+    public void onSearchUserResults() throws RemoteException {
+
+    }
 
     @Override
-    public void onSearchGroupResults() throws RemoteException {}
+    public void onSearchGroupResults() throws RemoteException {
+
+    }
 
     @Override
-    public void onFriendRequestSent() throws RemoteException {}
+    public void onFriendRequestSent() throws RemoteException {
+
+    }
 
     @Override
-    public void onGetOnlineFriends() throws RemoteException {}
+    public void onGetOnlineFriends() throws RemoteException {
+
+    }
 
     @Override
-    public void onSuccessfulUsernameChange() throws RemoteException {}
+    public void onSuccessfulUsernameChange() throws RemoteException {
+
+    }
 
     @Override
-    public void onFailedUsernameChange() throws RemoteException {}
+    public void onFailedUsernameChange() throws RemoteException {
+
+    }
 
     @Override
-    public void onSuccessfulPasswordChangeWithOldPassword() throws RemoteException {}
+    public void onSuccessfulPasswordChangeWithOldPassword() throws RemoteException {
+
+    }
 
     @Override
-    public void onFailedPasswordChangeWithOldPassword() throws RemoteException {}
+    public void onFailedPasswordChangeWithOldPassword() throws RemoteException {
+
+    }
 
     @Override
-    public void onFriendRequestReceived() throws RemoteException {}
+    public void onFriendRequestReceived() throws RemoteException {
+
+    }
 
     @Override
-    public void onFriendAccepted() throws RemoteException {}
+    public void onFriendAccepted() throws RemoteException {
+
+    }
 
     @Override
-    public void onFriendDeclined() throws RemoteException {}
+    public void onFriendDeclined() throws RemoteException {
+
+    }
 
     @Override
-    public void onFriendDeleted() throws RemoteException {}
+    public void onFriendDeleted() throws RemoteException {
+
+    }
 
     @Override
-    public void onCancelFriendRequest() throws RemoteException {}
+    public void onCancelFriendRequest() throws RemoteException {
+
+    }
 
     @Override
     public void onGetChatHistories(List<Conversation> allChats) throws RemoteException {

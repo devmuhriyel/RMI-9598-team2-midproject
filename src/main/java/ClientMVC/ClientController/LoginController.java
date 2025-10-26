@@ -19,7 +19,6 @@ import java.rmi.server.UnicastRemoteObject; // Used for client callback object (
 public class LoginController {
     private final LoginJFXController loginJFXController;
     private final LoginView view;
-    // ðŸ’¡ REPLACED: Use the RMI stub directly instead of UnifiedClientModel
     private final ClientInterface remoteService;
     private ClientCallbackImplementation clientCallback;
 
@@ -28,18 +27,23 @@ public class LoginController {
     // implementation of ClientCallbackInterface, which is beyond this controller's scope.
     // We will simulate the synchronous RMI call here.
 
-    public LoginController(LoginView loginView, ClientInterface remoteService, LoginJFXController loginJFXController) {
-        this.loginJFXController = loginJFXController;
+
+    public LoginController(LoginView loginView, ClientInterface remoteService, LoginJFXController loginJFXController, ClientCallbackInterface callback) {
+
         this.view = loginView;
         this.remoteService = remoteService;
-        initialize();
+        this.loginJFXController = loginJFXController;
+        this.clientCallback = (ClientCallbackImplementation) callback;
+        this.clientCallback.setClientLoginController(this);
+
+
+        initialize(); // keep your setup
     }
 
     private void initialize() {
         loginJFXController.setLoginButtonListener(() -> {
             String username = loginJFXController.getUsername();
             String password = loginJFXController.getPassword();
-            //  Call the RMI login method
             attemptLogin(username, password);
         });
 
@@ -48,10 +52,6 @@ public class LoginController {
                 try {
                     LoginView.getPrimaryStage().close();
                     SignupView signupView = new SignupView();
-
-                    // NOTE: SignupController now needs the ClientInterface stub
-                    //new SignupController(remoteService, signupView, signupView.getFxController());
-
                     signupView.getStage().show();
                 } catch (Exception ex) {
                     ex.printStackTrace();
@@ -65,7 +65,7 @@ public class LoginController {
 
     private void attemptLogin(String username, String password) {
         // Set username in callback so it knows who logged in
-        clientCallback.setUsername(username);
+        clientCallback.setName(username);
 
         // Create JSON
         String jsonString = createLoginJson(username, password);
@@ -92,6 +92,7 @@ public class LoginController {
 
     // Called by ClientCallbackImplementation
     public void onSuccessfulLoginFromRemote() {
+        System.out.println(">>> onSuccessfulLoginFromRemote CALLED <<<"); // DEBUG
         Platform.runLater(() -> {
             view.login(); // Close login view
             try {
