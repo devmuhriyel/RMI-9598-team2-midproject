@@ -124,65 +124,65 @@ public class SignupController {
         this.model = model;
         this.view = view;
         this.fxController = fxController;
-        initialize();
+//        initialize();
     }
 
-    private void initialize() {
-        fxController.setSignupButtonListener(() -> {
-            if (validateInput()) {
-                fxController.getSignupButton().setDisable(true);
-                String username = fxController.getUsername();
-                String password = fxController.getPassword();
-                String verification = fxController.getVerificationCode();
-                
-                try {
-                    // Use RMI to signup
-                    String jsonString = "{\"username\":\"" + username + "\",\"password\":\"" + password + "\",\"verificationCode\":\"" + verification + "\"}";
-                    model.signUp(username, password, verification, jsonString, model.getCallback());
-                } catch (Exception e) {
-                    fxController.getSignupButton().setDisable(false);
-                    fxController.showAlert("Signup Error: Failed to connect to server: " + e.getMessage());
-                    e.printStackTrace();
-                }
-            }
-        });
-        
-        fxController.setSignInListener(() -> {
-            Platform.runLater(() -> {
-                try {
-                    view.getStage().hide();
-                    Stage loginStage = ClientMVC.ClientView.Login.LoginView.getPrimaryStage();
-                    if (loginStage != null) {
-                        loginStage.show();
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            });
-        });
-        
-        // Set up callback listeners
-        setupCallbackListeners();
-    }
-
-    private void setupCallbackListeners() {
-        // Set up callback for successful signup
-        model.getCallback().setOnSuccessfulSignUpListener(() -> {
-            Platform.runLater(() -> {
-                fxController.showAlert("Registration successful! Please login with your new account.");
-                fxController.getSignupButton().setDisable(false);
-                navigateToLogin();
-            });
-        });
-        
-        // Set up callback for failed signup
-        model.getCallback().setOnFailedSignUpListener(() -> {
-            Platform.runLater(() -> {
-                fxController.showAlert("Registration failed. Username may already exist.");
-                fxController.getSignupButton().setDisable(false);
-            });
-        });
-    }
+//    private void initialize() {
+//        fxController.setSignupButtonListener(() -> {
+//            if (validateInput()) {
+//                fxController.getSignupButton().setDisable(true);
+//                String username = fxController.getUsername();
+//                String password = fxController.getPassword();
+//                String verification = fxController.getVerificationCode();
+//
+//                try {
+//                    // Use RMI to signup
+//                    String jsonString = "{\"username\":\"" + username + "\",\"password\":\"" + password + "\",\"verificationCode\":\"" + verification + "\"}";
+//                    model.signUp(username, password, verification, jsonString, model.getCallback());
+//                } catch (Exception e) {
+//                    fxController.getSignupButton().setDisable(false);
+//                    fxController.showAlert("Signup Error: Failed to connect to server: " + e.getMessage());
+//                    e.printStackTrace();
+//                }
+//            }
+//        });
+//
+//        fxController.setSignInListener(() -> {
+//            Platform.runLater(() -> {
+//                try {
+//                    view.getStage().hide();
+//                    Stage loginStage = ClientMVC.ClientView.Login.LoginView.getPrimaryStage();
+//                    if (loginStage != null) {
+//                        loginStage.show();
+//                    }
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//            });
+//        });
+//
+//        // Set up callback listeners
+//        setupCallbackListeners();
+//    }
+//
+//    private void setupCallbackListeners() {
+//        // Set up callback for successful signup
+//        model.getCallback().setOnSuccessfulSignUpListener(() -> {
+//            Platform.runLater(() -> {
+//                fxController.showAlert("Registration successful! Please login with your new account.");
+//                fxController.getSignupButton().setDisable(false);
+//                navigateToLogin();
+//            });
+//        });
+//
+//        // Set up callback for failed signup
+//        model.getCallback().setOnFailedSignUpListener(() -> {
+//            Platform.runLater(() -> {
+//                fxController.showAlert("Registration failed. Username may already exist.");
+//                fxController.getSignupButton().setDisable(false);
+//            });
+//        });
+//    }
 
     private boolean validateInput() {
         String username = fxController.getUsername();
