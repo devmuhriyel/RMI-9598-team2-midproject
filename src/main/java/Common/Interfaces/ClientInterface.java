@@ -30,6 +30,9 @@ public interface ClientInterface extends Remote {
     void acceptFriendRequest(String jsonString) throws RemoteException;
     void rejectFriendRequest(String jsonString) throws RemoteException;
     void removeFromFriendsList(String jsonString) throws RemoteException;
+    void getSentFriendRequests(String jsonString) throws RemoteException;
+    void getReceivedFriendRequests(String jsonString) throws RemoteException;
+    void getFriends(String jsonString) throws RemoteException;
 
     //USER COMMON CHATTING METHODS
     void getChatHistories(String jsonString, String sender) throws RemoteException;
@@ -55,4 +58,7 @@ public interface ClientInterface extends Remote {
     // CALLBACK REGISTRATION
     void registerClientCallback(String username, ClientCallbackInterface callback) throws RemoteException;
     void unregisterClientCallback(String username) throws RemoteException;
+
+
+
 }

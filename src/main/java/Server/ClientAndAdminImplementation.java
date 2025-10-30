@@ -239,56 +239,91 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
         String targetUsername;
 
         try {
-            JsonParser parser = new JsonParser();
-            com.google.gson.JsonObject jsonObject = parser.parse(jsonString).getAsJsonObject();
+            // Note: JsonParser is deprecated, switching to new Gson().fromJson or JsonParser.parseString().getAsJsonObject()
+            com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(jsonString).getAsJsonObject();
 
             requesterUsername = jsonObject.get("requester").getAsString();
-            targetUsername = jsonObject.get("target").getAsString();
+            targetUsername = jsonObject.get("responder").getAsString(); // FRIEND REQUEST JSON uses 'responder'
 
         } catch (Exception e) {
             System.err.println("Server Error: Failed to parse friend request JSON: " + jsonString);
+            // TODO: Add callback to client for failed request
             throw new RemoteException("Invalid request format.", e);
         }
+
+        // Validation check for self-request
+        if (requesterUsername.equalsIgnoreCase(targetUsername)) {
+            System.err.println("Friend request failed: Self-request is not allowed.");
+            // TODO: Add callback to client for failed request
+            return;
+        }
+
         fileLock.writeLock().lock();
         try {
             boolean success = handleFriendRequestLogic(requesterUsername, targetUsername);
 
             if (success) {
                 serverJSONHandler.writeClientAccountFile(
-                        "src/main/resources/JSONFiles/ClientAccountsList.json",
+                        "src/main/resources/JSONFiles/ClientAccounts.json",
                         clientAccountsList
                 );
                 System.out.println("Friend request saved: " + requesterUsername + " -> " + targetUsername);
 
+                // RMI Callback to the sender
+                ClientCallbackInterface senderCallback = clientCallbacks.get(requesterUsername);
+                if(senderCallback != null) {
+                    senderCallback.onFriendRequestSent();
+                }
+
+                // RMI Callback to the receiver
+                ClientCallbackInterface receiverCallback = clientCallbacks.get(targetUsername);
+                if(receiverCallback != null) {
+                    receiverCallback.onFriendRequestReceived();
+                }
+
             } else {
-                System.err.println("Friend request failed for logic: " + requesterUsername + " -> " + targetUsername);
+                System.err.println("Friend request failed (logic check failed, possibly already sent): " + requesterUsername + " -> " + targetUsername);
+                // TODO: Add callback to client for failure
             }
 
+        } catch (Exception e) {
+            System.err.println("Error during friend request logic: " + e.getMessage());
+            e.printStackTrace();
         } finally {
             fileLock.writeLock().unlock();
         }
     }
-
     private boolean handleFriendRequestLogic(String requester, String target) {
-        Client requesterClient = null;
-        Client targetClient = null;
-
-        for (Client c : clientAccountsList.getClients()) {
-            if (c.getUsername().equalsIgnoreCase(requester)) {
-                requesterClient = c;
-            } else if (c.getUsername().equalsIgnoreCase(target)) {
-                targetClient = c;
-            }
-        }
+        Client requesterClient = findClient(requester); // Use findClient helper
+        Client targetClient = findClient(target);       // Use findClient helper
 
         if (requesterClient == null || targetClient == null) {
+            System.err.println("Friend Request Logic Failed: Client not found.");
             return false;
         }
 
+        // 1. Check if they are already friends
+        if (requesterClient.getFriends() != null && requesterClient.getFriends().contains(target)) {
+            System.err.println("Friend Request Logic Failed: Users are already friends.");
+            return false;
+        }
+
+        // 2. Check if request is already pending (outgoing)
         if (requesterClient.getOutgoingFriendRequests() != null) {
             for (FriendRequest fr : requesterClient.getOutgoingFriendRequests()) {
                 if (fr.getResponder().equalsIgnoreCase(target) && fr.getStatus().equalsIgnoreCase("pending")) {
+                    System.err.println("Friend Request Logic Failed: Request already pending (outgoing).");
                     return false;
+                }
+            }
+        }
+
+        // 3. Check if target has already sent a request to requester (incoming) - Should be handled as an ACCEPT option in client UI
+        if (requesterClient.getIncomingFriendRequests() != null) {
+            for (FriendRequest fr : requesterClient.getIncomingFriendRequests()) {
+                if (fr.getRequester().equalsIgnoreCase(target) && fr.getStatus().equalsIgnoreCase("pending")) {
+                    System.err.println("Friend Request Logic Failed: Target has a pending request to requester.");
+                    return false; // Client should accept this instead of sending new
                 }
             }
         }
@@ -333,9 +368,9 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
 
         try {
             com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(jsonString).getAsJsonObject();
-
+            // Assuming the client sends the requester and the target (responder) in the JSON
             requester = jsonObject.get("requester").getAsString();
-            target = jsonObject.get("target").getAsString();
+            target = jsonObject.get("responder").getAsString(); // Consistent with FriendRequest object
 
         } catch (Exception e) {
             System.err.println("Server Error: Failed to parse JSON for cancelFriendRequest: " + jsonString);
@@ -352,19 +387,35 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
                 return;
             }
 
-            requesterClient.getOutgoingFriendRequests().removeIf(
+            // Remove from requester's outgoing list
+            boolean removedOutgoing = requesterClient.getOutgoingFriendRequests().removeIf(
                     req -> req.getResponder().equals(target) && req.getStatus().equals("pending")
             );
 
-            targetClient.getIncomingFriendRequests().removeIf(
+            // Remove from target's incoming list
+            boolean removedIncoming = targetClient.getIncomingFriendRequests().removeIf(
                     req -> req.getRequester().equals(requester) && req.getStatus().equals("pending")
             );
 
-            serverJSONHandler.writeClientAccountFile(
-                    "src/main/resources/JSONFiles/ClientAccountsList.json", clientAccountsList
-            );
-            System.out.println("Friend request cancelled: " + requester + " -> " + target);
+            if (removedOutgoing && removedIncoming) {
+                serverJSONHandler.writeClientAccountFile(
+                        "src/main/resources/JSONFiles/ClientAccounts.json", clientAccountsList // Corrected file path
+                );
+                System.out.println("Friend request cancelled: " + requester + " -> " + target);
 
+                // RMI Callback to the client who cancelled
+                ClientCallbackInterface senderCallback = clientCallbacks.get(requester);
+                if(senderCallback != null) {
+                    senderCallback.onCancelFriendRequest();
+                }
+
+            } else {
+                System.out.println("Cancel Failed: Request was not found in pending state.");
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error during cancel friend request: " + e.getMessage());
+            e.printStackTrace();
         } finally {
             fileLock.writeLock().unlock();
         }
@@ -379,7 +430,7 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
             com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(jsonString).getAsJsonObject();
 
             requester = jsonObject.get("requester").getAsString();
-            responder = jsonObject.get("target").getAsString();
+            responder = jsonObject.get("responder").getAsString(); // Consistent with FriendRequest object
 
         } catch (Exception e) {
             System.err.println("Server Error: Failed to parse JSON for acceptFriendRequest: " + jsonString);
@@ -388,21 +439,23 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
 
         fileLock.writeLock().lock();
         try {
-            Client responderClient = findClient(responder);
-            Client requesterClient = findClient(requester);
+            Client responderClient = findClient(responder); // Current user (the one who received the request)
+            Client requesterClient = findClient(requester); // The friend
 
             if (responderClient == null || requesterClient == null) {
                 System.out.println("Accept Failed: One or both users not found.");
                 return;
             }
 
-            requesterClient.getOutgoingFriendRequests().removeIf(
-                    req -> req.getResponder().equals(responder)
-            );
+            // 1. Remove pending requests
             responderClient.getIncomingFriendRequests().removeIf(
-                    req -> req.getRequester().equals(requester)
+                    req -> req.getRequester().equals(requester) && req.getStatus().equals("pending")
+            );
+            requesterClient.getOutgoingFriendRequests().removeIf(
+                    req -> req.getResponder().equals(responder) && req.getStatus().equals("pending")
             );
 
+            // 2. Add to friends lists
             if (responderClient.getFriends() == null) {
                 responderClient.setFriends(new ArrayList<>());
             }
@@ -418,12 +471,25 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
             }
 
             serverJSONHandler.writeClientAccountFile(
-                    "src/main/resources/JSONFiles/ClientAccountsList.json", clientAccountsList
+                    "src/main/resources/JSONFiles/ClientAccounts.json", clientAccountsList // Corrected file path
             );
             System.out.println("Friendship established: " + requester + " and " + responder);
 
-            // TODO: Implement RMI Callback to notify the 'requester' (the friend who was accepted)
+            // 3. RMI Callback to the accepted friend (requester)
+            ClientCallbackInterface requesterCallback = clientCallbacks.get(requester);
+            if(requesterCallback != null) {
+                requesterCallback.onFriendAccepted();
+            }
 
+            // 4. RMI Callback to the current user (responder)
+            ClientCallbackInterface responderCallback = clientCallbacks.get(responder);
+            if(responderCallback != null) {
+                responderCallback.onFriendAccepted();
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error during accept friend request: " + e.getMessage());
+            e.printStackTrace();
         } finally {
             fileLock.writeLock().unlock();
         }
@@ -431,12 +497,237 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
 
     @Override
     public void rejectFriendRequest(String jsonString) throws RemoteException{
+        String requester;
+        String responder;
 
+        try {
+            com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(jsonString).getAsJsonObject();
+
+            requester = jsonObject.get("requester").getAsString();
+            responder = jsonObject.get("responder").getAsString();
+
+        } catch (Exception e) {
+            System.err.println("Server Error: Failed to parse JSON for rejectFriendRequest: " + jsonString);
+            throw new RemoteException("Invalid request format for rejection.", e);
+        }
+
+        fileLock.writeLock().lock();
+        try {
+            Client responderClient = findClient(responder);
+            Client requesterClient = findClient(requester);
+
+            if (responderClient == null || requesterClient == null) {
+                System.out.println("Reject Failed: One or both users not found.");
+                return;
+            }
+
+            // Remove from responder's incoming list
+            boolean removedIncoming = responderClient.getIncomingFriendRequests().removeIf(
+                    req -> req.getRequester().equals(requester) && req.getStatus().equals("pending")
+            );
+
+            // Remove from requester's outgoing list
+            boolean removedOutgoing = requesterClient.getOutgoingFriendRequests().removeIf(
+                    req -> req.getResponder().equals(responder) && req.getStatus().equals("pending")
+            );
+
+            if (removedIncoming && removedOutgoing) {
+                serverJSONHandler.writeClientAccountFile(
+                        "src/main/resources/JSONFiles/ClientAccounts.json", clientAccountsList // Corrected file path
+                );
+                System.out.println("Friend request rejected: " + requester + " -> " + responder);
+
+                // RMI Callback to the client who rejected (responder)
+                ClientCallbackInterface responderCallback = clientCallbacks.get(responder);
+                if(responderCallback != null) {
+                    responderCallback.onFriendDeclined();
+                }
+
+                // RMI Callback to the requester (the person whose request was rejected)
+                ClientCallbackInterface requesterCallback = clientCallbacks.get(requester);
+                if(requesterCallback != null) {
+                    requesterCallback.onFriendDeclined(); // Or a more specific callback like onFriendRejected
+                }
+
+            } else {
+                System.out.println("Reject Failed: Request was not found in pending state.");
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error during reject friend request: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            fileLock.writeLock().unlock();
+        }
     }
 
     @Override
     public void removeFromFriendsList(String jsonString) throws RemoteException{
+        String unfriender;
+        String friendToRemove;
 
+        try {
+            com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(jsonString).getAsJsonObject();
+            // Assuming client sends the current user and the friend's name
+            unfriender = jsonObject.get("requester").getAsString();
+            friendToRemove = jsonObject.get("responder").getAsString();
+
+        } catch (Exception e) {
+            System.err.println("Server Error: Failed to parse JSON for removeFromFriendsList: " + jsonString);
+            throw new RemoteException("Invalid request format for unfriend.", e);
+        }
+
+        fileLock.writeLock().lock();
+        try {
+            Client unfrienderClient = findClient(unfriender);
+            Client friendToRemoveClient = findClient(friendToRemove);
+
+            if (unfrienderClient == null || friendToRemoveClient == null) {
+                System.out.println("Unfriend Failed: One or both users not found.");
+                return;
+            }
+
+            // 1. Remove from both lists
+            unfrienderClient.getFriends().remove(friendToRemove);
+            friendToRemoveClient.getFriends().remove(unfriender);
+
+            // 2. Save to file
+            serverJSONHandler.writeClientAccountFile(
+                    "src/main/resources/JSONFiles/ClientAccounts.json", clientAccountsList
+            );
+            System.out.println("Friendship removed: " + unfriender + " unfriended " + friendToRemove);
+
+            // 3. RMI Callback to the user who unfriended
+            ClientCallbackInterface unfrienderCallback = clientCallbacks.get(unfriender);
+            if(unfrienderCallback != null) {
+                unfrienderCallback.onFriendRemoved();
+            }
+
+            // 4. RMI Callback to the user who was unfriended
+            ClientCallbackInterface friendToRemoveCallback = clientCallbacks.get(friendToRemove);
+            if(friendToRemoveCallback != null) {
+                friendToRemoveCallback.onFriendDeletedByOther();
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error during unfriend action: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            fileLock.writeLock().unlock();
+        }
+    }
+
+    @Override
+    public void getSentFriendRequests(String jsonString) throws RemoteException{
+        String username;
+
+        try {
+            com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(jsonString).getAsJsonObject();
+            username = jsonObject.get("username").getAsString();
+
+        } catch (Exception e) {
+            System.err.println("Server Error: Failed to parse JSON for getSentFriendRequests: " + jsonString);
+            throw new RemoteException("Invalid request format.", e);
+        }
+
+        Client client = findClient(username);
+        ClientCallbackInterface callback = clientCallbacks.get(username);
+
+        if (client == null || callback == null) {
+            System.out.println("Warning: Client or callback not found for " + username);
+            return;
+        }
+
+        java.util.List<String> sentRequests = new java.util.ArrayList<>();
+        if (client.getOutgoingFriendRequests() != null) {
+            for (Common.Objects.ClientObjects.FriendRequest req : client.getOutgoingFriendRequests()) {
+                if (req.getStatus().equalsIgnoreCase("pending")) {
+                    sentRequests.add(req.getResponder());
+                }
+            }
+        }
+
+        callbackExecutor.execute(() -> {
+            try {
+                callback.onGetSentFriendRequests(sentRequests);
+                System.out.println("Sent " + sentRequests.size() + " outgoing requests to " + username);
+            } catch (RemoteException e) {
+                System.err.println("Failed to send sent friend requests to " + username + ": " + e.getMessage());
+            }
+        });
+    }
+
+    @Override
+    public void getReceivedFriendRequests(String jsonString) throws RemoteException {
+        String username;
+
+        try {
+            com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(jsonString).getAsJsonObject();
+            username = jsonObject.get("username").getAsString();
+
+        } catch (Exception e) {
+            System.err.println("Server Error: Failed to parse JSON for getReceivedFriendRequests: " + jsonString);
+            throw new RemoteException("Invalid request format.", e);
+        }
+
+        Client client = findClient(username);
+        ClientCallbackInterface callback = clientCallbacks.get(username);
+
+        if (client == null || callback == null) {
+            System.out.println("Warning: Client or callback not found for " + username);
+            return;
+        }
+
+        java.util.List<String> receivedRequests = new java.util.ArrayList<>();
+        if (client.getIncomingFriendRequests() != null) {
+            for (Common.Objects.ClientObjects.FriendRequest req : client.getIncomingFriendRequests()) {
+                if (req.getStatus().equalsIgnoreCase("pending")) {
+                    receivedRequests.add(req.getRequester());
+                }
+            }
+        }
+
+        callbackExecutor.execute(() -> {
+            try {
+                callback.onGetReceivedFriendRequests(receivedRequests);
+                System.out.println("✓ Sent " + receivedRequests.size() + " incoming requests to " + username);
+            } catch (RemoteException e) {
+                System.err.println("Failed to send received friend requests to " + username + ": " + e.getMessage());
+            }
+        });
+    }
+
+    @Override
+    public void getFriends(String jsonString) throws RemoteException {
+        String username;
+
+        try {
+            com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(jsonString).getAsJsonObject();
+            username = jsonObject.get("username").getAsString();
+
+        } catch (Exception e) {
+            System.err.println("Server Error: Failed to parse JSON for getFriends: " + jsonString);
+            throw new RemoteException("Invalid request format.", e);
+        }
+
+        Client client = findClient(username);
+        ClientCallbackInterface callback = clientCallbacks.get(username);
+
+        if (client == null || callback == null) {
+            System.out.println("Warning: Client or callback not found for " + username);
+            return;
+        }
+
+        java.util.List<String> friends = client.getFriends() != null ? client.getFriends() : new java.util.ArrayList<>();
+
+        callbackExecutor.execute(() -> {
+            try {
+                callback.onGetFriendsList(friends);
+                System.out.println("✓ Sent " + friends.size() + " friends to " + username);
+            } catch (RemoteException e) {
+                System.err.println("Failed to send friends list to " + username + ": " + e.getMessage());
+            }
+        });
     }
 
     //USER/ADMIN COMMON CHATTING METHODS

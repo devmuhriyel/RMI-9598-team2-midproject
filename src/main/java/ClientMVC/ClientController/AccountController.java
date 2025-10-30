@@ -39,6 +39,14 @@ public class AccountController {
                 throw new RuntimeException(e);
             }
         });
+        accountJFXController.setCancelSentRequestListener(friendName -> {
+            try {
+                String jsonString = model.createJSONStringRequest(model.getUsername(), friendName, "canceled");
+                model.cancelFriendRequest(jsonString);
+            } catch (RemoteException e) {
+                throw new RuntimeException(e);
+            }
+        });
         accountJFXController.setAcceptRequestListener(friendName -> {
             try {
                 model.acceptFriendRequest(friendName);

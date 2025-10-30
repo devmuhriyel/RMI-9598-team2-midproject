@@ -69,6 +69,7 @@ public class UnifiedClientModel {
     }
 
     //USER FRIEND REQUESTS UI METHODS
+
     public void sendFriendRequest(String jsonString) throws RemoteException {
         serverConnection.sendFriendRequest(jsonString);
     }
@@ -76,21 +77,18 @@ public class UnifiedClientModel {
         serverConnection.acceptFriendRequest(jsonString);
     }
 
-    public void getSentFriendRequests() throws RemoteException {
+    public void getSentFriendRequests(String jsonString) throws RemoteException {
         System.out.println("Model: Requesting sent friend requests");
-        // TODO: Add this method to ServerInterface if not present
-        // serverConnection.getSentFriendRequests(jsonString);
+         serverConnection.getSentFriendRequests(jsonString);
     }
 
     public void getReceivedFriendRequests(String jsonString) throws RemoteException {
         System.out.println("Model: Requesting received friend requests");
-        // TODO: Add this method to ServerInterface if not present
-        // serverConnection.getReceivedFriendRequests(jsonString);
+        serverConnection.getReceivedFriendRequests(jsonString);
     }
-    public void getFriends(String jsonString) throws RemoteException {
+    public void getFriendsList(String jsonString) throws RemoteException {
         System.out.println("Model: Requesting friends list");
-        // TODO: Add this method to ServerInterface if not present
-        // serverConnection.getFriends(jsonString);
+        serverConnection.getFriends(jsonString);
     }
 
     public void cancelFriendRequest(String jsonString) throws RemoteException{
@@ -192,4 +190,6 @@ public class UnifiedClientModel {
         File outputFile = new File(savePath, fileName);
         Files.write(outputFile.toPath(), fileBytes);
     }
+
+
 }
