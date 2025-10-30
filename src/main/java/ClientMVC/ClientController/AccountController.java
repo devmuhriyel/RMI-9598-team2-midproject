@@ -7,6 +7,8 @@ import ClientMVC.ClientView.Account.AccountJFXController;
 import ClientMVC.ClientView.Home.HomeView;
 import ClientMVC.ClientView.Login.LoginView;
 import Common.Interfaces.ClientInterface;
+import Common.Objects.ClientObjects.FriendRequest;
+import com.google.gson.Gson;
 import javafx.application.Platform;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -30,18 +32,21 @@ public class AccountController {
         initialize();
     }
 
+    Gson gson = new Gson();
+
     private void initialize() {
         accountJFXController.updateDisplayedUsername(model.getUsername());
         accountJFXController.setSentRequestButtonListener(() -> {
             try {
-                model.getSentFriendRequests();
+                String jsonString = model.createJSONStringRequest("GET_SENT_REQUESTS", "", model.getUsername());
+                model.getSentFriendRequests(jsonString);
             } catch (RemoteException e) {
                 throw new RuntimeException(e);
             }
         });
         accountJFXController.setCancelSentRequestListener(friendName -> {
             try {
-                String jsonString = model.createJSONStringRequest(model.getUsername(), friendName, "canceled");
+                String jsonString = gson.toJson(new FriendRequest(model.getUsername(), friendName, "canceled"));
                 model.cancelFriendRequest(jsonString);
             } catch (RemoteException e) {
                 throw new RuntimeException(e);
