@@ -258,6 +258,7 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
             fileLock.writeLock().unlock();
         }
     }
+
     private boolean handleFriendRequestLogic(String requester, String target) {
         Client requesterClient = null;
         Client targetClient = null;

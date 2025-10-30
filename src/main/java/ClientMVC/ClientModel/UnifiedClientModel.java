@@ -69,6 +69,30 @@ public class UnifiedClientModel {
     }
 
     //USER FRIEND REQUESTS UI METHODS
+    public void sendFriendRequest(String jsonString) throws RemoteException {
+        serverConnection.sendFriendRequest(jsonString);
+    }
+    public void acceptFriendRequest(String jsonString) throws RemoteException {
+        serverConnection.acceptFriendRequest(jsonString);
+    }
+
+    public void getSentFriendRequests() throws RemoteException {
+        System.out.println("Model: Requesting sent friend requests");
+        // TODO: Add this method to ServerInterface if not present
+        // serverConnection.getSentFriendRequests(jsonString);
+    }
+
+    public void getReceivedFriendRequests(String jsonString) throws RemoteException {
+        System.out.println("Model: Requesting received friend requests");
+        // TODO: Add this method to ServerInterface if not present
+        // serverConnection.getReceivedFriendRequests(jsonString);
+    }
+    public void getFriends(String jsonString) throws RemoteException {
+        System.out.println("Model: Requesting friends list");
+        // TODO: Add this method to ServerInterface if not present
+        // serverConnection.getFriends(jsonString);
+    }
+
     public void cancelFriendRequest(String jsonString) throws RemoteException{
         serverConnection.cancelFriendRequest(jsonString);
     }
