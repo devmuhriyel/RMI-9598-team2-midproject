@@ -141,26 +141,36 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
     @Override
     public void logIn(String username, String jsonString, ClientCallbackInterface clientCallback) throws RemoteException {
         System.out.println("Client login attempt for: " + username);
-        
+
         try {
-            // Parse JSON to get password
+            // Parse JSON to extract password
             com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(jsonString).getAsJsonObject();
             String password = jsonObject.get("password").getAsString();
-            
-            // Check if client exists and password matches
+
+            // Look up client
             Client client = allUsers.get(username);
-            if (client != null && client.getPassword().equals(password)) {
-                System.out.println("Client login successful: " + username);
-                
-                // Register callback for this client
-                clientCallbacks.put(username, clientCallback);
-                
-                clientCallback.onSuccessfulLogin();
-            } else {
-                System.out.println("Client login failed: Invalid credentials - " + username);
+            if (client == null) {
+                System.out.println("Login failed: Client username not found - " + username);
                 clientCallback.onFailedLogin();
+                return;
             }
-            
+
+            // Compare password
+            if (!client.getPassword().equals(password)) {
+                System.out.println("Login failed: Incorrect password for " + username);
+                clientCallback.onFailedLogin();
+                return;
+            }
+
+            // Register callback
+            clientCallbacks.put(username, clientCallback);
+
+            // Optional: mark user as online
+            //client.setOnline(true);
+
+            System.out.println("Client login successful: " + username);
+            clientCallback.onSuccessfulLogin();
+
         } catch (Exception e) {
             System.err.println("Error during client login: " + e.getMessage());
             e.printStackTrace();
