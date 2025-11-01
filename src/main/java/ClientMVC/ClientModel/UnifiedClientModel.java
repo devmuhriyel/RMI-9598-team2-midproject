@@ -191,4 +191,8 @@ public class UnifiedClientModel {
         Files.write(outputFile.toPath(), fileBytes);
     }
 
+    public void registerClientCallback(String username, ClientCallbackInterface callback) throws RemoteException {
+        serverConnection.registerClientCallback(username, callback);
+    }
+
 }

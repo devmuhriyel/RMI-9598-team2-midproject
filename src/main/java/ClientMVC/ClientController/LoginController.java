@@ -20,9 +20,7 @@ public class LoginController {
     private final UnifiedClientModel model;
     private final ClientCallbackImplementation clientCallback;
 
-    public LoginController(LoginView loginView, ClientInterface remoteService,
-                           LoginJFXController loginJFXController,
-                           ClientCallbackInterface callback) throws Exception {
+    public LoginController(LoginView loginView, ClientInterface remoteService, LoginJFXController loginJFXController, ClientCallbackInterface callback) throws Exception {
 
         this.view = loginView;
         this.loginJFXController = loginJFXController;
@@ -59,6 +57,9 @@ public class LoginController {
             try {
                 String jsonString = model.createJSONStringRequest("login", password, username);
                 model.logIn(username, jsonString, clientCallback);
+
+                // Once login is successful, register callback (client → server)
+                model.registerClientCallback(username, clientCallback);
 
             } catch (RemoteException e) {
                 Platform.runLater(() ->
