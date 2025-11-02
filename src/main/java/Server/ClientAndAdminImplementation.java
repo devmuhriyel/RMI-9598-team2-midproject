@@ -874,47 +874,34 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
 
         try {
             com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(jsonString).getAsJsonObject();
-            // Assuming client sends the current user and the friend's name
             unfriender = jsonObject.get("requester").getAsString();
             friendToRemove = jsonObject.get("responder").getAsString();
-
         } catch (Exception e) {
             System.err.println("Server Error: Failed to parse JSON for removeFromFriendsList: " + jsonString);
             throw new RemoteException("Invalid request format for unfriend.", e);
         }
-
         fileLock.writeLock().lock();
         try {
             Client unfrienderClient = findClient(unfriender);
             Client friendToRemoveClient = findClient(friendToRemove);
-
             if (unfrienderClient == null || friendToRemoveClient == null) {
                 System.out.println("Unfriend Failed: One or both users not found.");
                 return;
             }
-
-            // 1. Remove from both lists
             unfrienderClient.getFriends().remove(friendToRemove);
             friendToRemoveClient.getFriends().remove(unfriender);
-
-            // 2. Save to file
             serverJSONHandler.writeClientAccountFile(
                     "src/main/resources/JSONFiles/ClientAccounts.json", clientAccountsList
             );
             System.out.println("Friendship removed: " + unfriender + " unfriended " + friendToRemove);
-
-            // 3. RMI Callback to the user who unfriended
             ClientCallbackInterface unfrienderCallback = clientCallbacks.get(unfriender);
             if(unfrienderCallback != null) {
                 unfrienderCallback.onFriendRemoved();
             }
-
-            // 4. RMI Callback to the user who was unfriended
             ClientCallbackInterface friendToRemoveCallback = clientCallbacks.get(friendToRemove);
             if(friendToRemoveCallback != null) {
                 friendToRemoveCallback.onFriendDeletedByOther();
             }
-
         } catch (Exception e) {
             System.err.println("Error during unfriend action: " + e.getMessage());
             e.printStackTrace();
@@ -926,24 +913,19 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
     @Override
     public void getSentFriendRequests(String jsonString) throws RemoteException{
         String username;
-
         try {
             com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(jsonString).getAsJsonObject();
             username = jsonObject.get("username").getAsString();
-
         } catch (Exception e) {
             System.err.println("Server Error: Failed to parse JSON for getSentFriendRequests: " + jsonString);
             throw new RemoteException("Invalid request format.", e);
         }
-
         Client client = findClient(username);
         ClientCallbackInterface callback = clientCallbacks.get(username);
-
         if (client == null || callback == null) {
             System.out.println("Warning: Client or callback not found for " + username);
             return;
         }
-
         java.util.List<String> sentRequests = new java.util.ArrayList<>();
         if (client.getOutgoingFriendRequests() != null) {
             for (Common.Objects.ClientObjects.FriendRequest req : client.getOutgoingFriendRequests()) {
@@ -952,7 +934,6 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
                 }
             }
         }
-
         callbackExecutor.execute(() -> {
             try {
                 callback.onGetSentFriendRequests(sentRequests);
@@ -966,24 +947,19 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
     @Override
     public void getReceivedFriendRequests(String jsonString) throws RemoteException {
         String username;
-
         try {
             com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(jsonString).getAsJsonObject();
             username = jsonObject.get("username").getAsString();
-
         } catch (Exception e) {
             System.err.println("Server Error: Failed to parse JSON for getReceivedFriendRequests: " + jsonString);
             throw new RemoteException("Invalid request format.", e);
         }
-
         Client client = findClient(username);
         ClientCallbackInterface callback = clientCallbacks.get(username);
-
         if (client == null || callback == null) {
             System.out.println("Warning: Client or callback not found for " + username);
             return;
         }
-
         java.util.List<String> receivedRequests = new java.util.ArrayList<>();
         if (client.getIncomingFriendRequests() != null) {
             for (Common.Objects.ClientObjects.FriendRequest req : client.getIncomingFriendRequests()) {
@@ -992,7 +968,6 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
                 }
             }
         }
-
         callbackExecutor.execute(() -> {
             try {
                 callback.onGetReceivedFriendRequests(receivedRequests);
@@ -1006,26 +981,20 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
     @Override
     public void getFriends(String jsonString) throws RemoteException {
         String username;
-
         try {
             com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(jsonString).getAsJsonObject();
             username = jsonObject.get("username").getAsString();
-
         } catch (Exception e) {
             System.err.println("Server Error: Failed to parse JSON for getFriends: " + jsonString);
             throw new RemoteException("Invalid request format.", e);
         }
-
         Client client = findClient(username);
         ClientCallbackInterface callback = clientCallbacks.get(username);
-
         if (client == null || callback == null) {
             System.out.println("Warning: Client or callback not found for " + username);
             return;
         }
-
         java.util.List<String> friends = client.getFriends() != null ? client.getFriends() : new java.util.ArrayList<>();
-
         callbackExecutor.execute(() -> {
             try {
                 callback.onGetFriendsList(friends);

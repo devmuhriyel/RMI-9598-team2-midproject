@@ -180,6 +180,16 @@ public class HomeController {
         loadClientData();
     }
 
+    // In HomeController.java
+
+    public void updateFriendsList(List<String> friends) {
+        Platform.runLater(() -> {
+            System.out.println("HomeController: Received and updating friends list.");
+            ui.setFriends(friends);
+            ui.renderFriends(friends);
+        });
+    }
+
     private void openChatWithFriend(String friendName) throws IOException {
         // TODO: Implement chat view opening
     }

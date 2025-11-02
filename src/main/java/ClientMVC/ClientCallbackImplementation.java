@@ -241,7 +241,12 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
 
     @Override
     public void onGetFriendsList(List<String> friends) throws RemoteException {
-
+        System.out.println("Callback: Received friends list of size: " + (friends != null ? friends.size() : 0));
+        javafx.application.Platform.runLater(() -> {
+            if (clientHomeController != null) {
+                clientHomeController.updateFriendsList(friends);
+            }
+        });
     }
 
     @Override
