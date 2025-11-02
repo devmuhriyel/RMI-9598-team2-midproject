@@ -205,6 +205,31 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     }
 
     @Override
+    public void onGetSentFriendRequests(List<String> sentRequests) throws RemoteException {
+
+    }
+
+    @Override
+    public void onGetReceivedFriendRequests(List<String> receivedRequests) throws RemoteException {
+
+    }
+
+    @Override
+    public void onGetFriendsList(List<String> friends) throws RemoteException {
+
+    }
+
+    @Override
+    public void onFriendRemoved() throws RemoteException {
+
+    }
+
+    @Override
+    public void onFriendDeletedByOther() throws RemoteException {
+
+    }
+
+    @Override
     public void onGetChatHistories(List<Conversation> allChats) throws RemoteException {
         if (clientChatController != null) {
             System.out.println("Received " + allChats.size() + " conversations");

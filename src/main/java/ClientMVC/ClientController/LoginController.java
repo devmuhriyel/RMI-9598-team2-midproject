@@ -55,7 +55,6 @@ public class LoginController {
         clientCallback.setUsername(username);
 
         // Create JSON
-        String jsonString = createLoginJson(username, password);
         clientCallback.setUsername(username);
 
         new Thread(() -> {
