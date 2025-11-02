@@ -8,6 +8,7 @@ import Common.Objects.AdminObjects.Admin;
 import Common.Objects.AdminObjects.AdminAccountsList;
 import Common.Objects.ClientObjects.*;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import java.rmi.RemoteException;
@@ -351,14 +352,261 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
 
     //USER/ADMIN ACCOUNT SETTINGS UI METHODS
     @Override
-    public void changeUsername(String jsonString) throws RemoteException{
+    public void changeUsername(String jsonString) throws RemoteException {
+        String currentUsername = null;
+        String newUsername = null;
 
+        try {
+            JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
+            currentUsername = jsonObject.get("currentUsername").getAsString();
+            newUsername = jsonObject.get("newUsername").getAsString();
+
+            System.out.println(">>> Username change request: " + currentUsername + " -> " + newUsername);
+
+        } catch (Exception e) {
+            System.err.println("Server Error: Failed to parse username change JSON: " + jsonString);
+            throw new RemoteException("Invalid username change format.", e);
+        }
+
+        // Find client in allUsers map
+        Client targetClient = allUsers.get(currentUsername);
+
+        if (targetClient == null) {
+            System.out.println("✗ Username change failed: User not found - " + currentUsername);
+            notifyUsernameChangeFailed(currentUsername);
+            return;
+        }
+
+        // Check if new username already exists
+        if (allUsers.containsKey(newUsername)) {
+            System.out.println("✗ Username change failed: Username already exists - " + newUsername);
+            notifyUsernameExists(currentUsername);
+            return;
+        }
+
+        fileLock.writeLock().lock();
+        try {
+            // Update username in client object
+            targetClient.setUsername(newUsername);
+
+            // Update all references in clientAccountsList
+            updateUsernameReferences(currentUsername, newUsername);
+
+            // Update allUsers map
+            allUsers.remove(currentUsername);
+            allUsers.put(newUsername, targetClient);
+
+            // Update callback mapping
+            ClientCallbackInterface callback = clientCallbacks.remove(currentUsername);
+            if (callback != null) {
+                clientCallbacks.put(newUsername, callback);
+            }
+
+            // Sync to JSON immediately for critical changes
+            serverJSONHandler.writeClientAccountFile("src/main/resources/JSONFiles/ClientAccounts.json", clientAccountsList);
+
+            System.out.println("✓ Username changed successfully: " + currentUsername + " -> " + newUsername);
+
+            // Notify client of success
+            notifyUsernameChangeSuccess(newUsername);
+
+        } finally {
+            fileLock.writeLock().unlock();
+        }
     }
 
+    private void updateUsernameReferences(String oldUsername, String newUsername) {
+        System.out.println("  → Updating username references in all data...");
+
+        for (Client client : clientAccountsList.getClients()) {
+            // Update friends list
+            if (client.getFriends() != null) {
+                for (int i = 0; i < client.getFriends().size(); i++) {
+                    if (client.getFriends().get(i).equals(oldUsername)) {
+                        client.getFriends().set(i, newUsername);
+                    }
+                }
+            }
+
+            // Update outgoing friend requests
+            if (client.getOutgoingFriendRequests() != null) {
+                for (FriendRequest req : client.getOutgoingFriendRequests()) {
+                    if (req.getRequester().equals(oldUsername)) {
+                        req.setRequester(newUsername);
+                    }
+                    if (req.getResponder().equals(oldUsername)) {
+                        req.setResponder(newUsername);
+                    }
+                }
+            }
+
+            // Update incoming friend requests
+            if (client.getIncomingFriendRequests() != null) {
+                for (FriendRequest req : client.getIncomingFriendRequests()) {
+                    if (req.getRequester().equals(oldUsername)) {
+                        req.setRequester(newUsername);
+                    }
+                    if (req.getResponder().equals(oldUsername)) {
+                        req.setResponder(newUsername);
+                    }
+                }
+            }
+
+            // Update conversations
+            if (client.getConversations() != null) {
+                for (Conversation conv : client.getConversations()) {
+                    if (conv.getRecipient() != null && conv.getRecipient().equals(oldUsername)) {
+                        conv.setRecipient(newUsername);
+                    }
+
+                    // Update messages in conversation
+                    if (conv.getMessages() != null) {
+                        for (Message msg : conv.getMessages()) {
+                            if (msg.getSender() != null && msg.getSender().equals(oldUsername)) {
+                                msg.setSender(newUsername);
+                            }
+                            if (msg.getReceiver() != null && msg.getReceiver().equals(oldUsername)) {
+                                msg.setReceiver(newUsername);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        System.out.println("  ✓ All references updated");
+    }
     @Override
-    public void changePasswordWithOldPassword(String jsonString) throws RemoteException{
+    public void changePasswordWithOldPassword(String jsonString) throws RemoteException {
+        String username = null;
+        String oldPassword = null;
+        String newPassword = null;
 
+        try {
+            JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
+            username = jsonObject.get("username").getAsString();
+            oldPassword = jsonObject.get("oldPassword").getAsString();
+            newPassword = jsonObject.get("newPassword").getAsString();
+
+            System.out.println(">>> Password change request for user: " + username);
+
+        } catch (Exception e) {
+            System.err.println("Server Error: Failed to parse password change JSON: " + jsonString);
+            throw new RemoteException("Invalid password change format.", e);
+        }
+
+        // Find client
+        Client targetClient = allUsers.get(username);
+
+        if (targetClient == null) {
+            System.out.println("✗ Password change failed: User not found - " + username);
+            notifyPasswordChangeFailed(username);
+            return;
+        }
+
+        // Verify old password
+        if (!targetClient.getPassword().equals(oldPassword)) {
+            System.out.println("✗ Password change failed: Invalid old password for - " + username);
+            notifyInvalidOldPassword(username);
+            return;
+        }
+
+        fileLock.writeLock().lock();
+        try {
+            // Update password
+            targetClient.setPassword(newPassword);
+
+            // Sync to JSON immediately
+            serverJSONHandler.writeClientAccountFile("src/main/resources/JSONFiles/ClientAccounts.json", clientAccountsList);
+
+            System.out.println("✓ Password changed successfully for user: " + username);
+
+            // Notify client of success
+            notifyPasswordChangeSuccess(username);
+
+        } finally {
+            fileLock.writeLock().unlock();
+        }
     }
+
+    // ==================== CALLBACK NOTIFICATIONS ====================
+    private void notifyUsernameChangeSuccess(String username) {
+        ClientCallbackInterface callback = clientCallbacks.get(username);
+        if (callback != null) {
+            callbackExecutor.execute(() -> {
+                try {
+                    callback.onSuccessfulUsernameChange();
+                } catch (RemoteException e) {
+                    System.err.println("Failed to notify username change success: " + e.getMessage());
+                }
+            });
+        }
+    }
+
+    private void notifyUsernameExists(String username) {
+        ClientCallbackInterface callback = clientCallbacks.get(username);
+        if (callback != null) {
+            callbackExecutor.execute(() -> {
+                try {
+                    callback.onFailedUsernameChange();
+                } catch (RemoteException e) {
+                    System.err.println("Failed to notify username exists: " + e.getMessage());
+                }
+            });
+        }
+    }
+
+    private void notifyUsernameChangeFailed(String username) {
+        ClientCallbackInterface callback = clientCallbacks.get(username);
+        if (callback != null) {
+            callbackExecutor.execute(() -> {
+                try {
+                    callback.onFailedUsernameChange();
+                } catch (RemoteException e) {
+                    System.err.println("Failed to notify username change failure: " + e.getMessage());
+                }
+            });
+        }
+    }
+
+    private void notifyPasswordChangeSuccess(String username) {
+        ClientCallbackInterface callback = clientCallbacks.get(username);
+        if (callback != null) {
+            callbackExecutor.execute(() -> {
+                try {
+                    callback.onSuccessfulPasswordChangeWithOldPassword();
+                } catch (RemoteException e) {
+                    System.err.println("Failed to notify password change success: " + e.getMessage());
+                }
+            });
+        }
+    }
+
+    private void notifyInvalidOldPassword(String username) {
+        ClientCallbackInterface callback = clientCallbacks.get(username);
+        if (callback != null) {
+            callbackExecutor.execute(() -> {
+                try {
+                    callback.onFailedPasswordChangeWithOldPassword();
+                } catch (RemoteException e) {
+                    System.err.println("Failed to notify invalid old password: " + e.getMessage());
+                }
+            });
+        }
+    }
+
+    private void notifyPasswordChangeFailed(String username) {
+        ClientCallbackInterface callback = clientCallbacks.get(username);
+        if (callback != null) {
+            callbackExecutor.execute(() -> {
+                try {
+                    callback.onFailedPasswordChangeWithOldPassword();
+                } catch (RemoteException e) {
+                    System.err.println("Failed to notify password change failure: " + e.getMessage());
+                }
+            });
+        }
+    }
+
 
     //USER/ADMIN FRIEND REQUESTS UI METHODS
     @Override

@@ -31,6 +31,12 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     private ConnectionController clientConnectionController;
     private HomeController clientHomeController;
 
+    // Callback handlers for account operations
+    private Runnable onUsernameChangeSuccess;
+    private Runnable onUsernameChangeFailed;
+    private Runnable onPasswordChangeSuccess;
+    private Runnable onPasswordChangeFailed;
+
     public ClientCallbackImplementation() throws RemoteException {
         super();
         this.gson = new Gson();
@@ -113,24 +119,49 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
 
     }
 
+    // -=-=-=-=-=USERNAME CHANGE CALLBACKS=-=-=-=-=- \\
+    // -=-=-=-=-=Successful Username Change=-=-=-=-=- \\
     @Override
     public void onSuccessfulUsernameChange() throws RemoteException {
-
+        System.out.println("✓ Callback received: Username change successful");
+        if (onUsernameChangeSuccess != null) {
+            onUsernameChangeSuccess.run();
+        } else {
+            System.err.println("⚠ Warning: onUsernameChangeSuccess handler is null");
+        }
     }
 
+    // -=-=-=-=-=Failed Username Change=-=-=-=-=- \\
     @Override
     public void onFailedUsernameChange() throws RemoteException {
-
+        System.out.println("✗ Callback received: Username change failed");
+        if (onUsernameChangeFailed != null) {
+            onUsernameChangeFailed.run();
+        } else {
+            System.err.println("⚠ Warning: onUsernameChangeFailed handler is null");
+        }
     }
-
+    // -=-=-=-=-=PASSWORD CHANGE CALLBACKS=-=-=-=-=- \\
+    // -=-=-=-=-=Successful Password Change=-=-=-=-=- \\
     @Override
     public void onSuccessfulPasswordChangeWithOldPassword() throws RemoteException {
-
+        System.out.println("✓ Callback received: Password change successful");
+        if (onPasswordChangeSuccess != null) {
+            onPasswordChangeSuccess.run();
+        } else {
+            System.err.println("⚠ Warning: onPasswordChangeSuccess handler is null");
+        }
     }
 
+    // -=-=-=-=-=Failed Password Change=-=-=-=-=- \\
     @Override
     public void onFailedPasswordChangeWithOldPassword() throws RemoteException {
-
+        System.out.println("✗ Callback received: Password change failed (invalid old password)");
+        if (onPasswordChangeFailed != null) {
+            onPasswordChangeFailed.run();
+        } else {
+            System.err.println("⚠ Warning: onPasswordChangeFailed handler is null");
+        }
     }
 
     @Override
@@ -420,6 +451,7 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
         this.clientChatController = null;
     }
 
+
     //HELPER METHODS
     public Message messageStringToObject(String message) throws RemoteException {
         try {
@@ -428,5 +460,25 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
             System.err.println("Error parsing message: " + e.getMessage());
             throw new RemoteException("Failed to parse message", e);
         }
+    }
+
+    public void setOnUsernameChangeSuccess(Runnable handler) {
+        System.out.println("  → Setting username change success handler");
+        this.onUsernameChangeSuccess = handler;
+    }
+
+    public void setOnUsernameChangeFailed(Runnable handler) {
+        System.out.println("  → Setting username change failed handler");
+        this.onUsernameChangeFailed = handler;
+    }
+
+    public void setOnPasswordChangeSuccess(Runnable handler) {
+        System.out.println("  → Setting password change success handler");
+        this.onPasswordChangeSuccess = handler;
+    }
+
+    public void setOnPasswordChangeFailed(Runnable handler) {
+        System.out.println("  → Setting password change failed handler");
+        this.onPasswordChangeFailed = handler;
     }
 }

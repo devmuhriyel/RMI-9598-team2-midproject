@@ -60,12 +60,29 @@ public class UnifiedClientModel {
     }
 
     //USER ACCOUNT SETTINGS UI METHODS
-    public void changeUsername(String jsonString) throws RemoteException{
-        serverConnection.changeUsername(jsonString);
+    // -=-=-=-=-=Change Username=-=-=-=-=- \\
+    public void changeUsername(String newUsername) throws RemoteException {
+        String jsonRequest = String.format(
+                "{\"currentUsername\":\"%s\",\"newUsername\":\"%s\"}",
+                username,
+                newUsername
+        );
+
+        System.out.println("Model: Sending username change request to server");
+        serverConnection.changeUsername(jsonRequest);
     }
 
-    public void changePasswordWithOldPassword(String jsonString) throws RemoteException{
-        serverConnection.changePasswordWithOldPassword(jsonString);
+    // -=-=-=-=-=Change Password=-=-=-=-=- \\
+    public void changePasswordWithOldPassword(String oldPassword, String newPassword) throws RemoteException {
+        String jsonRequest = String.format(
+                "{\"username\":\"%s\",\"oldPassword\":\"%s\",\"newPassword\":\"%s\"}",
+                username,
+                oldPassword,
+                newPassword
+        );
+
+        System.out.println("Model: Sending password change request to server");
+        serverConnection.changePasswordWithOldPassword(jsonRequest);
     }
 
     //USER FRIEND REQUESTS UI METHODS
