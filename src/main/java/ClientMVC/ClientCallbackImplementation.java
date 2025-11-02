@@ -89,17 +89,23 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
 
     @Override
     public void onSearchUserResults() throws RemoteException {
-
+        System.out.println("Callback: Search user results received!");
+        // TODO: Parse results and notify home controller
     }
 
     @Override
     public void onSearchGroupResults() throws RemoteException {
-
+        System.out.println("Callback: Search group results received!");
+        // TODO: Parse results and notify home controller
     }
 
     @Override
     public void onFriendRequestSent() throws RemoteException {
-
+        System.out.println("Callback: Friend request sent successfully!");
+        // Notify HomeController if it's active
+        if (clientHomeController != null) {
+            clientHomeController.handleFriendRequestSent();
+        }
     }
 
     @Override
@@ -129,27 +135,73 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
 
     @Override
     public void onFriendRequestReceived() throws RemoteException {
+        System.out.println("Callback: New friend request received!");
 
+        // Notify AccountController to refresh the received requests list
+        if (clientAccountController != null) {
+            // TODO: Optionally show a notification to the user
+            // clientAccountController.showNewFriendRequestNotification();
+        }
+
+        // Also notify HomeController if active (to show notification badge, etc.)
+        if (clientHomeController != null) {
+            // clientHomeController.showFriendRequestNotification();
+        }
     }
 
     @Override
     public void onFriendAccepted() throws RemoteException {
+        System.out.println("Callback: Friend request accepted!");
 
+        // Notify AccountController
+        if (clientAccountController != null) {
+            // TODO: Extract friend name from server response
+            // For now, just refresh
+            // clientAccountController.handleFriendAccepted(friendName);
+        }
+
+        // Refresh HomeController's friends list
+        if (clientHomeController != null) {
+            clientHomeController.refreshUserData();
+        }
     }
 
     @Override
     public void onFriendDeclined() throws RemoteException {
+        System.out.println("Callback: Friend request declined!");
 
+        // Notify AccountController
+        if (clientAccountController != null) {
+            // TODO: Extract friend name from server response
+            // clientAccountController.handleFriendDeclined(friendName);
+        }
     }
 
     @Override
     public void onFriendDeleted() throws RemoteException {
+        System.out.println("Callback: Friend removed from list!");
 
+        // Notify AccountController
+        if (clientAccountController != null) {
+            // TODO: Extract friend name from server response
+            // clientAccountController.handleFriendRemoved(friendName);
+        }
+
+        // Refresh HomeController's friends list
+        if (clientHomeController != null) {
+            clientHomeController.refreshUserData();
+        }
     }
 
     @Override
     public void onCancelFriendRequest() throws RemoteException {
+        System.out.println("Callback: Friend request cancelled!");
 
+        // Notify AccountController
+        if (clientAccountController != null) {
+            // TODO: Extract friend name from server response
+            // clientAccountController.handleFriendRequestCancelled(friendName);
+        }
     }
 
     @Override

@@ -69,6 +69,28 @@ public class UnifiedClientModel {
     }
 
     //USER FRIEND REQUESTS UI METHODS
+
+    public void sendFriendRequest(String jsonString) throws RemoteException {
+        serverConnection.sendFriendRequest(jsonString);
+    }
+    public void acceptFriendRequest(String jsonString) throws RemoteException {
+        serverConnection.acceptFriendRequest(jsonString);
+    }
+
+    public void getSentFriendRequests(String jsonString) throws RemoteException {
+        System.out.println("Model: Requesting sent friend requests");
+         serverConnection.getSentFriendRequests(jsonString);
+    }
+
+    public void getReceivedFriendRequests(String jsonString) throws RemoteException {
+        System.out.println("Model: Requesting received friend requests");
+        serverConnection.getReceivedFriendRequests(jsonString);
+    }
+    public void getFriendsList(String jsonString) throws RemoteException {
+        System.out.println("Model: Requesting friends list");
+        serverConnection.getFriends(jsonString);
+    }
+
     public void cancelFriendRequest(String jsonString) throws RemoteException{
         serverConnection.cancelFriendRequest(jsonString);
     }
@@ -168,4 +190,9 @@ public class UnifiedClientModel {
         File outputFile = new File(savePath, fileName);
         Files.write(outputFile.toPath(), fileBytes);
     }
+
+    public void registerClientCallback(String username, ClientCallbackInterface callback) throws RemoteException {
+        serverConnection.registerClientCallback(username, callback);
+    }
+
 }

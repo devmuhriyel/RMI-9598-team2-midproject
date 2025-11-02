@@ -6,6 +6,8 @@ import ClientMVC.ClientView.Account.AccountView;
 import ClientMVC.ClientView.Home.HomeJFXController;
 import ClientMVC.ClientView.Home.HomeView;
 import ClientMVC.ClientView.Chat.ChatView;
+import Common.Objects.ClientObjects.FriendRequest;
+import com.google.gson.Gson;
 import javafx.application.Platform;
 import javafx.scene.control.TextInputDialog;
 import javafx.stage.Stage;
@@ -28,79 +30,87 @@ public class HomeController {
         this.ui = ui;
         this.clientCallback = callback;
         callback.setClientHomeController(this);
-//        initialize();
+         initialize();
     }
 
-//    private void initialize() {
-//        ui.setAccountButtonListener(() -> {
-//            Platform.runLater(() -> {
-//                try {
-//                    view.getStage().close();
-//                    AccountView accountView = new AccountView();
-//                    Stage accountStage = new Stage();
-//                    accountView.start(accountStage);
-//                    new AccountController(model, accountView, accountView.getFXController(), clientCallback);
-//
-//                } catch (Exception ex) {
-//                    ex.printStackTrace();
-//                }
-//            });
-//        });
-//        if (model.getUsername() != null) {
-//            ui.setUserLabel(model.getUsername());
-//        }
-//        ui.setSearchListener(queryText -> {
-//            String q = (queryText == null) ? "" : queryText.trim().toLowerCase();
-//            if (q.isEmpty()) {
-//                ui.renderFriends(ui.getOriginalFriends());
-//                ui.renderGroups(ui.getOriginalGroups());
-//                return;
-//            }
-//            List<String> allUsers = null;
-//            try {
-//                model.getAllUsers();
-//            } catch (RemoteException e) {
-//                throw new RuntimeException(e);
-//            }
-//            List<String> matchedUsers = filterList(allUsers, q);
-//            ui.renderFriends(matchedUsers);
-//            ui.renderGroups(filterList(ui.getOriginalGroups(), q));
-//        });
-//        ui.setFriendClickListener(friendName -> {
-//            try {
-//                openChatWithFriend(friendName);
-//                view.openChatWithFriend();
-//            } catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-//        });
-//        ui.setGroupClickListener(groupName -> {
-//            try {
-//                if (groupName.equals("Community Chat")) {
-//                    openCommunityChat();
-//                } else {
-//                    openGroupChat(groupName);
-//                }
-//                view.openChatWithFriend();
-//            } catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-//        });
-//        ui.setAddFriendListener(username -> {
-//            System.out.println("HomeController: addFriend called with username: " + username);
-//            try {
-//                sendFriendRequest(username);
-//            } catch (RemoteException e) {
-//                throw new RuntimeException(e);
-//            }
-//        });
-//        ui.setCreateGroupListener(this::createGroup);
-//        refreshUserData();
-//    }
-//
-//    private void sendFriendRequest(String username) throws RemoteException {
-//        model.sendFriendRequest(username);
-//    }
+    private void initialize() {
+        ui.setAccountButtonListener(() -> {
+            Platform.runLater(() -> {
+                try {
+                    view.getStage().close();
+                    AccountView accountView = new AccountView();
+                    Stage accountStage = new Stage();
+                    accountView.start(accountStage);
+
+                    new AccountController(model, accountView, accountView.getFXController(), clientCallback);
+
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            });
+        });
+
+        if (model.getUsername() != null) {
+            ui.setUserLabel(model.getUsername());
+        }
+        ui.setSearchListener(queryText -> {
+            String q = (queryText == null) ? "" : queryText.trim().toLowerCase();
+            if (q.isEmpty()) {
+                ui.renderFriends(ui.getOriginalFriends());
+                ui.renderGroups(ui.getOriginalGroups());
+                return;
+            }
+            ui.renderFriends(filterList(ui.getOriginalFriends(), q));
+            ui.renderGroups(filterList(ui.getOriginalGroups(), q));
+        });
+        ui.setFriendClickListener(friendName -> {
+            try {
+                openChatWithFriend(friendName);
+                view.openChatWithFriend();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        ui.setGroupClickListener(groupName -> {
+            try {
+                if (groupName.equals("Community Chat")) {
+                    openCommunityChat();
+                } else {
+                    openGroupChat(groupName);
+                }
+                view.openChatWithFriend();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        ui.setAddFriendListener(username -> {
+            System.out.println("HomeController: addFriend called with username: " + username);
+            try {
+                sendFriendRequest(username);
+            } catch (RemoteException e) {
+                System.err.println("Error sending friend request: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
+
+        ui.setCreateGroupListener(this::createGroup);
+        refreshUserData();
+    }
+
+    private void sendFriendRequest(String targetusername) throws RemoteException {
+        System.out.print("Sending friend request to: " + targetusername);
+        Gson gson = new Gson();
+        String jsonString = gson.toJson(new FriendRequest(model.getUsername(), targetusername, "pending"));
+        model.sendFriendRequest(jsonString);
+   }
+
+   public void handleFriendRequestSent(){
+        Platform.runLater(() -> {
+            System.out.println("Friend request send successfully!");
+        });
+   }
 
     private void createGroup(String groupName) {
         // Show a dialog to select members for the group
@@ -121,9 +131,6 @@ public class HomeController {
                         members.add(trimmedMember);
                     }
                 }
-//                model.createGroup(groupName, members);
-            } else {
-//                model.createGroup(groupName, new ArrayList<>());
             }
             refreshUserData();
         }

@@ -38,6 +38,13 @@ public interface ClientCallbackInterface extends Remote {
     void onFriendDeclined() throws RemoteException;
     void onFriendDeleted() throws RemoteException;
     void onCancelFriendRequest() throws RemoteException;
+    //UI for friends
+    void onGetSentFriendRequests(java.util.List<String> sentRequests) throws RemoteException; // Added in previous step, confirming use
+    void onGetReceivedFriendRequests(java.util.List<String> receivedRequests) throws RemoteException; // Added in previous step, confirming use
+    void onGetFriendsList(java.util.List<String> friends) throws RemoteException;
+    void onFriendRemoved() throws RemoteException; // To notify the user who initiated the unfriend
+    void onFriendDeletedByOther() throws RemoteException; // To notify the user who was unfriended
+
 
     //USER COMMON CHATTING METHODS
     void onGetChatHistories(List<Conversation> allChats) throws RemoteException;
