@@ -8,6 +8,7 @@ import Common.Objects.AdminObjects.Admin;
 import Common.Objects.AdminObjects.AdminAccountsList;
 import Common.Objects.ClientObjects.*;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import java.rmi.RemoteException;
@@ -143,9 +144,17 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
         System.out.println("Client login attempt for: " + username);
 
         try {
-            // Parse JSON to extract password
-            com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(jsonString).getAsJsonObject();
+            // Parse JSON to extract username and password
+            JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
+            String jsonUsername = jsonObject.get("username").getAsString();
             String password = jsonObject.get("password").getAsString();
+
+            // Verify username from parameter matches username in JSON
+            if (!username.equals(jsonUsername)) {
+                System.out.println("Login failed: Username mismatch");
+                clientCallback.onFailedLogin();
+                return;
+            }
 
             // Look up client
             Client client = allUsers.get(username);
@@ -164,9 +173,6 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
 
             // Register callback
             clientCallbacks.put(username, clientCallback);
-
-            // Optional: mark user as online
-            //client.setOnline(true);
 
             System.out.println("Client login successful: " + username);
             clientCallback.onSuccessfulLogin();

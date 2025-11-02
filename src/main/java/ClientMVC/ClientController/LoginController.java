@@ -1,6 +1,7 @@
 package ClientMVC.ClientController;
 
 import ClientMVC.ClientCallbackImplementation;
+import ClientMVC.ClientJSONHandler;
 import ClientMVC.ClientModel.UnifiedClientModel;
 import ClientMVC.ClientView.Home.HomeView;
 import ClientMVC.ClientView.Login.LoginJFXController;
@@ -8,6 +9,7 @@ import ClientMVC.ClientView.Login.LoginView;
 import ClientMVC.ClientView.Signup.SignupView;
 import Common.Interfaces.ClientInterface;
 import Common.Interfaces.ClientCallbackInterface;
+import com.google.gson.Gson;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.stage.Stage;
@@ -51,19 +53,13 @@ public class LoginController {
     }
 
     private void attemptLogin(String username, String password) {
-        // Set username in callback so it knows who logged in
-        clientCallback.setUsername(username);
-
-        // Create JSON
         clientCallback.setUsername(username);
 
         new Thread(() -> {
             try {
-                String jsonString = model.createJSONStringRequest("login", password, username);
+                ClientJSONHandler jsonHandler = new ClientJSONHandler();
+                String jsonString = jsonHandler.createLoginJSON(username, password);
                 model.logIn(username, jsonString, clientCallback);
-
-                // Once login is successful, register callback (client → server)
-                model.registerClientCallback(username, clientCallback);
 
             } catch (RemoteException e) {
                 Platform.runLater(() ->
@@ -92,13 +88,6 @@ public class LoginController {
         Platform.runLater(() ->
                 loginJFXController.showAlert(Alert.AlertType.ERROR,
                         "Login Failed", "Invalid username or password")
-        );
-    }
-    private String createLoginJson(String username, String password) {
-        return String.format(
-                "{\"username\":\"%s\",\"password\":\"%s\"}",
-                username,
-                password
         );
     }
 }

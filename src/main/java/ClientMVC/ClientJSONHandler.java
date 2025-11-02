@@ -18,6 +18,14 @@ public class ClientJSONHandler {
         return "{ \\n \" logType \": \"" + logType + "\", \n \" messageType \": \"" + msgType + "\", \n \" receiver \": \n " + sender + " \n}";
     }
 
+    public String createLoginJSON(String username, String password){
+        Gson gson = new Gson();
+        java.util.Map<String, String> loginData = new java.util.HashMap<>();
+        loginData.put("username", username);
+        loginData.put("password", password);
+        return gson.toJson(loginData);
+    }
+
     //SETTERS AND GETTERS
     public static void setCurrentUser(String username) {
         currentUser = username;
