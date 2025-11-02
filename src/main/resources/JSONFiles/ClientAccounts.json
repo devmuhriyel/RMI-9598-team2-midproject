@@ -1,7 +1,7 @@
 {
   "clientAccounts": [
     {
-      "username": "alice",
+      "username": "bob",
       "password": "alice123",
       "verificationCode": "superman",
       "friends": [],
@@ -10,37 +10,37 @@
           "recipient": "gian",
           "messages": [
             {
-              "sender": "alice",
+              "sender": "bob",
               "receiver": "gian",
               "content": "Hello from alice!",
               "isFile": false
             },
             {
-              "sender": "alice",
+              "sender": "bob",
               "receiver": "gian",
               "content": "Hello from alice!",
               "isFile": false
             },
             {
-              "sender": "alice",
+              "sender": "bob",
               "receiver": "gian",
               "content": "Hello from alice!",
               "isFile": false
             },
             {
-              "sender": "alice",
+              "sender": "bob",
               "receiver": "gian",
               "content": "Hello from alice!",
               "isFile": false
             },
             {
-              "sender": "alice",
+              "sender": "bob",
               "receiver": "gian",
               "content": "Hello from alice!",
               "isFile": false
             },
             {
-              "sender": "alice",
+              "sender": "bob",
               "receiver": "gian",
               "content": "Hello from alice!",
               "isFile": false
@@ -48,37 +48,17 @@
           ]
         }
       ],
-      "groupChats": [
-        {
-          "groupID": "1",
-          "groupName": "Study Group",
-          "receivers": ["gian", "alice", "diana", "hal"],
-          "messages": [
-            {
-              "sender": "alice",
-              "receivers": ["gian", "alice", "diana", "hal"],
-              "content": "hello everyone",
-              "isFile": false
-            },
-            {
-              "sender": "gian",
-              "receivers": ["gian", "alice", "diana", "hal"],
-              "content": "hello",
-              "isFile": false
-            }
-          ]
-        }
-      ],
+      "groupchats": [],
       "incomingFriendRequests": [
         {
           "requester": "gian",
-          "responder": "alice",
+          "responder": "bob",
           "status": "pending"
         }
       ],
       "outgoingFriendRequests": [
         {
-          "requester": "alice",
+          "requester": "bob",
           "responder": "diana",
           "status": "pending"
         }
@@ -91,40 +71,40 @@
       "friends": [],
       "conversations": [
         {
-          "recipient": "alice",
+          "recipient": "bob",
           "messages": [
             {
-              "sender": "alice",
+              "sender": "bob",
               "receiver": "gian",
               "content": "Hello from alice!",
               "isFile": false
             },
             {
-              "sender": "alice",
+              "sender": "bob",
               "receiver": "gian",
               "content": "Hello from alice!",
               "isFile": false
             },
             {
-              "sender": "alice",
+              "sender": "bob",
               "receiver": "gian",
               "content": "Hello from alice!",
               "isFile": false
             },
             {
-              "sender": "alice",
+              "sender": "bob",
               "receiver": "gian",
               "content": "Hello from alice!",
               "isFile": false
             },
             {
-              "sender": "alice",
+              "sender": "bob",
               "receiver": "gian",
               "content": "Hello from alice!",
               "isFile": false
             },
             {
-              "sender": "alice",
+              "sender": "bob",
               "receiver": "gian",
               "content": "Hello from alice!",
               "isFile": false
@@ -132,7 +112,7 @@
           ]
         }
       ],
-      "groupChats": [],
+      "groupchats": [],
       "incomingFriendRequests": [],
       "outgoingFriendRequests": []
     },
@@ -142,7 +122,7 @@
       "verificationCode": "wonderwoman",
       "friends": [],
       "conversations": [],
-      "groupChats": [],
+      "groupchats": [],
       "incomingFriendRequests": [],
       "outgoingFriendRequests": []
     },
@@ -152,7 +132,7 @@
       "verificationCode": "greenlantern",
       "friends": [],
       "conversations": [],
-      "groupChats": [],
+      "groupchats": [],
       "incomingFriendRequests": [],
       "outgoingFriendRequests": []
     },
@@ -162,7 +142,7 @@
       "verificationCode": "Superman",
       "friends": [],
       "conversations": [],
-      "groupChats": [],
+      "groupchats": [],
       "incomingFriendRequests": [],
       "outgoingFriendRequests": []
     },
@@ -172,7 +152,7 @@
       "verificationCode": "kidFlash",
       "friends": [],
       "conversations": [],
-      "groupChats": [],
+      "groupchats": [],
       "incomingFriendRequests": [],
       "outgoingFriendRequests": []
     }

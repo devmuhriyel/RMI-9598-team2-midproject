@@ -1,5 +1,6 @@
 package Common.Interfaces;
 
+import Common.Objects.ClientObjects.Client;
 import Common.Objects.ClientObjects.Conversation;
 import Common.Objects.ClientObjects.GroupChat;
 
@@ -12,7 +13,7 @@ public interface ClientCallbackInterface extends Remote {
     //USER LOG IN, SIGN UP, AND OTHER RELATED METHODS
     void onSuccessfulSignUp() throws RemoteException;
     void onFailedSignUp() throws RemoteException;
-    void onSuccessfulLogin() throws RemoteException;
+    void onSuccessfulLogin(String clientDataJson) throws RemoteException; // UPDATED: Now passes client data
     void onFailedLogin() throws RemoteException;
     void onSuccessfulLogout() throws RemoteException;
     void onSuccessfulPasswordChange() throws RemoteException;
@@ -38,13 +39,11 @@ public interface ClientCallbackInterface extends Remote {
     void onFriendDeclined() throws RemoteException;
     void onFriendDeleted() throws RemoteException;
     void onCancelFriendRequest() throws RemoteException;
-    //UI for friends
-    void onGetSentFriendRequests(java.util.List<String> sentRequests) throws RemoteException; // Added in previous step, confirming use
-    void onGetReceivedFriendRequests(java.util.List<String> receivedRequests) throws RemoteException; // Added in previous step, confirming use
+    void onGetSentFriendRequests(java.util.List<String> sentRequests) throws RemoteException;
+    void onGetReceivedFriendRequests(java.util.List<String> receivedRequests) throws RemoteException;
     void onGetFriendsList(java.util.List<String> friends) throws RemoteException;
-    void onFriendRemoved() throws RemoteException; // To notify the user who initiated the unfriend
-    void onFriendDeletedByOther() throws RemoteException; // To notify the user who was unfriended
-
+    void onFriendRemoved() throws RemoteException;
+    void onFriendDeletedByOther() throws RemoteException;
 
     //USER COMMON CHATTING METHODS
     void onGetChatHistories(List<Conversation> allChats) throws RemoteException;

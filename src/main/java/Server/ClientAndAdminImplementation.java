@@ -10,6 +10,7 @@ import Common.Objects.ClientObjects.*;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -211,12 +212,24 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
                 return;
             }
 
-            // Register callback
+            // Register callback for this user
             clientCallbacks.put(username, clientCallback);
+            System.out.println("✓ Registered callback for user: " + username);
 
-            System.out.println("Client login successful: " + username);
-            clientCallback.onSuccessfulLogin();
+            // Serialize client data to JSON
+            Gson gson = new Gson();
+            String clientDataJson = gson.toJson(client);
 
+            System.out.println("✓ Client login successful: " + username);
+            System.out.println("  - Sending client data (" + clientDataJson.length() + " chars)");
+
+            // Send success with client data
+            clientCallback.onSuccessfulLogin(clientDataJson);
+
+        } catch (JsonSyntaxException e) {
+            System.err.println("Error parsing login JSON: " + e.getMessage());
+            e.printStackTrace();
+            clientCallback.onFailedLogin();
         } catch (Exception e) {
             System.err.println("Error during client login: " + e.getMessage());
             e.printStackTrace();
@@ -286,7 +299,7 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
 
         try {
             // Note: JsonParser is deprecated, switching to new Gson().fromJson or JsonParser.parseString().getAsJsonObject()
-            com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(jsonString).getAsJsonObject();
+            JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
 
             requesterUsername = jsonObject.get("requester").getAsString();
             targetUsername = jsonObject.get("responder").getAsString(); // FRIEND REQUEST JSON uses 'responder'

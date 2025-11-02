@@ -6,7 +6,9 @@ import ClientMVC.ClientView.Account.AccountView;
 import ClientMVC.ClientView.Home.HomeJFXController;
 import ClientMVC.ClientView.Home.HomeView;
 import ClientMVC.ClientView.Chat.ChatView;
+import Common.Objects.ClientObjects.Client;
 import Common.Objects.ClientObjects.FriendRequest;
+import Common.Objects.ClientObjects.GroupChat;
 import com.google.gson.Gson;
 import javafx.application.Platform;
 import javafx.scene.control.TextInputDialog;
@@ -30,7 +32,9 @@ public class HomeController {
         this.ui = ui;
         this.clientCallback = callback;
         callback.setClientHomeController(this);
-         initialize();
+
+        initialize();
+        loadClientData(); // Load data immediately after initialization
     }
 
     private void initialize() {
@@ -50,9 +54,6 @@ public class HomeController {
             });
         });
 
-        if (model.getUsername() != null) {
-            ui.setUserLabel(model.getUsername());
-        }
         ui.setSearchListener(queryText -> {
             String q = (queryText == null) ? "" : queryText.trim().toLowerCase();
             if (q.isEmpty()) {
@@ -63,6 +64,7 @@ public class HomeController {
             ui.renderFriends(filterList(ui.getOriginalFriends(), q));
             ui.renderGroups(filterList(ui.getOriginalGroups(), q));
         });
+
         ui.setFriendClickListener(friendName -> {
             try {
                 openChatWithFriend(friendName);
@@ -96,24 +98,61 @@ public class HomeController {
         });
 
         ui.setCreateGroupListener(this::createGroup);
-        refreshUserData();
+    }
+
+    private void loadClientData() {
+        Client clientData = clientCallback.getClientData();
+        if (clientData != null) {
+            System.out.println("Loading client data into HomeView...");
+
+            // Set username
+            model.setUsername(clientData.getUsername());
+            ui.setUserLabel(clientData.getUsername());
+
+            // Load friends list
+            List<String> friends = clientData.getFriends();
+            if (friends != null && !friends.isEmpty()) {
+                ui.setFriends(friends);
+                System.out.println("✓ Loaded " + friends.size() + " friends: " + friends);
+            } else {
+                ui.setFriends(new ArrayList<>());
+                System.out.println("✓ No friends to load");
+            }
+
+            // Load group chats
+            List<GroupChat> groupChats = clientData.getGroupChats();
+            if (groupChats != null && !groupChats.isEmpty()) {
+                List<String> groupNames = new ArrayList<>();
+                for (GroupChat gc : groupChats) {
+                    groupNames.add(gc.getGroupName());
+                }
+                ui.setGroups(groupNames);
+                System.out.println("✓ Loaded " + groupNames.size() + " groups: " + groupNames);
+            } else {
+                ui.setGroups(new ArrayList<>());
+                System.out.println("✓ No groups to load");
+            }
+
+            System.out.println("✓ Client data loaded successfully for: " + clientData.getUsername());
+        } else {
+            System.err.println("⚠ Warning: No client data available to load");
+        }
     }
 
     private void sendFriendRequest(String targetusername) throws RemoteException {
-        System.out.print("Sending friend request to: " + targetusername);
+        System.out.println("Sending friend request to: " + targetusername);
         Gson gson = new Gson();
         String jsonString = gson.toJson(new FriendRequest(model.getUsername(), targetusername, "pending"));
         model.sendFriendRequest(jsonString);
-   }
+    }
 
-   public void handleFriendRequestSent(){
+    public void handleFriendRequestSent(){
         Platform.runLater(() -> {
-            System.out.println("Friend request send successfully!");
+            System.out.println("Friend request sent successfully!");
         });
-   }
+    }
 
     private void createGroup(String groupName) {
-        // Show a dialog to select members for the group
         TextInputDialog dialog = new TextInputDialog("");
         dialog.setTitle("Create Group");
         dialog.setHeaderText("Create new group: " + groupName);
@@ -137,44 +176,20 @@ public class HomeController {
     }
 
     public void refreshUserData() {
-//        Platform.runLater(() -> {
-////            List<String> friends = model.getFriends();
-////            List<String> groups = model.getGroups();
-//            ui.setFriends(friends);
-//            ui.setGroups(groups);
-//            for (String group : groups) {
-//                System.out.println("Client is in group: " + group);
-//            }
-//        });
+        // Reload client data from callback
+        loadClientData();
     }
 
     private void openChatWithFriend(String friendName) throws IOException {
-//        model.requestChatHistory(friendName);
-//        ChatView chatView = new ChatView();
-//        Stage stage = new Stage();
-//        chatView.start(stage);
-//        chatView.getFXController().setLabel(friendName);
-//        ChatController chatController = new ChatController(model, chatView, chatView.getFXController());
-//        chatController.loadChatHistory(model.getUsername(), friendName);
+        // TODO: Implement chat view opening
     }
 
     private void openGroupChat(String groupName) throws IOException {
-//        model.requestGroupChatHistory(groupName);
-//        ChatView chatView = new ChatView();
-//        Stage stage = new Stage();
-//        chatView.start(stage);
-//        chatView.getFXController().setLabel("Group: " + groupName);
-//        ChatController chatController = new ChatController(model, chatView, chatView.getFXController());
-//        chatController.loadGroupChatHistory(model.getUsername(), groupName);
+        // TODO: Implement group chat view opening
     }
 
     private void openCommunityChat() throws IOException {
-//        ChatView chatView = new ChatView();
-//        Stage stage = new Stage();
-//        chatView.start(stage);
-//        chatView.getFXController().setLabel("Community Chat");
-//        ChatController chatController = new ChatController(model, chatView, chatView.getFXController());
-//        chatController.loadCommunityChatHistory(model.getUsername());
+        // TODO: Implement community chat view opening
     }
 
     private List<String> filterList(List<String> source, String queryLower) {

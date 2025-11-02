@@ -5,6 +5,7 @@ import AdminMVC.AdminControllers.AdminController;
 import ClientMVC.ClientController.*;
 import AdminMVC.AdminControllers.AdminLoginController;
 import Common.Interfaces.ClientCallbackInterface;
+import Common.Objects.ClientObjects.Client;
 import Common.Objects.ClientObjects.Conversation;
 import Common.Objects.ClientObjects.GroupChat;
 import Common.Objects.ClientObjects.Message;
@@ -17,6 +18,7 @@ import java.util.List;
 public class ClientCallbackImplementation extends UnicastRemoteObject implements ClientCallbackInterface {
     private String username;
     private Gson gson;
+    private Client clientData; // ADDED: Store the full client data
 
     //Admin Controllers
     private AdminLoginController adminLoginController;
@@ -53,9 +55,26 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     }
 
     @Override
-    public void onSuccessfulLogin() throws RemoteException {
-        ClientJSONHandler.setCurrentUser(username);
+    public void onSuccessfulLogin(String clientDataJson) throws RemoteException {
         System.out.println("Server says login success!");
+        System.out.println("Received client data JSON");
+
+        // Parse and store the client data
+        try {
+            this.clientData = gson.fromJson(clientDataJson, Client.class);
+            this.username = clientData.getUsername();
+            ClientJSONHandler.setCurrentUser(username);
+
+            System.out.println("✓ Parsed client data for: " + clientData.getUsername());
+            System.out.println("  - Friends: " + (clientData.getFriends() != null ? clientData.getFriends().size() : 0));
+            System.out.println("  - Groups: " + (clientData.getGroupChats() != null ? clientData.getGroupChats().size() : 0));
+            System.out.println("  - Conversations: " + (clientData.getConversations() != null ? clientData.getConversations().size() : 0));
+
+        } catch (Exception e) {
+            System.err.println("Error parsing client data: " + e.getMessage());
+            e.printStackTrace();
+        }
+
         if(clientLoginController != null){
             clientLoginController.onSuccessfulLoginFromRemote();
         }
@@ -70,7 +89,10 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
 
     @Override
     public void onSuccessfulLogout() throws RemoteException {
-
+        // Clear client data on logout
+        this.clientData = null;
+        this.username = null;
+        ClientJSONHandler.setCurrentUser(null);
     }
 
     @Override
@@ -108,7 +130,6 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     @Override
     public void onFriendRequestSent() throws RemoteException {
         System.out.println("Callback: Friend request sent successfully!");
-        // Notify HomeController if it's active
         if (clientHomeController != null) {
             clientHomeController.handleFriendRequestSent();
         }
@@ -119,8 +140,6 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
 
     }
 
-    // -=-=-=-=-=USERNAME CHANGE CALLBACKS=-=-=-=-=- \\
-    // -=-=-=-=-=Successful Username Change=-=-=-=-=- \\
     @Override
     public void onSuccessfulUsernameChange() throws RemoteException {
         System.out.println("✓ Callback received: Username change successful");
@@ -131,7 +150,6 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
         }
     }
 
-    // -=-=-=-=-=Failed Username Change=-=-=-=-=- \\
     @Override
     public void onFailedUsernameChange() throws RemoteException {
         System.out.println("✗ Callback received: Username change failed");
@@ -141,8 +159,7 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
             System.err.println("⚠ Warning: onUsernameChangeFailed handler is null");
         }
     }
-    // -=-=-=-=-=PASSWORD CHANGE CALLBACKS=-=-=-=-=- \\
-    // -=-=-=-=-=Successful Password Change=-=-=-=-=- \\
+
     @Override
     public void onSuccessfulPasswordChangeWithOldPassword() throws RemoteException {
         System.out.println("✓ Callback received: Password change successful");
@@ -153,7 +170,6 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
         }
     }
 
-    // -=-=-=-=-=Failed Password Change=-=-=-=-=- \\
     @Override
     public void onFailedPasswordChangeWithOldPassword() throws RemoteException {
         System.out.println("✗ Callback received: Password change failed (invalid old password)");
@@ -167,31 +183,20 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     @Override
     public void onFriendRequestReceived() throws RemoteException {
         System.out.println("Callback: New friend request received!");
-
-        // Notify AccountController to refresh the received requests list
         if (clientAccountController != null) {
             // TODO: Optionally show a notification to the user
-            // clientAccountController.showNewFriendRequestNotification();
         }
-
-        // Also notify HomeController if active (to show notification badge, etc.)
         if (clientHomeController != null) {
-            // clientHomeController.showFriendRequestNotification();
+            // TODO: Show notification badge
         }
     }
 
     @Override
     public void onFriendAccepted() throws RemoteException {
         System.out.println("Callback: Friend request accepted!");
-
-        // Notify AccountController
         if (clientAccountController != null) {
-            // TODO: Extract friend name from server response
-            // For now, just refresh
-            // clientAccountController.handleFriendAccepted(friendName);
+            // TODO: Handle friend accepted
         }
-
-        // Refresh HomeController's friends list
         if (clientHomeController != null) {
             clientHomeController.refreshUserData();
         }
@@ -200,25 +205,17 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     @Override
     public void onFriendDeclined() throws RemoteException {
         System.out.println("Callback: Friend request declined!");
-
-        // Notify AccountController
         if (clientAccountController != null) {
-            // TODO: Extract friend name from server response
-            // clientAccountController.handleFriendDeclined(friendName);
+            // TODO: Handle friend declined
         }
     }
 
     @Override
     public void onFriendDeleted() throws RemoteException {
         System.out.println("Callback: Friend removed from list!");
-
-        // Notify AccountController
         if (clientAccountController != null) {
-            // TODO: Extract friend name from server response
-            // clientAccountController.handleFriendRemoved(friendName);
+            // TODO: Handle friend removed
         }
-
-        // Refresh HomeController's friends list
         if (clientHomeController != null) {
             clientHomeController.refreshUserData();
         }
@@ -227,11 +224,8 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     @Override
     public void onCancelFriendRequest() throws RemoteException {
         System.out.println("Callback: Friend request cancelled!");
-
-        // Notify AccountController
         if (clientAccountController != null) {
-            // TODO: Extract friend name from server response
-            // clientAccountController.handleFriendRequestCancelled(friendName);
+            // TODO: Handle request cancelled
         }
     }
 
@@ -385,12 +379,17 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     @Override
     public void onCommunityMessageReceived() throws RemoteException {}
 
+    // GETTERS
     public String getUsername(){
         return username;
     }
 
     public void setUsername(String username){
         this.username = username;
+    }
+
+    public Client getClientData() {
+        return clientData;
     }
 
     //ADMIN CONTROLLER SETUP
@@ -450,7 +449,6 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     public void unsetClientChatController(){
         this.clientChatController = null;
     }
-
 
     //HELPER METHODS
     public Message messageStringToObject(String message) throws RemoteException {
