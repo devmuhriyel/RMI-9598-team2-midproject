@@ -1,7 +1,7 @@
 {
   "clientAccounts": [
     {
-      "username": "bob",
+      "username": "alice",
       "password": "alice123",
       "verificationCode": "superman",
       "friends": ["gian", "diana"],
