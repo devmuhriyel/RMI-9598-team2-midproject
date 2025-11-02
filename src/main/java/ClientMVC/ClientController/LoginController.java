@@ -65,7 +65,7 @@ public class LoginController {
 
     private void attemptLogin(String username, String password) {
         // Set username in callback so it knows who logged in
-        clientCallback.setName(username);
+        clientCallback.setUsername(username);
 
         // Create JSON
         String jsonString = createLoginJson(username, password);

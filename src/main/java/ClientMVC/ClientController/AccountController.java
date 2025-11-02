@@ -32,23 +32,23 @@ public class AccountController {
 
     private void initialize() {
         accountJFXController.updateDisplayedUsername(model.getUsername());
-        accountJFXController.setSentRequestButtonListener(() -> {
-            try {
-                model.getFriendRequests();
-            } catch (RemoteException e) {
-                throw new RuntimeException(e);
-            }
-        });
-        accountJFXController.setAcceptRequestListener(friendName -> {
-            model.acceptFriendRequest(friendName);
-        });
-        accountJFXController.setDeclineRequestListener(friendName -> {
-            try {
-                model.rejectFriendRequest(friendName);
-            } catch (RemoteException e) {
-                throw new RuntimeException(e);
-            }
-        });
+//        accountJFXController.setSentRequestButtonListener(() -> {
+//            try {
+//                model.getFriendRequests();
+//            } catch (RemoteException e) {
+//                throw new RuntimeException(e);
+//            }
+//        });
+//        accountJFXController.setAcceptRequestListener(friendName -> {
+//            model.acceptFriendRequest(friendName);
+//        });
+//        accountJFXController.setDeclineRequestListener(friendName -> {
+//            try {
+//                model.rejectFriendRequest(friendName);
+//            } catch (RemoteException e) {
+//                throw new RuntimeException(e);
+//            }
+//        });
 
         accountJFXController.setBackButtonListener(() -> {
             view.getStage().close();
