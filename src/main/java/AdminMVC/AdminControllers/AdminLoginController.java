@@ -1,5 +1,6 @@
 package AdminMVC.AdminControllers;
 
+import AdminMVC.AdminCallbackImplementation;
 import AdminMVC.AdminModel.UnifiedAdminModel;
 import AdminMVC.AdminView.Admin.AdminView;
 import AdminMVC.AdminView.Login.LoginJFXController;
@@ -20,6 +21,12 @@ public class AdminLoginController {
         this.loginJFXController = loginJFXController;
         this.view = loginView;
         this.model = unifiedModel;
+
+        // Connect callback to this controller
+        if (model.getCallback() instanceof AdminCallbackImplementation) {
+            ((AdminCallbackImplementation) model.getCallback()).setAdminLoginController(this);
+        }
+
         model.setLoginResponseListener(this::handleLoginResponse);
         model.setVerificationCodeValidListener(this::handleVerificationCodeValid);
         model.setPasswordResetListener(this::handlePasswordResetListener);

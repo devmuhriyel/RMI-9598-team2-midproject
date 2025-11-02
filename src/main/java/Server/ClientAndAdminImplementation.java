@@ -93,12 +93,52 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
     //USER LOG IN, SIGN UP, AND OTHER RELATED METHODS
     @Override
     public void signUp(String username, String password, String verificationCode, String jsonString, AdminCallbackInterface adminCallback) throws RemoteException {
-        // Admin signup not implemented - Admin MVC remains unchanged
+        // Admin signup not implemented
+        System.out.println("Admin signup not implemented");
+        adminCallback.onFailedSignUp();
     }
 
     @Override
     public void logIn(String username, String jsonString, AdminCallbackInterface adminCallback) throws RemoteException {
-        // Admin login not implemented - Admin MVC remains unchanged
+        System.out.println(">>> Admin login attempt for: " + username);
+
+        try {
+            // Parse JSON to extract password
+            JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
+            String password = jsonObject.get("password").getAsString();
+
+            System.out.println("  - Looking up admin: " + username);
+
+            // Look up admin
+            Admin admin = allAdmins.get(username);
+            if (admin == null) {
+                System.out.println("  ✗ Admin not found: " + username);
+                adminCallback.onFailedLogin();
+                return;
+            }
+
+            System.out.println("  ✓ Admin found: " + username);
+
+            // Compare password
+            if (!admin.getPassword().equals(password)) {
+                System.out.println("  ✗ Incorrect password for admin: " + username);
+                adminCallback.onFailedLogin();
+                return;
+            }
+
+            System.out.println("  ✓ Password correct");
+
+            // Register callback
+            adminCallbacks.put(username, adminCallback);
+
+            System.out.println("  ✓ Admin login successful: " + username);
+            adminCallback.onSuccessfulLogin();
+
+        } catch (Exception e) {
+            System.err.println("  ✗ Error during admin login: " + e.getMessage());
+            e.printStackTrace();
+            adminCallback.onFailedLogin();
+        }
     }
 
     @Override

@@ -1,6 +1,8 @@
 package AdminMVC.AdminModel;
 
 import AdminMVC.AdminXMLHandler;
+import Common.Interfaces.AdminCallbackInterface;
+import Common.Interfaces.AdminInterface;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -47,6 +49,9 @@ public class UnifiedAdminModel implements Runnable {
     private Consumer<String> communityMessagesUpdateListener;
     private Consumer<String> userStatsListener;
 
+    private AdminInterface server;
+    private AdminCallbackInterface callback;
+
     public enum ConnectionStatus {
         SUCCESS, EMPTY_FIELDS, INVALID_PORT_FORMAT, INVALID_IP_FORMAT, INVALID_PORT_RANGE, CONNECTION_FAILED
     }
@@ -69,12 +74,10 @@ public class UnifiedAdminModel implements Runnable {
         }
     }
 
-    public UnifiedAdminModel(Socket socket) throws IOException {
+    public UnifiedAdminModel(AdminInterface server, AdminCallbackInterface callback) {
         this();
-        this.socket = socket;
-        this.readMSG = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        this.writeMSG = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-        adminClients.add(this);
+        this.server = server;
+        this.callback = callback;
         this.connected = true;
     }
 
@@ -88,6 +91,14 @@ public class UnifiedAdminModel implements Runnable {
 
     public void login(String username, String password) {
         try {
+            if (server == null) {
+                System.err.println("Server not connected");
+                if (loginResponseListener != null) {
+                    Platform.runLater(() -> loginResponseListener.accept("LOGIN_FAILED"));
+                }
+                return;
+            }
+
             if (!adminXMLHandler.validateAdminCredentials(username, password)) {
                 System.err.println("Invalid admin credentials format");
                 if (loginResponseListener != null) {
@@ -96,13 +107,19 @@ public class UnifiedAdminModel implements Runnable {
                 return;
             }
 
-            String message = adminXMLHandler.createAdminLoginRequest(username, password);
-            writeMSG.write(message);
-            writeMSG.newLine();
-            writeMSG.flush();
             adminUsername = username;
-        } catch (IOException e) {
+
+            // Create JSON string with credentials
+            String jsonString = "{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}";
+
+            // Call RMI server login method
+            server.logIn(username, jsonString, callback);
+
+        } catch (Exception e) {
             e.printStackTrace();
+            if (loginResponseListener != null) {
+                Platform.runLater(() -> loginResponseListener.accept("LOGIN_FAILED"));
+            }
         }
     }
 
@@ -900,6 +917,9 @@ public class UnifiedAdminModel implements Runnable {
 
 
     // Getters
+    public AdminCallbackInterface getCallback() {
+        return callback;
+    }
     public ObservableList<Map<String, String>> getAllUsers() {
         return allUsers;
     }
