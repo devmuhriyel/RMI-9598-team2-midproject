@@ -2,6 +2,7 @@ package AdminMVC.AdminControllers;
 
 import AdminMVC.AdminModel.UnifiedAdminModel;
 import AdminMVC.AdminView.Admin.AdminPageJFXController;
+import Common.Objects.ClientObjects.Client;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -11,11 +12,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.rmi.RemoteException;
+import java.util.*;
 
 public class AdminController {
     //VARIABLES
@@ -36,15 +34,6 @@ public class AdminController {
         setupModelListeners();
         setupPasswordResetHandling();
         refreshData();
-        startAutoRefresh();
-    }
-
-    private void startAutoRefresh() {
-        Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(5), event -> {
-            model.requestAllUsersWithStatus();
-        }));
-        timeline.setCycleCount(Animation.INDEFINITE);
-        timeline.play();
     }
 
     private void setupSearchListener() {
@@ -84,10 +73,11 @@ public class AdminController {
             notifyUIOfError("Password must be at least 4 characters long");
             return;
         }
-        String request = "<Request><type>ADMIN_VERIFY_AND_CHANGE_PASSWORD</type><content>" +
-                username + "![]!" + verificationCode + "![]!" + newPassword + "</content></Request>";
-        model.sendAdminCommand(request);
-        notifyUIOfProcessingStatus("Verifying security code and changing password...");
+        try {
+            model.verifyAndChangePassword(username, verificationCode, newPassword);
+        } catch (RemoteException e) {
+            notifyUIOfError("Failed to process password reset: " + e.getMessage());
+        }
     }
 
     public void processPasswordResetRejection(String username) {
@@ -95,11 +85,11 @@ public class AdminController {
             notifyUIOfError("Username cannot be empty");
             return;
         }
-
-        String rejectRequest = "<Request><type>REJECT_PASSWORD_RESET</type><content>" +
-                username + "</content></Request>";
-        model.sendAdminCommand(rejectRequest);
-        notifyUIOfProcessingStatus("Password reset request rejected for user: " + username);
+        try {
+            model.rejectPasswordReset(username);
+        } catch (RemoteException e) {
+            notifyUIOfError("Failed to reject password reset: " + e.getMessage());
+        }
     }
 
     public void processDirectPasswordChange(String username, String newPassword) {
@@ -111,7 +101,11 @@ public class AdminController {
             notifyUIOfError("Password must be at least 4 characters long");
             return;
         }
-        model.changeUserPassword(username, newPassword);
+        try {
+            model.changeUserPassword(username, newPassword);
+        } catch (RemoteException e) {
+            notifyUIOfError("Failed to change password: " + e.getMessage());
+        }
     }
 
     private void notifyUIOfVerificationSuccess(String username) {
@@ -133,6 +127,7 @@ public class AdminController {
             }
         });
     }
+
     private void showPasswordChangeDialog(String username) {
         TextInputDialog passwordDialog = new TextInputDialog();
         passwordDialog.setTitle("Change Password");
@@ -156,6 +151,7 @@ public class AdminController {
             }
         }
     }
+
     private String getStoredVerificationCode(String username) {
         return null;
     }
@@ -279,37 +275,20 @@ public class AdminController {
 
         model.setOperationResultListener(result -> {
             Platform.runLater(() -> {
-                if (result.contains("ADMIN_PASSWORD_RESET_SUCCESS")) {
-                    showAlert("Success", "Password reset completed successfully. Client has been notified with new password.");
-                    if (currentPasswordResetRequest != null) {
-                        currentPasswordResetRequest = null;
-                    }
-                } else if (result.contains("ADMIN_PASSWORD_RESET_FAILED")) {
-                    if (result.contains("Invalid verification code")) {
-                        showAlert("Error", "Verification code does not match user's security code.");
-                    } else {
-                        showAlert("Error", "Password reset failed: " + result);
-                    }
-                } else if (result.contains("PASSWORD_RESET_REJECTED")) {
-                    showAlert("Success", "Password reset request rejected. Client has been notified.");
-                    if (currentPasswordResetRequest != null) {
-                        currentPasswordResetRequest = null;
-                    }
-                } else {
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                    alert.setTitle("Operation Result");
-                    alert.setHeaderText(null);
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Operation Result");
+                alert.setHeaderText(null);
 
-                    if (result.contains("already exists") || result.contains("Failed") ||
-                            result.contains("Invalid") || result.contains("cannot contain")) {
-                        alert.setAlertType(Alert.AlertType.ERROR);
-                        alert.setTitle("Error");
-                    }
-                    alert.setContentText(result);
-                    alert.showAndWait();
+                if (result.contains("already exists") || result.contains("Failed") ||
+                        result.contains("Invalid") || result.contains("cannot contain")) {
+                    alert.setAlertType(Alert.AlertType.ERROR);
+                    alert.setTitle("Error");
                 }
+                alert.setContentText(result);
+                alert.showAndWait();
             });
         });
+
         model.setPasswordResetListener(username -> {
             Platform.runLater(() -> {
                 ui.showPasswordResetNotification(username);
@@ -318,8 +297,12 @@ public class AdminController {
     }
 
     private void performSearch(String query) {
-        model.searchUsers(query);
-        model.searchGroups(query);
+        try {
+            model.searchUsers(query);
+            model.searchGroups(query);
+        } catch (RemoteException e) {
+            notifyUIOfError("Search failed: " + e.getMessage());
+        }
     }
 
     private List<Map<String, String>> filterUsers(List<Map<String, String>> users, String queryLower) {
@@ -345,11 +328,20 @@ public class AdminController {
     }
 
     private void refreshData() {
-        model.loadData();
+        try {
+            model.getAllClientsFromServer();
+            model.getAllGroupsFromServer();
+        } catch (RemoteException e) {
+            notifyUIOfError("Failed to refresh data: " + e.getMessage());
+        }
     }
 
     private void showActiveUsers() {
-        model.requestActiveUsersOnly();
+        try {
+            model.getActiveClientsOnly();
+        } catch (RemoteException e) {
+            notifyUIOfError("Failed to get active users: " + e.getMessage());
+        }
     }
 
     private void showCreateUserDialog() {
@@ -367,7 +359,11 @@ public class AdminController {
             Optional<String> passwordResult = passwordDialog.showAndWait();
             if (passwordResult.isPresent() && !passwordResult.get().trim().isEmpty()) {
                 String password = passwordResult.get().trim();
-                model.createNewUser(username, password);
+                try {
+                    model.createNewUser(username, password);
+                } catch (RemoteException e) {
+                    notifyUIOfError("Failed to create user: " + e.getMessage());
+                }
             }
         }
     }
@@ -379,36 +375,18 @@ public class AdminController {
             return;
         }
         String username = selectedUser.get("username");
-        String verificationCode = ui.getVerificationCodeForUser(username);
-        if (verificationCode != null) {
-            TextInputDialog verificationDialog = new TextInputDialog();
-            verificationDialog.setTitle("Verify Password Reset");
-            verificationDialog.setHeaderText("Client '" + username + "' requested password reset");
-            verificationDialog.setContentText("Enter verification code (sent to user):");
-            Optional<String> codeResult = verificationDialog.showAndWait();
-            if (codeResult.isPresent() && codeResult.get().equals(verificationCode)) {
-                TextInputDialog passwordDialog = new TextInputDialog();
-                passwordDialog.setTitle("Reset Password");
-                passwordDialog.setHeaderText("Reset Password for " + username);
-                passwordDialog.setContentText("New Password:");
-                Optional<String> passwordResult = passwordDialog.showAndWait();
-                if (passwordResult.isPresent() && !passwordResult.get().trim().isEmpty()) {
-                    String newPassword = passwordResult.get().trim();
-                    model.changeUserPassword(username, newPassword);
-                    ui.removePasswordResetRequest(username);
-                }
-            } else {
-                showAlert("Verification Failed", "Invalid verification code.");
-            }
-        } else {
-            TextInputDialog passwordDialog = new TextInputDialog();
-            passwordDialog.setTitle("Edit Client");
-            passwordDialog.setHeaderText("Change Password for " + username);
-            passwordDialog.setContentText("New Password:");
-            Optional<String> result = passwordDialog.showAndWait();
-            if (result.isPresent() && !result.get().trim().isEmpty()) {
-                String newPassword = result.get().trim();
+
+        TextInputDialog passwordDialog = new TextInputDialog();
+        passwordDialog.setTitle("Edit Client");
+        passwordDialog.setHeaderText("Change Password for " + username);
+        passwordDialog.setContentText("New Password:");
+        Optional<String> result = passwordDialog.showAndWait();
+        if (result.isPresent() && !result.get().trim().isEmpty()) {
+            String newPassword = result.get().trim();
+            try {
                 model.changeUserPassword(username, newPassword);
+            } catch (RemoteException e) {
+                notifyUIOfError("Failed to change password: " + e.getMessage());
             }
         }
     }
@@ -426,9 +404,14 @@ public class AdminController {
         confirmAlert.setContentText("Are you sure you want to delete user: " + username + "?");
         Optional<ButtonType> result = confirmAlert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            model.deleteUser(username);
+            try {
+                model.deleteUser(username);
+            } catch (RemoteException e) {
+                notifyUIOfError("Failed to delete user: " + e.getMessage());
+            }
         }
     }
+
     private void deleteSelectedGroup() {
         Map<String, String> selectedGroup = ui.getSelectedGroup();
         if (selectedGroup == null) {
@@ -446,27 +429,41 @@ public class AdminController {
 
         Optional<ButtonType> result = confirmAlert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            model.deleteGroup(groupName, owner);
+            try {
+                model.deleteGroup(groupName, owner);
+            } catch (RemoteException e) {
+                notifyUIOfError("Failed to delete group: " + e.getMessage());
+            }
         }
     }
 
     private void showCommunityMessages() {
-        model.requestCommunityMessages();
+        try {
+            model.getCommunityMessages();
+        } catch (RemoteException e) {
+            notifyUIOfError("Failed to load community messages: " + e.getMessage());
+            return;
+        }
+
         Platform.runLater(() -> {
             Dialog<String> communityDialog = new Dialog<>();
             communityDialog.setTitle("Community Chat");
             communityDialog.setHeaderText("Community Chat - Admin View");
             communityDialog.setResizable(true);
+
             TextArea messagesArea = new TextArea();
             messagesArea.setEditable(false);
             messagesArea.setPrefRowCount(15);
             messagesArea.setPrefColumnCount(50);
             messagesArea.setWrapText(true);
+
             TextField messageField = new TextField();
             messageField.setPromptText("Type your message here...");
             messageField.setPrefWidth(400);
+
             Button sendButton = new Button("Send");
             Button refreshButton = new Button("Refresh");
+
             VBox content = new VBox(10);
             HBox messageInputBox = new HBox(10, messageField, sendButton, refreshButton);
             content.getChildren().addAll(
@@ -475,59 +472,62 @@ public class AdminController {
                     new Label("Send Message:"),
                     messageInputBox
             );
+
             communityDialog.getDialogPane().setContent(content);
             communityDialog.getDialogPane().getButtonTypes().addAll(ButtonType.CLOSE);
+
             loadCommunityMessages(messagesArea);
+
             sendButton.setOnAction(event -> {
                 String messageText = messageField.getText().trim();
                 if (!messageText.isEmpty()) {
-                    sendCommunityMessage(messageText);
+                    try {
+                        model.sendCommunityMessage(messageText);
+                    } catch (RemoteException e) {
+                        notifyUIOfError("Failed to send message: " + e.getMessage());
+                    }
                     messageField.clear();
                     Timeline refreshTimeline = new Timeline(new KeyFrame(Duration.millis(500),
                             e -> loadCommunityMessages(messagesArea)));
                     refreshTimeline.play();
                 }
             });
+
             messageField.setOnKeyPressed(event -> {
                 if (event.getCode() == javafx.scene.input.KeyCode.ENTER) {
                     sendButton.fire();
                 }
             });
+
             refreshButton.setOnAction(event -> {
-                model.requestCommunityMessages();
+                try {
+                    model.getCommunityMessages();
+                } catch (RemoteException e) {
+                    notifyUIOfError("Failed to refresh messages: " + e.getMessage());
+                }
                 loadCommunityMessages(messagesArea);
             });
+
             Timeline autoRefresh = new Timeline(new KeyFrame(Duration.seconds(3),
                     event -> loadCommunityMessages(messagesArea)));
             autoRefresh.setCycleCount(Timeline.INDEFINITE);
             autoRefresh.play();
+
             communityDialog.setOnCloseRequest(event -> autoRefresh.stop());
             communityDialog.showAndWait();
         });
     }
 
     private void loadCommunityMessages(TextArea messagesArea) {
-        if (model.getCommunityMessages() != null && !model.getCommunityMessages().isEmpty()) {
+        if (model.getCommunityMessagesList() != null && !model.getCommunityMessagesList().isEmpty()) {
             Platform.runLater(() -> {
                 StringBuilder messageText = new StringBuilder();
-                for (String message : model.getCommunityMessages()) {
+                for (String message : model.getCommunityMessagesList()) {
                     messageText.append(message).append("\n");
                 }
                 messagesArea.setText(messageText.toString());
                 messagesArea.setScrollTop(Double.MAX_VALUE);
             });
-        }
-    }
-
-    private void sendCommunityMessage(String message) {
-        try {
-            if (model.isConnected() && model.getAdminUsername() != null) {
-                String request = "<Request><type>SEND_COMMUNITY_MESSAGE</type><content>" +
-                        model.getAdminUsername() + "![]!" + message + "</content></Request>";
-                model.sendAdminCommand(request);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
@@ -539,7 +539,84 @@ public class AdminController {
         alert.showAndWait();
     }
 
-    //BUTTON LISTENERS
+    //CALLBACK HANDLERS
+    public void handleSuccessfulSignUp() {
+        showAlert("Success", "Admin account created successfully");
+    }
+
+    public void handleFailedSignUp() {
+        showAlert("Failed", "Failed to create admin account");
+    }
+
+    public void handleSuccessfulLogin() {
+        System.out.println("✓ Controller: Handling successful login");
+        refreshData();
+    }
+
+    public void handleFailedLogin() {
+        System.out.println("✗ Controller: Handling failed login");
+        showAlert("Login Failed", "Invalid username or password");
+    }
+
+    public void handleSuccessfulLogout() {
+        showAlert("Success", "Logged out successfully");
+    }
+
+    public void handleSuccessfulPasswordChange() {
+        showAlert("Success", "Password changed successfully");
+        refreshData();
+    }
+
+    public void handleFailedPasswordChange() {
+        showAlert("Failed", "Failed to change password");
+    }
+
+    public void handleSuccessfulCodeVerification() {
+        showAlert("Success", "Verification code validated");
+    }
+
+    public void handleFailedCodeVerification() {
+        showAlert("Failed", "Invalid verification code");
+    }
+
+    public void handleSearchUserResults() {
+        refreshData();
+    }
+
+    public void handleSearchGroupResults() {
+        refreshData();
+    }
+
+    public void handleDeleteUser() {
+        showAlert("Success", "User deleted successfully");
+        refreshData();
+    }
+
+    public void handleDeleteGroup() {
+        showAlert("Success", "Group deleted successfully");
+        refreshData();
+    }
+
+    public void handleGetChatHistoryOfUser() {
+        // Handle chat history display
+    }
+
+    public void handleGetChatHistoryOfGroup() {
+        // Handle group chat history display
+    }
+
+    public void handleGetChatHistoryOfCommunity() {
+        // Handle community chat history display
+    }
+
+    public void handleCommunityMessageSent() {
+        System.out.println("Community message sent");
+    }
+
+    public void handleCommunityMessageReceived() {
+        System.out.println("Community message received");
+    }
+
     private void setupPasswordResetHandling() {
         model.setVerificationCodeValidListener(this::handleVerificationCodeValidRequest);
     }
