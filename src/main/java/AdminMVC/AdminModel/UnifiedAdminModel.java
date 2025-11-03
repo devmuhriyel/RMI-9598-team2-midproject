@@ -1,43 +1,26 @@
 package AdminMVC.AdminModel;
 
-import AdminMVC.AdminXMLHandler;
+import AdminMVC.AdminJSONHandler;
 import Common.Interfaces.AdminCallbackInterface;
 import Common.Interfaces.AdminInterface;
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
+import Common.Objects.ClientObjects.Client;
+import Common.Objects.ClientObjects.GroupChat;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.util.Duration;
 
-import java.io.*;
-import java.net.Socket;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.locks.ReentrantLock;
+import java.rmi.RemoteException;
+import java.util.*;
 import java.util.function.Consumer;
 
-public class UnifiedAdminModel implements Runnable {
-    private volatile Socket socket;
-    private volatile String ip;
-    private volatile int port;
-    private volatile boolean connected;
-    private final ReentrantLock connectionLock = new ReentrantLock();
-
-    private BufferedReader readMSG;
-    private BufferedWriter writeMSG;
-    private String adminUsername;
-    private volatile boolean shouldStop = false;
-
+public class UnifiedAdminModel {
+    private boolean isLoadingData = false;
     private ObservableList<Map<String, String>> allUsers;
     private ObservableList<Map<String, String>> allGroups;
     private ObservableList<String> activeUsers;
-    private ObservableList<String> communityMessages;
-    private static ArrayList<UnifiedAdminModel> adminClients = new ArrayList<>();
+    private ObservableList<String> communityMessagesList;
 
-    private AdminXMLHandler adminXMLHandler;
+    private AdminJSONHandler adminJSONHandler;
 
     private Consumer<String> passwordResetListener;
     private Consumer<String> verificationCodeValidListener;
@@ -51,44 +34,30 @@ public class UnifiedAdminModel implements Runnable {
 
     private AdminInterface server;
     private AdminCallbackInterface callback;
+    private String adminUsername;
 
-    public enum ConnectionStatus {
-        SUCCESS, EMPTY_FIELDS, INVALID_PORT_FORMAT, INVALID_IP_FORMAT, INVALID_PORT_RANGE, CONNECTION_FAILED
-    }
-
-    public static class ConnectionResult {
-        private final ConnectionStatus status;
-        private final String message;
-
-        public ConnectionResult(ConnectionStatus status, String message) {
-            this.status = status;
-            this.message = message;
-        }
-
-        public ConnectionStatus getStatus() {
-            return status;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-    }
+    // Track online users (received from server callbacks)
+    private Set<String> onlineUsers;
 
     public UnifiedAdminModel(AdminInterface server, AdminCallbackInterface callback) {
         this();
         this.server = server;
         this.callback = callback;
-        this.connected = true;
     }
 
     public UnifiedAdminModel() {
-        this.adminXMLHandler = new AdminXMLHandler();
+        this.adminJSONHandler = new AdminJSONHandler();
         this.allUsers = FXCollections.observableArrayList();
         this.allGroups = FXCollections.observableArrayList();
         this.activeUsers = FXCollections.observableArrayList();
-        this.communityMessages = FXCollections.observableArrayList();
+        this.communityMessagesList = FXCollections.observableArrayList();
+        this.onlineUsers = new HashSet<>();
     }
-
+    public void setAdminUsername(String username) {
+        this.adminUsername = username;
+        System.out.println("✓ Admin username set to: " + username);
+    }
+    // AUTHENTICATION METHODS
     public void login(String username, String password) {
         try {
             if (server == null) {
@@ -99,7 +68,7 @@ public class UnifiedAdminModel implements Runnable {
                 return;
             }
 
-            if (!adminXMLHandler.validateAdminCredentials(username, password)) {
+            if (!adminJSONHandler.validateUsername(username) || !adminJSONHandler.validatePassword(password)) {
                 System.err.println("Invalid admin credentials format");
                 if (loginResponseListener != null) {
                     Platform.runLater(() -> loginResponseListener.accept("LOGIN_FAILED"));
@@ -107,15 +76,14 @@ public class UnifiedAdminModel implements Runnable {
                 return;
             }
 
-            adminUsername = username;
+            // **FIX: Store username BEFORE making the RMI call**
+            this.adminUsername = username;
+            System.out.println("✓ Storing admin username: " + username);
 
-            // Create JSON string with credentials
-            String jsonString = "{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}";
-
-            // Call RMI server login method
+            String jsonString = adminJSONHandler.createLoginJSON(username, password);
             server.logIn(username, jsonString, callback);
-
-        } catch (Exception e) {
+        } catch (RemoteException e) {
+            System.err.println("Error during login: " + e.getMessage());
             e.printStackTrace();
             if (loginResponseListener != null) {
                 Platform.runLater(() -> loginResponseListener.accept("LOGIN_FAILED"));
@@ -123,155 +91,278 @@ public class UnifiedAdminModel implements Runnable {
         }
     }
 
-    public void requestAllUsersWithStatus() {
-        try {
-            if (writeMSG != null && isConnected()) {
-                String request = adminXMLHandler.createGetAllUsersWithStatusRequest();
-                writeMSG.write(request);
-                writeMSG.newLine();
-                writeMSG.flush();
+    public void updateGroupsList(List<Map<String, String>> groups) {
+        Platform.runLater(() -> {
+            allGroups.clear();
+            if (groups != null) {
+                allGroups.addAll(groups);
             }
-        } catch (IOException e) {
+
+            if (dataUpdateListener != null) {
+                dataUpdateListener.accept("GROUPS_UPDATED");
+            }
+        });
+    }
+
+    public void sendAdminCommand(String xmlMessage) {
+        try {
+            if (server == null) {
+                System.err.println("Server not connected");
+                if (operationResultListener != null) {
+                    Platform.runLater(() -> operationResultListener.accept("Command failed: Server not connected"));
+                }
+                return;
+            }
+
+            if (xmlMessage.contains("ADMIN_REQUEST_PASSWORD_RESET_WITH_CODE")) {
+                String content = extractXMLContent(xmlMessage);
+                if (content != null && content.contains("![]!")) {
+                    String[] parts = content.split("!\\[]!");
+                    if (parts.length >= 2) {
+                        String username = parts[0];
+                        String verificationCode = parts[1];
+                    }
+                }
+            } else if (xmlMessage.contains("ADMIN_RESET_PASSWORD")) {
+                String content = extractXMLContent(xmlMessage);
+                if (content != null && content.contains("![]!")) {
+                    String[] parts = content.split("!\\[]!");
+                    if (parts.length >= 2) {
+                        String username = parts[0];
+                        String newPassword = parts[1];
+                        resetAdminPassword(username, newPassword);
+                    }
+                }
+            } else {
+                System.err.println("Unknown admin command: " + xmlMessage);
+                if (operationResultListener != null) {
+                    Platform.runLater(() -> operationResultListener.accept("Unknown command"));
+                }
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error sending admin command: " + e.getMessage());
             e.printStackTrace();
+            if (operationResultListener != null) {
+                Platform.runLater(() -> operationResultListener.accept("Command failed: " + e.getMessage()));
+            }
         }
     }
 
-    public void requestActiveUsersOnly() {
-        try {
-            if (writeMSG != null && isConnected()) {
-                String request = adminXMLHandler.createGetActiveUsersOnlyRequest();
-                writeMSG.write(request);
-                writeMSG.newLine();
-                writeMSG.flush();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+    public void notifyLoginSuccess() {
+        System.out.println(">>> Model: Notifying login success");
+        if (loginResponseListener != null) {
+            Platform.runLater(() -> {
+                loginResponseListener.accept("LOGIN_SUCCESS");
+            });
+        } else {
+            System.err.println("✗ loginResponseListener is null!");
         }
     }
 
-    public void requestAllGroupsEnhanced() {
-        try {
-            if (writeMSG != null && isConnected()) {
-                String request = adminXMLHandler.createGetAllGroupsEnhancedRequest();
-                writeMSG.write(request);
-                writeMSG.newLine();
-                writeMSG.flush();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+    public void notifyLoginFailure() {
+        System.out.println(">>> Model: Notifying login failure");
+        if (loginResponseListener != null) {
+            Platform.runLater(() -> {
+                loginResponseListener.accept("LOGIN_FAILED");
+            });
+        } else {
+            System.err.println("✗ loginResponseListener is null!");
         }
     }
 
-    public void requestActiveUsers() {
+    private String extractXMLContent(String xmlMessage) {
         try {
-            if (writeMSG != null && isConnected()) {
-                String request = adminXMLHandler.createGetActiveUsersRequest();
-                writeMSG.write(request);
-                writeMSG.newLine();
-                writeMSG.flush();
+            int startIndex = xmlMessage.indexOf("<content>") + 9;
+            int endIndex = xmlMessage.indexOf("</content>");
+            if (startIndex > 8 && endIndex > startIndex) {
+                return xmlMessage.substring(startIndex, endIndex);
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
+            System.err.println("Error extracting XML content: " + e.getMessage());
+        }
+        return null;
+    }
+
+    private void resetAdminPassword(String username, String newPassword) throws RemoteException {
+        if (server == null || adminJSONHandler == null) return;
+
+        try {
+            boolean success = adminJSONHandler.changeAdminPassword(username, newPassword);
+
+            if (success) {
+                System.out.println("✓ Admin password reset successful for: " + username);
+                if (operationResultListener != null) {
+                    Platform.runLater(() -> operationResultListener.accept("ADMIN_PASSWORD_RESET_SUCCESS"));
+                }
+            } else {
+                System.out.println("✗ Admin password reset failed for: " + username);
+                if (operationResultListener != null) {
+                    Platform.runLater(() -> operationResultListener.accept("PASSWORD_RESET_FAILED"));
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error resetting admin password: " + e.getMessage());
             e.printStackTrace();
+            if (operationResultListener != null) {
+                Platform.runLater(() -> operationResultListener.accept("PASSWORD_RESET_FAILED"));
+            }
         }
     }
 
-    public void requestCommunityMessages() {
+    public void loadData() {
         try {
-            if (writeMSG != null && isConnected()) {
-                String request = adminXMLHandler.createGetCommunityMessagesRequest();
-                writeMSG.write(request);
-                writeMSG.newLine();
-                writeMSG.flush();
+            if (server == null) {
+                System.err.println("Cannot load data: Server not connected");
+                return;
             }
-        } catch (IOException e) {
+
+            System.out.println("Loading admin data ONE TIME ONLY...");
+
+            // Load all users - this will trigger callbacks
+            getAllClientsFromServer();
+
+            // Load all groups - this will trigger callbacks
+            getAllGroupsFromServer();
+
+            // DON'T call these here - they're redundant
+            // getActiveClientsOnly();
+            // getCommunityMessages();
+
+            System.out.println("✓ Admin initial data load requested");
+
+        } catch (RemoteException e) {
+            System.err.println("Error loading admin data: " + e.getMessage());
             e.printStackTrace();
+            if (operationResultListener != null) {
+                Platform.runLater(() -> operationResultListener.accept("Failed to load data: " + e.getMessage()));
+            }
         }
     }
 
-    public void searchUsers(String keyword) {
-        try {
-            if (writeMSG != null && isConnected()) {
-                String request = adminXMLHandler.createSearchUsersRequest(keyword);
-                writeMSG.write(request);
-                writeMSG.newLine();
-                writeMSG.flush();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+    public void logout(String username) throws RemoteException {
+        if (server != null) {
+            String jsonString = adminJSONHandler.createJSONStringRequest("request", "LOGOUT", username);
+            server.logOut(username, jsonString);
+            adminUsername = null;
         }
     }
 
-    public void searchGroups(String keyword) {
-        try {
-            if (writeMSG != null && isConnected()) {
-                String request = adminXMLHandler.createSearchGroupsRequest(keyword);
-                writeMSG.write(request);
-                writeMSG.newLine();
-                writeMSG.flush();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+    // USER MANAGEMENT METHODS
+    public void getAllClientsFromServer() throws RemoteException {
+        if (server == null) return;
 
-
-    public void deleteUser(String username) {
-        if (!adminXMLHandler.validateUsername(username)) {
-            System.err.println("Invalid username format: " + username);
+        if (isLoadingData) {  // ADD THIS CHECK
+            System.out.println("⚠ Already loading data, skipping duplicate request");
             return;
         }
 
-        try {
-            if (writeMSG != null && isConnected()) {
-                String request = adminXMLHandler.createDeleteUserRequest(username);
-                writeMSG.write(request);
-                writeMSG.newLine();
-                writeMSG.flush();
+        isLoadingData = true;  // SET FLAG
+
+        System.out.println("DEBUG: adminUsername = '" + adminUsername + "'");
+        String jsonString = adminJSONHandler.createJSONStringRequest("request", "GET_ALL_USERS", adminUsername);
+        System.out.println("DEBUG: Sending JSON to server: " + jsonString);
+        server.searchUsers(jsonString);
+
+        // Reset flag after a short delay
+        new Thread(() -> {
+            try {
+                Thread.sleep(1000);  // Wait 1 second
+                isLoadingData = false;
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        }).start();
     }
 
-    public void deleteGroup(String groupName, String owner) {
-        if (!adminXMLHandler.validateGroupName(groupName) || !adminXMLHandler.validateUsername(owner)) {
-            System.err.println("Invalid group name or owner format");
-            return;
-        }
+    public void getActiveClientsOnly() throws RemoteException {
+        if (server == null) return;
 
-        try {
-            if (writeMSG != null && isConnected()) {
-                String request = adminXMLHandler.createDeleteGroupRequest(groupName, owner);
-                writeMSG.write(request);
-                writeMSG.newLine();
-                writeMSG.flush();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        String jsonString = adminJSONHandler.createJSONStringRequest("request", "GET_ACTIVE_USERS", adminUsername);
+        server.searchUsers(jsonString);
     }
 
-    public void changeUserPassword(String username, String newPassword) {
-        if (!adminXMLHandler.validateUsername(username) || !adminXMLHandler.validatePassword(newPassword)) {
-            System.err.println("Invalid username or password format");
-            return;
-        }
+    public void searchUsers(String keyword) throws RemoteException {
+        if (server == null) return;
 
-        try {
-            if (writeMSG != null && isConnected()) {
-                String request = adminXMLHandler.createChangePasswordRequest(username, newPassword);
-                writeMSG.write(request);
-                writeMSG.newLine();
-                writeMSG.flush();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        Map<String, String> searchData = new HashMap<>();
+        searchData.put("keyword", keyword);
+        searchData.put("admin", adminUsername);
+        String jsonString = new com.google.gson.Gson().toJson(searchData);
+        server.searchUsers(jsonString);
     }
 
+    public void searchGroups(String keyword) throws RemoteException {
+        if (server == null) return;
 
-    public void createNewUser(String username, String password) {
-        if (!adminXMLHandler.validateUsername(username)) {
+        Map<String, String> searchData = new HashMap<>();
+        searchData.put("keyword", keyword);
+        searchData.put("admin", adminUsername);
+        String jsonString = new com.google.gson.Gson().toJson(searchData);
+        server.searchGroups(jsonString);
+    }
+
+    public void deleteUser(String username) throws RemoteException {
+        if (server == null || !adminJSONHandler.validateUsername(username)) {
+            throw new RemoteException("Invalid operation");
+        }
+
+        Map<String, String> deleteData = new HashMap<>();
+        deleteData.put("username", username);
+        deleteData.put("admin", adminUsername);
+        String jsonString = new com.google.gson.Gson().toJson(deleteData);
+        server.deleteUser(jsonString);
+    }
+
+    public void deleteGroup(String groupName, String owner) throws RemoteException {
+        if (server == null) return;
+
+        Map<String, String> deleteData = new HashMap<>();
+        deleteData.put("groupName", groupName);
+        deleteData.put("owner", owner);
+        deleteData.put("admin", adminUsername);
+        String jsonString = new com.google.gson.Gson().toJson(deleteData);
+        server.deleteGroup(jsonString);
+    }
+
+    public void changeUserPassword(String username, String newPassword) throws RemoteException {
+        if (server == null || !adminJSONHandler.validatePassword(newPassword)) {
+            throw new RemoteException("Invalid operation");
+        }
+
+        Map<String, String> passwordData = new HashMap<>();
+        passwordData.put("username", username);
+        passwordData.put("newPassword", newPassword);
+        passwordData.put("admin", adminUsername);
+        String jsonString = new com.google.gson.Gson().toJson(passwordData);
+        server.changePassword(jsonString);
+    }
+
+    public void verifyAndChangePassword(String username, String verificationCode, String newPassword) throws RemoteException {
+        if (server == null) return;
+
+        Map<String, String> verifyData = new HashMap<>();
+        verifyData.put("username", username);
+        verifyData.put("verificationCode", verificationCode);
+        verifyData.put("newPassword", newPassword);
+        verifyData.put("admin", adminUsername);
+        String jsonString = new com.google.gson.Gson().toJson(verifyData);
+        server.verifyCode(jsonString);
+    }
+
+    public void rejectPasswordReset(String username) throws RemoteException {
+        if (server == null) return;
+
+        Map<String, String> rejectData = new HashMap<>();
+        rejectData.put("username", username);
+        rejectData.put("admin", adminUsername);
+        rejectData.put("action", "REJECT");
+        String jsonString = new com.google.gson.Gson().toJson(rejectData);
+        server.verifyCode(jsonString);
+    }
+
+    public void createNewUser(String username, String password) throws RemoteException {
+        if (!adminJSONHandler.validateUsername(username)) {
             Platform.runLater(() -> {
                 if (operationResultListener != null) {
                     operationResultListener.accept("Invalid username. Must be 3+ characters, no spaces, and cannot contain: #$%^?\"}|_/\\{}");
@@ -279,7 +370,7 @@ public class UnifiedAdminModel implements Runnable {
             });
             return;
         }
-        if (!adminXMLHandler.validatePassword(password)) {
+        if (!adminJSONHandler.validatePassword(password)) {
             Platform.runLater(() -> {
                 if (operationResultListener != null) {
                     operationResultListener.accept("Invalid password. Must be 4+ characters, no spaces, and cannot contain: #$%^?\"}|_/\\{}");
@@ -288,638 +379,116 @@ public class UnifiedAdminModel implements Runnable {
             return;
         }
 
-        try {
-            if (writeMSG != null && isConnected()) {
-                String request = adminXMLHandler.createNewUserRequest(username, password);
-                writeMSG.write(request);
-                writeMSG.newLine();
-                writeMSG.flush();
-            } else {
-                Platform.runLater(() -> {
-                    if (operationResultListener != null) {
-                        operationResultListener.accept("Not connected to server.");
-                    }
-                });
-            }
-        } catch (IOException e) {
-            Platform.runLater(() -> {
-                if (operationResultListener != null) {
-                    operationResultListener.accept("Failed to create user: Connection error.");
-                }
-            });
+        Map<String, String> createData = new HashMap<>();
+        createData.put("username", username);
+        createData.put("password", password);
+        createData.put("admin", adminUsername);
+        String jsonString = new com.google.gson.Gson().toJson(createData);
+
+        server.signUp(username, password, "", jsonString, callback);
+    }
+
+    // GROUP MANAGEMENT METHODS
+    public void getAllGroupsFromServer() throws RemoteException {
+        if (server == null) return;
+
+        if (isLoadingData) {  // ADD THIS CHECK
+            System.out.println("⚠ Already loading data, skipping duplicate request");
+            return;
         }
+
+        String jsonString = adminJSONHandler.createJSONStringRequest("request", "GET_ALL_GROUPS", adminUsername);
+        server.searchGroups(jsonString);
     }
 
-    public void loadData() {
-        requestAllUsersWithStatus();
-        requestAllGroupsEnhanced();
-        requestActiveUsers();
-        requestCommunityMessages();
+    // CHAT HISTORY METHODS
+    public void getUserChatHistory(String username) throws RemoteException {
+        if (server == null) return;
+
+        Map<String, String> requestData = new HashMap<>();
+        requestData.put("username", username);
+        requestData.put("admin", adminUsername);
+        String jsonString = new com.google.gson.Gson().toJson(requestData);
+        server.getChatHistoryOfUser(jsonString);
     }
 
-    @Override
-    public void run() {
-        try {
-            String msg;
-            while ((msg = readMSG.readLine()) != null && !shouldStop) {
-                if (msg.trim().startsWith("<")) {
-                    String finalMsg = msg.trim();
-                    System.out.println("Admin received: " + finalMsg);
+    public void getGroupChatHistory(String groupName) throws RemoteException {
+        if (server == null) return;
 
-                    try {
-                        String reply = adminXMLHandler.getReply(finalMsg);
-                        if (reply != null) {
-                            handleServerResponse(reply, finalMsg);
-                        }
-                    } catch (Exception e) {
-                        System.out.println("Error parsing server response: " + e.getMessage());
-                        e.printStackTrace();
-                    }
-
-                    if (messageListener != null) {
-                        Platform.runLater(() -> messageListener.accept(finalMsg));
-                    }
-                } else {
-                    System.out.println("Server message: " + msg);
-                }
-            }
-        } catch (IOException e) {
-            if (!shouldStop) {
-                System.err.println("Admin model connection lost: " + e.getMessage());
-            }
-        }
+        Map<String, String> requestData = new HashMap<>();
+        requestData.put("groupName", groupName);
+        requestData.put("admin", adminUsername);
+        String jsonString = new com.google.gson.Gson().toJson(requestData);
+        server.getChatHistoryOfGroup(jsonString);
     }
 
-    private void handleServerResponse(String reply, String finalMsg) {
-        switch (reply) {
-            case "USERS_WITH_STATUS":
-                handleUsersWithStatusResponse(finalMsg);
-                break;
+    public void getCommunityMessages() throws RemoteException {
+        if (server == null) return;
 
-            case "ACTIVE_USERS_ONLY":
-                handleActiveUsersOnlyResponse(finalMsg);
-                break;
-
-            case "GROUPS_ENHANCED":
-                handleGroupsEnhancedResponse(finalMsg);
-                break;
-
-            case "PASSWORD_RESET_REQUESTED":
-                handlePasswordResetResponse(finalMsg);
-                break;
-
-            case "VERIFICATION_CODE_VALID":
-                handleVerificationCodeValidResponse(finalMsg);
-                break;
-
-            case "ADMIN_LOGIN_SUCCESS":
-                try {
-                    String responseBody = adminXMLHandler.getResponseBody(finalMsg);
-                    System.out.println("Admin login successful: " + responseBody);
-
-                    if (loginResponseListener != null) {
-                        Platform.runLater(() -> loginResponseListener.accept("LOGIN_SUCCESS"));
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    if (loginResponseListener != null) {
-                        Platform.runLater(() -> loginResponseListener.accept("LOGIN_FAILED"));
-                    }
-                }
-                break;
-
-            case "ADMIN_LOGIN_FAILED":
-                try {
-                    System.out.println("Admin login failed: " + adminXMLHandler.getResponseBody(finalMsg));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                if (loginResponseListener != null) {
-                    Platform.runLater(() -> loginResponseListener.accept("LOGIN_FAILED"));
-                }
-                break;
-
-            case "ALL_USERS":
-                handleUsersResponse(finalMsg);
-                break;
-
-            case "ALL_GROUPS":
-                handleGroupsResponse(finalMsg);
-                break;
-
-            case "SEARCH_USERS_RESULT":
-                handleUsersResponse(finalMsg);
-                break;
-
-            case "SEARCH_GROUPS_RESULT":
-                handleGroupsResponse(finalMsg);
-                break;
-
-            case "ACTIVE_USERS":
-                handleActiveUsersResponse(finalMsg);
-                break;
-
-            case "COMMUNITY_MESSAGES":
-                handleCommunityMessagesResponse(finalMsg);
-                break;
-
-            case "COMMUNITY_MESSAGE":
-                handleNewCommunityMessage(finalMsg);
-                break;
-
-            case "SEND_COMMUNITY_MESSAGE":
-                handleOperationResponse("Community message sent successfully", finalMsg);
-                requestCommunityMessages();
-                break;
-
-            case "USER_DELETED":
-                handleOperationResponse("Client deleted successfully", finalMsg);
-                loadData();
-                break;
-
-            case "GROUP_DELETED":
-                handleOperationResponse("Group deleted successfully", finalMsg);
-                loadData();
-                break;
-
-            case "PASSWORD_CHANGED":
-                handleOperationResponse("Password changed successfully", finalMsg);
-                loadData();
-                break;
-
-            case "USER_CREATED":
-                handleOperationResponse("Client created successfully", finalMsg);
-                loadData();
-                break;
-
-            case "USER_STATS":
-                handleUserStatsResponse(finalMsg);
-                break;
-
-            case "USER_DELETE_FAILED":
-                handleOperationResponse("Failed to delete user", finalMsg);
-                break;
-
-            case "PASSWORD_CHANGE_FAILED":
-                handleOperationResponse("Failed to change password", finalMsg);
-                break;
-
-            case "USER_CREATE_FAILED":
-                handleOperationResponse("Failed to create user", finalMsg);
-                break;
-
-            case "GROUP_DELETE_FAILED":
-                handleOperationResponse("Failed to delete group", finalMsg);
-                break;
-
-            case "USER_EXISTS":
-                handleOperationResponse("Username already exists. Please choose a different username.", finalMsg);
-                break;
-
-            case "FORCE_LOGOUT":
-                String body = null;
-                try {
-                    body = adminXMLHandler.getResponseBody(finalMsg);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                String finalBody = body;
-                Platform.runLater(() -> {
-                    System.out.println("Force logged out: " + finalBody);
-                    try {
-                        if (socket != null) {
-                            socket.close();
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                });
-                break;
-            case "ADMIN_VERIFICATION_CODE_VALID":
-                handleAdminVerificationCodeValidResponse(finalMsg);
-                break;
-
-            case "ADMIN_VERIFICATION_CODE_INVALID":
-                handleAdminVerificationCodeInvalidResponse(finalMsg);
-                break;
-
-            case "ADMIN_PASSWORD_RESET_SUCCESS":
-                handleAdminPasswordResetSuccessResponse(finalMsg);
-                break;
-
-            case "ADMIN_PASSWORD_RESET_FAILED":
-                handleAdminPasswordResetFailedResponse(finalMsg);
-                break;
-
-            default:
-                System.out.println("Unhandled admin response: " + reply);
-                break;
-        }
+        String jsonString = adminJSONHandler.createJSONStringRequest("request", "GET_COMMUNITY_MESSAGES", adminUsername);
+        server.getChatHistoryOfCommunity(jsonString);
     }
 
-    private void handleAdminVerificationCodeValidResponse(String xmlResponse) {
-        try {
-            String body = adminXMLHandler.getResponseBody(xmlResponse);
-            String username;
-            if (body != null && !body.trim().isEmpty()) {
-                username = body.trim();
-            } else {
-                username = adminUsername != null ? adminUsername : "";
-            }
-            if (verificationCodeValidListener != null) {
-                Platform.runLater(() -> verificationCodeValidListener.accept(username));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    public void sendCommunityMessage(String message) throws RemoteException {
+        if (server == null || message == null || message.trim().isEmpty()) return;
+
+        Map<String, String> messageData = new HashMap<>();
+        messageData.put("sender", adminUsername);
+        messageData.put("message", message);
+        String jsonString = new com.google.gson.Gson().toJson(messageData);
+        server.sendCommunityMessage(jsonString);
     }
 
-    private void handleAdminPasswordResetSuccessResponse(String xmlResponse) {
-        try {
-            String body = adminXMLHandler.getResponseBody(xmlResponse);
-            String message;
+    // DATA UPDATE METHODS - FIXED TO USE AdminJSONHandler
+    public void updateUsersList(List<Client> clients) {
+        Platform.runLater(() -> {
+            allUsers.clear();
+            if (clients != null) {
+                for (Client client : clients) {
+                    Map<String, String> userMap = new HashMap<>();
+                    userMap.put("username", client.getUsername());
+                    userMap.put("password", client.getPassword());
+                    userMap.put("verificationCode", client.getVerificationCode());
 
-            if (body != null && !body.trim().isEmpty()) {
-                String[] parts = body.split("!\\[]!");
-                if (parts.length >= 2) {
-                    String username = parts[0];
-                    String additionalMessage = parts[1];
-                    message = "Admin password for " + username + " has been successfully reset: " + additionalMessage;
-                } else {
-                    message = body;
-                }
-            } else {
-                message = "Admin password has been successfully reset";
-            }
+                    String status = onlineUsers.contains(client.getUsername()) ? "Online" : "Offline";
+                    userMap.put("status", status);
 
-            if (operationResultListener != null) {
-                Platform.runLater(() -> operationResultListener.accept("ADMIN_PASSWORD_RESET_SUCCESS: " + message));
-            }
-        } catch (Exception e) {
-            System.err.println("Error handling admin password reset success response: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    private void handleAdminPasswordResetFailedResponse(String xmlResponse) {
-        try {
-            String body = adminXMLHandler.getResponseBody(xmlResponse);
-            String message;
-
-            if (body != null && !body.trim().isEmpty()) {
-                if (body.contains("No verification code found")) {
-                    message = "Your admin account does not have a verification code set up. Please contact the system administrator.";
-                } else {
-                    message = "Admin password reset failed: " + body;
-                }
-            } else {
-                message = "Admin password reset failed";
-            }
-
-            if (operationResultListener != null) {
-                Platform.runLater(() -> operationResultListener.accept("PASSWORD_RESET_FAILED: " + message));
-            }
-        } catch (Exception e) {
-            System.err.println("Error handling admin password reset failed response: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    private void handleAdminVerificationCodeInvalidResponse(String xmlResponse) {
-        try {
-            String body = adminXMLHandler.getResponseBody(xmlResponse);
-            String message;
-            if (body != null && !body.trim().isEmpty()) {
-                message = body;
-            } else {
-                message = "Invalid admin verification code";
-            }
-
-            if (operationResultListener != null) {
-                Platform.runLater(() -> operationResultListener.accept("VERIFICATION_CODE_INVALID: " + message));
-            }
-        } catch (Exception e) {
-            System.err.println("Error handling admin verification code invalid response: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    private void handleUsersWithStatusResponse(String xmlResponse) {
-        try {
-            String body = adminXMLHandler.getResponseBody(xmlResponse);
-            if (body != null && !body.isEmpty()) {
-                Platform.runLater(() -> {
-                    allUsers.clear();
-                    String[] userEntries = body.split(",");
-                    for (String entry : userEntries) {
-                        if (!entry.trim().isEmpty()) {
-                            String[] parts = entry.split("!\\[]!");
-                            if (parts.length >= 3) {
-                                Map<String, String> user = new HashMap<>();
-                                user.put("username", parts[0]);
-                                user.put("password", parts[1]);
-                                user.put("status", Boolean.parseBoolean(parts[2]) ? "Online" : "Offline");
-                                user.put("isOnline", parts[2]);
-                                allUsers.add(user);
-                            }
-                        }
-                    }
-
-                    if (dataUpdateListener != null) {
-                        dataUpdateListener.accept("USERS_UPDATED");
-                    }
-                });
-            }
-        } catch (Exception e) {
-            System.err.println("Error handling users with status response: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    private void handleActiveUsersOnlyResponse(String xmlResponse) {
-        try {
-            String body = adminXMLHandler.getResponseBody(xmlResponse);
-            if (body != null && !body.isEmpty()) {
-                Platform.runLater(() -> {
-                    allUsers.clear();
-                    String[] userEntries = body.split(",");
-                    for (String entry : userEntries) {
-                        if (!entry.trim().isEmpty()) {
-                            String[] parts = entry.split("!\\[]!");
-                            if (parts.length >= 3) {
-                                Map<String, String> user = new HashMap<>();
-                                user.put("username", parts[0]);
-                                user.put("password", parts[1]);
-                                user.put("status", "Online");
-                                user.put("isOnline", "true");
-                                allUsers.add(user);
-                            }
-                        }
-                    }
-
-                    if (dataUpdateListener != null) {
-                        dataUpdateListener.accept("USERS_UPDATED");
-                    }
-                });
-            }
-        } catch (Exception e) {
-            System.err.println("Error handling active users only response: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    private void handleGroupsEnhancedResponse(String xmlResponse) {
-        try {
-            String body = adminXMLHandler.getResponseBody(xmlResponse);
-            if (body != null && !body.isEmpty()) {
-                Platform.runLater(() -> {
-                    allGroups.clear();
-                    String[] groupEntries = body.split(",");
-                    for (String entry : groupEntries) {
-                        if (!entry.trim().isEmpty()) {
-                            String[] parts = entry.split("!\\[]!");
-                            if (parts.length >= 3) {
-                                Map<String, String> group = new HashMap<>();
-                                group.put("groupName", parts[0]);
-                                group.put("username", parts[1]); // owner
-                                group.put("memberCount", parts[2]);
-                                allGroups.add(group);
-                            }
-                        }
-                    }
-
-                    if (dataUpdateListener != null) {
-                        dataUpdateListener.accept("GROUPS_UPDATED");
-                    }
-                });
-            }
-        } catch (Exception e) {
-            System.err.println("Error handling groups enhanced response: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    private void handleUsersResponse(String xmlResponse) {
-        try {
-            String body = adminXMLHandler.getResponseBody(xmlResponse);
-            if (body != null && !body.isEmpty()) {
-                Platform.runLater(() -> {
-                    allUsers.clear();
-                    String[] userEntries = body.split(",");
-                    for (String entry : userEntries) {
-                        if (!entry.trim().isEmpty()) {
-                            String[] parts = entry.split("!\\[]!");
-                            if (parts.length >= 2) {
-                                Map<String, String> user = new HashMap<>();
-                                user.put("username", parts[0]);
-                                user.put("password", parts[1]);
-                                user.put("status", "Unknown");
-                                user.put("isOnline", "false");
-                                allUsers.add(user);
-                            }
-                        }
-                    }
-
-                    if (dataUpdateListener != null) {
-                        dataUpdateListener.accept("USERS_UPDATED");
-                    }
-                });
-            }
-        } catch (Exception e) {
-            System.err.println("Error handling users response: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    private void handleGroupsResponse(String xmlResponse) {
-        try {
-            String body = adminXMLHandler.getResponseBody(xmlResponse);
-            if (body != null && !body.isEmpty()) {
-                Platform.runLater(() -> {
-                    allGroups.clear();
-                    String[] groupEntries = body.split(",");
-                    for (String entry : groupEntries) {
-                        if (!entry.trim().isEmpty()) {
-                            String[] parts = entry.split("!\\[]!");
-                            if (parts.length >= 2) {
-                                Map<String, String> group = new HashMap<>();
-                                group.put("groupName", parts[0]);
-                                group.put("username", parts[1]); // owner
-                                group.put("memberCount", "1");
-                                allGroups.add(group);
-                            }
-                        }
-                    }
-
-                    if (dataUpdateListener != null) {
-                        dataUpdateListener.accept("GROUPS_UPDATED");
-                    }
-                });
-            }
-        } catch (Exception e) {
-            System.err.println("Error handling groups response: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    private void handlePasswordResetResponse(String xmlResponse) {
-        try {
-            String body = adminXMLHandler.getResponseBody(xmlResponse);
-            if (body != null && !body.isEmpty()) {
-                String[] parts = body.split("!\\[]!");
-                if (parts.length >= 2) {
-                    String username = parts[0];
-                    String verificationCode = parts[1];
-
-                    if (passwordResetListener != null) {
-                        Platform.runLater(() -> passwordResetListener.accept(username));
-                    }
+                    userMap.put("friendsCount", client.getFriends() != null ? String.valueOf(client.getFriends().size()) : "0");
+                    allUsers.add(userMap);
                 }
             }
-        } catch (Exception e) {
-            System.err.println("Error handling password reset response: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
 
-    private void handleVerificationCodeValidResponse(String xmlResponse) {
-        try {
-            String body = adminXMLHandler.getResponseBody(xmlResponse);
-            if (body != null && !body.isEmpty()) {
-                String username = body.trim();
-                
-                if (verificationCodeValidListener != null) {
-                    Platform.runLater(() -> verificationCodeValidListener.accept(username));
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Error handling verification code valid response: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    private void handleActiveUsersResponse(String xmlResponse) {
-        try {
-            String body = adminXMLHandler.getResponseBody(xmlResponse);
-            if (body != null && !body.isEmpty()) {
-                Platform.runLater(() -> {
-                    activeUsers.clear();
-                    String[] users = body.split(",");
-                    for (String user : users) {
-                        if (!user.trim().isEmpty()) {
-                            activeUsers.add(user.trim());
-                        }
-                    }
-
-                    if (activeUsersUpdateListener != null) {
-                        activeUsersUpdateListener.accept("ACTIVE_USERS_UPDATED");
-                    }
-                });
-            }
-        } catch (Exception e) {
-            System.err.println("Error handling active users response: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    private void handleCommunityMessagesResponse(String xmlResponse) {
-        try {
-            String body = adminXMLHandler.getResponseBody(xmlResponse);
-            if (body != null && !body.isEmpty()) {
-                Platform.runLater(() -> {
-                    communityMessages.clear();
-                    String[] messages = body.split("!\\[\\]!");
-                    for (String message : messages) {
-                        if (!message.trim().isEmpty()) {
-                            communityMessages.add(message.trim());
-                        }
-                    }
-
-                    if (communityMessagesUpdateListener != null) {
-                        communityMessagesUpdateListener.accept("COMMUNITY_MESSAGES_UPDATED");
-                    }
-
-                    System.out.println("Loaded " + communityMessages.size() + " community messages for admin");
-                });
-            }
-        } catch (Exception e) {
-            System.err.println("Error handling community messages response: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    private void handleNewCommunityMessage(String xmlResponse) {
-        try {
-            String body = adminXMLHandler.getResponseBody(xmlResponse);
-            if (body != null && !body.isEmpty()) {
-                String[] parts = body.split("!\\[]!", 2);
-                if (parts.length == 2) {
-                    String sender = parts[0];
-                    String message = parts[1];
-
-                    Platform.runLater(() -> {
-                        String formattedMessage = sender + ": " + message + " [" +
-                                java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) + "]";
-                        communityMessages.add(formattedMessage);
-                        if (communityMessages.size() > 100) {
-                            communityMessages.remove(0);
-                        }
-
-                        if (communityMessagesUpdateListener != null) {
-                            communityMessagesUpdateListener.accept("NEW_COMMUNITY_MESSAGE");
-                        }
-
-                        System.out.println("New community message received: " + formattedMessage);
-                    });
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Error handling new community message: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    private void handleOperationResponse(String operation, String xmlResponse) {
-        try {
-            String body = adminXMLHandler.getResponseBody(xmlResponse);
-            String message = operation;
-            if (body != null && !body.trim().isEmpty()) {
-                message = operation + ": " + body;
+            if (dataUpdateListener != null) {
+                dataUpdateListener.accept("USERS_UPDATED");  // THIS TRIGGERS REFRESH
             }
 
-            System.out.println(message);
-
-            if (operationResultListener != null) {
-                String finalMessage = message;
-                Platform.runLater(() -> operationResultListener.accept(finalMessage));
-            }
-
-        } catch (Exception e) {
-            System.err.println("Error handling operation response: " + e.getMessage());
-            e.printStackTrace();
-        }
+            System.out.println("✓ Updated users list: " + allUsers.size() + " users");
+        });
     }
 
-    private void handleUserStatsResponse(String xmlResponse) {
-        try {
-            String body = adminXMLHandler.getResponseBody(xmlResponse);
-            System.out.println("Client stats: " + body);
+    public void updateActiveUsersList(List<String> activeUsernames) {
+        Platform.runLater(() -> {
+            activeUsers.clear();
+            onlineUsers.clear();
 
-            if (userStatsListener != null) {
-                Platform.runLater(() -> userStatsListener.accept(body));
+            if (activeUsernames != null) {
+                activeUsers.addAll(activeUsernames);
+                onlineUsers.addAll(activeUsernames);
             }
-        } catch (Exception e) {
-            System.err.println("Error handling user stats response: " + e.getMessage());
-            e.printStackTrace();
-        }
+
+            if (activeUsersUpdateListener != null) {
+                activeUsersUpdateListener.accept("ACTIVE_USERS_UPDATED");
+            }
+
+            System.out.println("✓ Updated active users: " + onlineUsers.size() + " online");
+        });
     }
 
-
-
-    // Getters
+    // GETTERS
     public AdminCallbackInterface getCallback() {
         return callback;
     }
+
     public ObservableList<Map<String, String>> getAllUsers() {
         return allUsers;
     }
@@ -928,22 +497,19 @@ public class UnifiedAdminModel implements Runnable {
         return allGroups;
     }
 
-    public ObservableList<String> getCommunityMessages() {
-        return communityMessages;
+    public ObservableList<String> getCommunityMessagesList() {
+        return communityMessagesList;
     }
 
     public boolean isConnected() {
-        return connected && socket != null && !socket.isClosed();
-    }
-
-    public int getPort() {
-        return port;
+        return server != null;
     }
 
     public String getAdminUsername() {
         return adminUsername;
     }
 
+    // LISTENER SETTERS
     public void setLoginResponseListener(Consumer<String> listener) {
         this.loginResponseListener = listener;
     }
@@ -959,6 +525,7 @@ public class UnifiedAdminModel implements Runnable {
     public void setCommunityMessagesUpdateListener(Consumer<String> listener) {
         this.communityMessagesUpdateListener = listener;
     }
+
     public void setPasswordResetListener(Consumer<String> listener) {
         this.passwordResetListener = listener;
     }
@@ -966,15 +533,12 @@ public class UnifiedAdminModel implements Runnable {
     public void setVerificationCodeValidListener(Consumer<String> listener) {
         this.verificationCodeValidListener = listener;
     }
-    public void sendAdminCommand(String command) {
-        try {
-            if (writeMSG != null && isConnected()) {
-                writeMSG.write(command);
-                writeMSG.newLine();
-                writeMSG.flush();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
+    public void setActiveUsersUpdateListener(Consumer<String> listener) {
+        this.activeUsersUpdateListener = listener;
+    }
+
+    public void setUserStatsListener(Consumer<String> listener) {
+        this.userStatsListener = listener;
     }
 }

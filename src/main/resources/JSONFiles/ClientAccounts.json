@@ -51,7 +51,7 @@
           ]
         }
       ],
-      "groupchats": [],
+      "groupChats": [],
       "incomingFriendRequests": [
         {
           "requester": "gian",
@@ -145,7 +145,7 @@
           ]
         }
       ],
-      "groupchats": [],
+      "groupChats": [],
       "incomingFriendRequests": [],
       "outgoingFriendRequests": []
     },
@@ -165,7 +165,7 @@
       "verificationCode": "greenlantern",
       "friends": [],
       "conversations": [],
-      "groupchats": [],
+      "groupChats": [],
       "incomingFriendRequests": [],
       "outgoingFriendRequests": []
     },
@@ -175,7 +175,7 @@
       "verificationCode": "Superman",
       "friends": [],
       "conversations": [],
-      "groupchats": [],
+      "groupChats": [],
       "incomingFriendRequests": [],
       "outgoingFriendRequests": []
     },
@@ -185,7 +185,7 @@
       "verificationCode": "kidFlash",
       "friends": [],
       "conversations": [],
-      "groupchats": [],
+      "groupChats": [],
       "incomingFriendRequests": [],
       "outgoingFriendRequests": []
     },
@@ -195,7 +195,16 @@
       "verificationCode": "9874",
       "friends": [],
       "conversations": [],
-      "groupchats": [],
+      "groupChats": [
+        {
+          "groupID": "grp-1762183467863",
+          "groupName": "yesss",
+          "receivers": [
+            "Carlitoo"
+          ],
+          "messages": []
+        }
+      ],
       "incomingFriendRequests": [],
       "outgoingFriendRequests": []
     }

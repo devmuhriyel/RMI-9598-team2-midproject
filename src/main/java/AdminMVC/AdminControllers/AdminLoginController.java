@@ -6,7 +6,6 @@ import AdminMVC.AdminView.Admin.AdminView;
 import AdminMVC.AdminView.Login.LoginJFXController;
 import AdminMVC.AdminView.Login.LoginView;
 
-
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.stage.Stage;
@@ -22,9 +21,11 @@ public class AdminLoginController {
         this.view = loginView;
         this.model = unifiedModel;
 
-        // Connect callback to this controller
+        // Connect callback to this controller AND set the model
         if (model.getCallback() instanceof AdminCallbackImplementation) {
-            ((AdminCallbackImplementation) model.getCallback()).setAdminLoginController(this);
+            AdminCallbackImplementation callback = (AdminCallbackImplementation) model.getCallback();
+            callback.setAdminLoginController(this);
+            callback.setModel(model);  // ADD THIS LINE
         }
 
         model.setLoginResponseListener(this::handleLoginResponse);
@@ -44,6 +45,40 @@ public class AdminLoginController {
 
         loginJFXController.setForgotPasswordLinkListener(() -> {
             handleForgotPassword();
+        });
+    }
+
+    public void handleSuccessfulLogin() {
+        Platform.runLater(() -> {
+            System.out.println("✓ AdminLoginController: Login successful");
+            // This will be called from the callback
+            // The actual UI transition happens in handleLoginResponse
+        });
+    }
+
+    public void handleFailedLogin() {
+        Platform.runLater(() -> {
+            System.out.println("✗ AdminLoginController: Login failed");
+            loginJFXController.showAlert(Alert.AlertType.ERROR,
+                    "Login Failed",
+                    "Invalid username or password");
+            loginJFXController.getLoginButton().setDisable(false);
+        });
+    }
+
+    public void handleSuccessfulCodeVerification() {
+        Platform.runLater(() -> {
+            System.out.println("✓ AdminLoginController: Code verification successful");
+            // Handle successful verification
+        });
+    }
+
+    public void handleFailedCodeVerification() {
+        Platform.runLater(() -> {
+            System.out.println("✗ AdminLoginController: Code verification failed");
+            loginJFXController.showAlert(Alert.AlertType.ERROR,
+                    "Verification Failed",
+                    "Invalid verification code");
         });
     }
 
@@ -168,19 +203,39 @@ public class AdminLoginController {
     public void handleLoginResponse(String response) {
         Platform.runLater(() -> {
             if ("LOGIN_SUCCESS".equals(response)) {
-                view.login();
+                System.out.println("✓ Login successful, transitioning to admin view...");
+
                 try {
-                    AdminView homeView = new AdminView();
-                    Stage stage1 = new Stage();
-                    homeView.start(stage1);
-                    new AdminController(homeView.getFXController(), model);
-                    model.loadData();
+                    Stage loginStage = (Stage) loginJFXController.getLoginButton().getScene().getWindow();
+                    String loggedInUsername = loginJFXController.getUsername();
+
+                    model.setAdminUsername(loggedInUsername);
+
+                    AdminView adminView = new AdminView();
+                    Stage adminStage = new Stage();
+                    adminView.start(adminStage);
+
+                    AdminController adminController = new AdminController(adminView.getFXController(), model);
+
+                    if (model.getCallback() instanceof AdminCallbackImplementation) {
+                        ((AdminCallbackImplementation) model.getCallback()).setAdminController(adminController);
+                    }
+
+                    // Load data ONLY ONCE
+                    model.loadData();  // This should be the ONLY place calling loadData()
+
+                    loginStage.close();
+
+                    System.out.println("✓ Admin view displayed successfully");
+
                 } catch (Exception e) {
+                    System.err.println("✗ Error showing admin view: " + e.getMessage());
                     e.printStackTrace();
+                    loginJFXController.showAlert(Alert.AlertType.ERROR,
+                            "Error",
+                            "Failed to open admin panel: " + e.getMessage());
+                    loginJFXController.getLoginButton().setDisable(false);
                 }
-            } else if ("LOGIN_FAILED".equals(response)) {
-                System.out.println("Invalid admin credentials");
-                loginJFXController.getLoginButton().setDisable(false);
             }
         });
     }

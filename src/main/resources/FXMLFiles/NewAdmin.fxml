@@ -12,7 +12,7 @@
         <Button fx:id="ActiveButton" layoutX="20.0" layoutY="30.0" prefHeight="31.0" prefWidth="119.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Active Users" />
         <Button fx:id="CommunityButton" layoutX="193.0" layoutY="30.0" prefHeight="31.0" prefWidth="170.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Community Messages" />
         <Button fx:id="AddButton" layoutX="421.0" layoutY="30.0" prefHeight="31.0" prefWidth="86.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Add User" />
-        <Button fx:id="refreshButton" layoutX="555.0" layoutY="30.0" prefHeight="24.0" prefWidth="80" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Refresh" />
+        <Button fx:id="refreshButton" layoutX="555.0" layoutY="30.0" prefHeight="31.0" prefWidth="80" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Refresh" />
 
         <!-- Search Components -->
         <TextField fx:id="searchField" layoutX="682.0" layoutY="30.0" prefHeight="31.0" prefWidth="159.0" promptText="Search..." style="-fx-background-radius: 20; -fx-background-color: #2a2a2a; -fx-text-fill: white;" />
@@ -42,10 +42,7 @@
                 <TableColumn fx:id="memberCountCol" prefWidth="273.3" text="Members" />
             </columns>
         </TableView>
-
-        <!-- Group Management Buttons -->
-        <Button fx:id="editGroupButton" layoutX="20.0" layoutY="573.0" prefHeight="31.0" prefWidth="119.0" style="-fx-background-color: #0087b1; -fx-text-fill: white;" text="Edit Group" />
-        <Button fx:id="deleteGroupButton" layoutX="152.0" layoutY="573.0" prefHeight="31.0" prefWidth="119.0" style="-fx-background-color: #b10000; -fx-text-fill: white;" text="Delete Group" />
+        <Button fx:id="deleteGroupButton" layoutX="20.0" layoutY="573.0" prefHeight="31.0" prefWidth="119.0" style="-fx-background-color: #b10000; -fx-text-fill: white;" text="Delete Group" />
 
     </children>
 </AnchorPane>

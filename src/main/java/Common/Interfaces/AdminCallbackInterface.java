@@ -1,7 +1,9 @@
 package Common.Interfaces;
 
+import Common.Objects.ClientObjects.Client;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.List;
 
 public interface AdminCallbackInterface extends Remote {
     //ADMIN LOG IN, SIGN UP, AND OTHER RELATED METHODS
@@ -18,6 +20,11 @@ public interface AdminCallbackInterface extends Remote {
     //ADMIN HOME UI METHODS
     void onSearchUserResults() throws RemoteException;
     void onSearchGroupResults() throws RemoteException;
+
+    // DATA DELIVERY METHODS
+    void onReceiveUsersList(List<Client> users) throws RemoteException;
+    void onReceiveGroupsList(String groupsJson) throws RemoteException;
+    void onReceiveActiveUsersList(List<String> activeUsernames) throws RemoteException; // NEW
 
     //ADMIN ACCOUNT AND GROUP UI METHODS
     void onDeleteUser() throws RemoteException;

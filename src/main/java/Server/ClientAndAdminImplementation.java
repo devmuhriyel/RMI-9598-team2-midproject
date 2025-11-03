@@ -16,6 +16,7 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -100,43 +101,36 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
     }
 
     @Override
-    public void logIn(String username, String jsonString, AdminCallbackInterface adminCallback) throws RemoteException {
+    public synchronized void logIn(String username, String jsonString, AdminCallbackInterface adminCallback) throws RemoteException {
         System.out.println(">>> Admin login attempt for: " + username);
 
         try {
-            // Parse JSON to extract password
+            // Parse JSON string
             JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
             String password = jsonObject.get("password").getAsString();
 
-            System.out.println("  - Looking up admin: " + username);
-
-            // Look up admin
+            // Example: your admin credentials can come from JSON, XML, or a map
             Admin admin = allAdmins.get(username);
+
             if (admin == null) {
-                System.out.println("  ✗ Admin not found: " + username);
+                System.out.println("✗ Admin not found: " + username);
                 adminCallback.onFailedLogin();
                 return;
             }
 
-            System.out.println("  ✓ Admin found: " + username);
-
-            // Compare password
             if (!admin.getPassword().equals(password)) {
-                System.out.println("  ✗ Incorrect password for admin: " + username);
+                System.out.println("✗ Incorrect password for: " + username);
                 adminCallback.onFailedLogin();
                 return;
             }
 
-            System.out.println("  ✓ Password correct");
-
-            // Register callback
+            // Successful login
+            System.out.println("✓ Admin login successful: " + username);
             adminCallbacks.put(username, adminCallback);
-
-            System.out.println("  ✓ Admin login successful: " + username);
             adminCallback.onSuccessfulLogin();
 
         } catch (Exception e) {
-            System.err.println("  ✗ Error during admin login: " + e.getMessage());
+            System.err.println("✗ Error during admin login: " + e.getMessage());
             e.printStackTrace();
             adminCallback.onFailedLogin();
         }
@@ -192,19 +186,16 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
         System.out.println("Client login attempt for: " + username);
 
         try {
-            // Parse JSON to extract username and password
             JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
             String jsonUsername = jsonObject.get("username").getAsString();
             String password = jsonObject.get("password").getAsString();
 
-            // Verify username from parameter matches username in JSON
             if (!username.equals(jsonUsername)) {
                 System.out.println("Login failed: Username mismatch");
                 clientCallback.onFailedLogin();
                 return;
             }
 
-            // Look up client
             Client client = allUsers.get(username);
             if (client == null) {
                 System.out.println("Login failed: Client username not found - " + username);
@@ -212,7 +203,6 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
                 return;
             }
 
-            // Compare password
             if (!client.getPassword().equals(password)) {
                 System.out.println("Login failed: Incorrect password for " + username);
                 clientCallback.onFailedLogin();
@@ -228,10 +218,12 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
             String clientDataJson = gson.toJson(client);
 
             System.out.println("✓ Client login successful: " + username);
-            System.out.println("  - Sending client data (" + clientDataJson.length() + " chars)");
 
             // Send success with client data
             clientCallback.onSuccessfulLogin(clientDataJson);
+
+            // Notify all connected admins about user status change
+            notifyAdminsOfOnlineUsers();
 
         } catch (JsonSyntaxException e) {
             System.err.println("Error parsing login JSON: " + e.getMessage());
@@ -247,22 +239,48 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
     @Override
     public void logOut(String username, String jsonString) throws RemoteException {
         System.out.println("Client logout attempt for: " + username);
-        
+
         try {
-            // Unregister client callback if it exists
             if (clientCallbacks.containsKey(username)) {
                 clientCallbacks.remove(username);
                 System.out.println("Client callback unregistered for: " + username);
             }
-            
+
+            // Notify all connected admins about user status change
+            notifyAdminsOfOnlineUsers();
+
             System.out.println("Client logout successful for: " + username);
-            
+
         } catch (Exception e) {
             System.err.println("Error during client logout: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
+    private void notifyAdminsOfOnlineUsers() {
+        List<String> onlineUsernames = new ArrayList<>(clientCallbacks.keySet());
+
+        // Create a copy to avoid concurrent modification
+        List<Map.Entry<String, AdminCallbackInterface>> adminEntries =
+                new ArrayList<>(adminCallbacks.entrySet());
+
+        for (Map.Entry<String, AdminCallbackInterface> entry : adminEntries) {
+            String adminName = entry.getKey();
+            AdminCallbackInterface adminCallback = entry.getValue();
+
+            callbackExecutor.execute(() -> {
+                try {
+                    // Send list of currently online users
+                    adminCallback.onReceiveActiveUsersList(onlineUsernames);
+                    System.out.println("✓ Sent online users update to admin: " + adminName + " (" + onlineUsernames.size() + " online)");
+                } catch (RemoteException e) {
+                    System.err.println("Failed to notify admin " + adminName + " of online users: " + e.getMessage());
+                    // Remove dead callback
+                    adminCallbacks.remove(adminName);
+                }
+            });
+        }
+    }
     @Override
     public void changePassword(String jsonString) throws RemoteException{
 
@@ -275,23 +293,272 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
 
     //USER/ADMIN HOME UI METHODS
     @Override
-    public void searchUsers(String jsonString) throws RemoteException{
+    public void searchUsers(String jsonString) throws RemoteException {
+        System.out.println(">>> Admin searchUsers called");
+        System.out.println("DEBUG: Received JSON: " + jsonString);  // ADD THIS
 
+        try {
+            JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
+            String keyword = jsonObject.has("keyword") ? jsonObject.get("keyword").getAsString() : "";
+            String admin = jsonObject.has("admin") ? jsonObject.get("admin").getAsString() : "";
+            String messageType = jsonObject.has("messageType") ? jsonObject.get("messageType").getAsString() : "";
+
+            System.out.println("DEBUG: Extracted admin username: '" + admin + "'");  // ADD THIS
+
+            AdminCallbackInterface adminCallback = adminCallbacks.get(admin);
+            if (adminCallback == null) {
+                System.out.println("No admin callback found for: " + admin);
+                System.out.println("DEBUG: Available admin callbacks: " + adminCallbacks.keySet());  // ADD THIS
+                return;
+            }
+
+            fileLock.readLock().lock();
+            try {
+                List<Client> matchingClients = new ArrayList<>();
+                List<String> onlineUsernames = new ArrayList<>(clientCallbacks.keySet());
+
+                if ("GET_ACTIVE_USERS".equals(messageType)) {
+                    // Return only online users
+                    for (String onlineUsername : onlineUsernames) {
+                        Client client = allUsers.get(onlineUsername);
+                        if (client != null) {
+                            matchingClients.add(client);
+                        }
+                    }
+                    System.out.println("✓ Found " + matchingClients.size() + " active users");
+                } else if (keyword.isEmpty()) {
+                    // Return all users
+                    matchingClients.addAll(allUsers.values());
+                    System.out.println("✓ Returning all " + matchingClients.size() + " users");
+                } else {
+                    // Search by keyword
+                    for (Client client : allUsers.values()) {
+                        if (client.getUsername().toLowerCase().contains(keyword.toLowerCase())) {
+                            matchingClients.add(client);
+                        }
+                    }
+                    System.out.println("✓ Found " + matchingClients.size() + " users matching: " + keyword);
+                }
+
+                // Send data to admin
+                List<Client> finalMatchingClients = matchingClients;
+                List<String> finalOnlineUsernames = onlineUsernames;
+
+                callbackExecutor.execute(() -> {
+                    try {
+                        // Send user list
+                        adminCallback.onReceiveUsersList(finalMatchingClients);
+                        // Send active users list for status tracking
+                        adminCallback.onReceiveActiveUsersList(finalOnlineUsernames);
+                        // Notify search complete
+                        adminCallback.onSearchUserResults();
+                    } catch (RemoteException e) {
+                        System.err.println("Failed to send search results to admin: " + e.getMessage());
+                    }
+                });
+
+            } finally {
+                fileLock.readLock().unlock();
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error in searchUsers: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     @Override
-    public void searchGroups(String jsonString) throws RemoteException{
+    public void searchGroups(String jsonString) throws RemoteException {
+        System.out.println(">>> Admin searchGroups called");
 
+        try {
+            JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
+            String keyword = jsonObject.has("keyword") ? jsonObject.get("keyword").getAsString() : "";
+            String admin = jsonObject.has("admin") ? jsonObject.get("admin").getAsString() : "";
+
+            AdminCallbackInterface adminCallback = adminCallbacks.get(admin);
+            if (adminCallback == null) {
+                System.out.println("No admin callback found for: " + admin);
+                return;
+            }
+
+            fileLock.readLock().lock();
+            try {
+                List<GroupChat> matchingGroups = new ArrayList<>();
+
+                // Search through all users' group chats
+                for (Client client : allUsers.values()) {
+                    if (client.getGroupChats() != null) {
+                        for (GroupChat group : client.getGroupChats()) {
+                            if (keyword.isEmpty() ||
+                                    (group.getGroupName() != null && group.getGroupName().toLowerCase().contains(keyword.toLowerCase()))) {
+                                // Check if group already added
+                                boolean exists = false;
+                                for (GroupChat g : matchingGroups) {
+                                    if (g.getGroupID().equals(group.getGroupID())) {
+                                        exists = true;
+                                        break;
+                                    }
+                                }
+                                if (!exists) {
+                                    matchingGroups.add(group);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                System.out.println("✓ Found " + matchingGroups.size() + " groups matching: " + keyword);
+
+                // SEND THE DATA TO ADMIN
+                Gson gson = new Gson();
+                String groupsJson = gson.toJson(matchingGroups);
+
+                callbackExecutor.execute(() -> {
+                    try {
+                        adminCallback.onReceiveGroupsList(groupsJson);
+                        adminCallback.onSearchGroupResults();
+                    } catch (RemoteException e) {
+                        System.err.println("Failed to send group search results to admin: " + e.getMessage());
+                    }
+                });
+
+            } finally {
+                fileLock.readLock().unlock();
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error in searchGroups: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
-
     @Override
     public void deleteUser(String jsonString) throws RemoteException {
+        System.out.println(">>> Admin deleteUser called");
 
+        try {
+            JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
+            String username = jsonObject.get("username").getAsString();
+            String admin = jsonObject.has("admin") ? jsonObject.get("admin").getAsString() : "";
+
+            AdminCallbackInterface adminCallback = adminCallbacks.get(admin);
+
+            fileLock.writeLock().lock();
+            try {
+                Client clientToDelete = allUsers.get(username);
+                if (clientToDelete == null) {
+                    System.out.println("✗ User not found: " + username);
+                    if (adminCallback != null) {
+                        callbackExecutor.execute(() -> {
+                            try {
+                                adminCallback.onDeleteUser();
+                            } catch (RemoteException e) {
+                                System.err.println("Failed to notify admin: " + e.getMessage());
+                            }
+                        });
+                    }
+                    return;
+                }
+
+                // Remove user from all data structures
+                allUsers.remove(username);
+                clientCallbacks.remove(username);
+                clientAccountsList.getClients().removeIf(c -> c.getUsername().equals(username));
+
+                // Remove from other users' friend lists
+                for (Client client : clientAccountsList.getClients()) {
+                    if (client.getFriends() != null) {
+                        client.getFriends().remove(username);
+                    }
+
+                    // Remove friend requests
+                    if (client.getIncomingFriendRequests() != null) {
+                        client.getIncomingFriendRequests().removeIf(req ->
+                                req.getRequester().equals(username) || req.getResponder().equals(username));
+                    }
+                    if (client.getOutgoingFriendRequests() != null) {
+                        client.getOutgoingFriendRequests().removeIf(req ->
+                                req.getRequester().equals(username) || req.getResponder().equals(username));
+                    }
+                }
+
+                // Save changes
+                serverJSONHandler.writeClientAccountFile("src/main/resources/JSONFiles/ClientAccounts.json", clientAccountsList);
+
+                System.out.println("✓ User deleted: " + username);
+
+                if (adminCallback != null) {
+                    callbackExecutor.execute(() -> {
+                        try {
+                            adminCallback.onDeleteUser();
+                        } catch (RemoteException e) {
+                            System.err.println("Failed to notify admin: " + e.getMessage());
+                        }
+                    });
+                }
+
+            } finally {
+                fileLock.writeLock().unlock();
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error in deleteUser: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     @Override
-    public void deleteGroup(String jsonString) throws RemoteException{
+    public void deleteGroup(String jsonString) throws RemoteException {
+        System.out.println(">>> Admin deleteGroup called");
 
+        try {
+            JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
+            String groupName = jsonObject.get("groupName").getAsString();
+            String owner = jsonObject.get("owner").getAsString();
+            String admin = jsonObject.has("admin") ? jsonObject.get("admin").getAsString() : "";
+
+            AdminCallbackInterface adminCallback = adminCallbacks.get(admin);
+
+            fileLock.writeLock().lock();
+            try {
+                boolean groupDeleted = false;
+
+                // Remove group from all users
+                for (Client client : clientAccountsList.getClients()) {
+                    if (client.getGroupChats() != null) {
+                        boolean removed = client.getGroupChats().removeIf(g ->
+                                g.getGroupName().equals(groupName));
+                        if (removed) {
+                            groupDeleted = true;
+                        }
+                    }
+                }
+
+                if (groupDeleted) {
+                    serverJSONHandler.writeClientAccountFile("src/main/resources/JSONFiles/ClientAccounts.json", clientAccountsList);
+                    System.out.println("✓ Group deleted: " + groupName);
+                } else {
+                    System.out.println("✗ Group not found: " + groupName);
+                }
+
+                if (adminCallback != null) {
+                    callbackExecutor.execute(() -> {
+                        try {
+                            adminCallback.onDeleteGroup();
+                        } catch (RemoteException e) {
+                            System.err.println("Failed to notify admin: " + e.getMessage());
+                        }
+                    });
+                }
+
+            } finally {
+                fileLock.writeLock().unlock();
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error in deleteGroup: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -1217,18 +1484,137 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
         return groupChatWith;
     }
     @Override
-    public String getChatHistoryOfUser(String jsonString) throws RemoteException{
-        return "";
+    public String getChatHistoryOfUser(String jsonString) throws RemoteException {
+        System.out.println(">>> Admin getChatHistoryOfUser called");
+
+        try {
+            JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
+            String username = jsonObject.get("username").getAsString();
+            String admin = jsonObject.has("admin") ? jsonObject.get("admin").getAsString() : "";
+
+            AdminCallbackInterface adminCallback = adminCallbacks.get(admin);
+
+            fileLock.readLock().lock();
+            try {
+                Client client = allUsers.get(username);
+                if (client == null) {
+                    return "{}";
+                }
+
+                Gson gson = new Gson();
+                String chatHistory = gson.toJson(client.getConversations());
+
+                if (adminCallback != null) {
+                    callbackExecutor.execute(() -> {
+                        try {
+                            adminCallback.onGetChatHistoryOfUser();
+                        } catch (RemoteException e) {
+                            System.err.println("Failed to notify admin: " + e.getMessage());
+                        }
+                    });
+                }
+
+                return chatHistory;
+
+            } finally {
+                fileLock.readLock().unlock();
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error in getChatHistoryOfUser: " + e.getMessage());
+            e.printStackTrace();
+            return "{}";
+        }
     }
 
     @Override
-    public String getChatHistoryOfGroup(String jsonString) throws RemoteException{
-        return "";
+    public String getChatHistoryOfGroup(String jsonString) throws RemoteException {
+        System.out.println(">>> Admin getChatHistoryOfGroup called");
+
+        try {
+            JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
+            String groupName = jsonObject.get("groupName").getAsString();
+            String admin = jsonObject.has("admin") ? jsonObject.get("admin").getAsString() : "";
+
+            AdminCallbackInterface adminCallback = adminCallbacks.get(admin);
+
+            fileLock.readLock().lock();
+            try {
+                GroupChat foundGroup = null;
+
+                // Find the group
+                for (Client client : allUsers.values()) {
+                    if (client.getGroupChats() != null) {
+                        for (GroupChat group : client.getGroupChats()) {
+                            if (group.getGroupName().equals(groupName)) {
+                                foundGroup = group;
+                                break;
+                            }
+                        }
+                        if (foundGroup != null) break;
+                    }
+                }
+
+                if (foundGroup == null) {
+                    return "{}";
+                }
+
+                Gson gson = new Gson();
+                String chatHistory = gson.toJson(foundGroup.getMessages());
+
+                if (adminCallback != null) {
+                    callbackExecutor.execute(() -> {
+                        try {
+                            adminCallback.onGetChatHistoryOfGroup();
+                        } catch (RemoteException e) {
+                            System.err.println("Failed to notify admin: " + e.getMessage());
+                        }
+                    });
+                }
+
+                return chatHistory;
+
+            } finally {
+                fileLock.readLock().unlock();
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error in getChatHistoryOfGroup: " + e.getMessage());
+            e.printStackTrace();
+            return "{}";
+        }
     }
 
     @Override
-    public String getChatHistoryOfCommunity(String jsonString) throws RemoteException{
-        return "";
+    public String getChatHistoryOfCommunity(String jsonString) throws RemoteException {
+        System.out.println(">>> Admin getChatHistoryOfCommunity called");
+
+        try {
+            JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
+            String admin = jsonObject.has("admin") ? jsonObject.get("admin").getAsString() : "";
+
+            AdminCallbackInterface adminCallback = adminCallbacks.get(admin);
+
+            // TODO: Implement community chat storage
+            // For now, return empty
+
+            if (adminCallback != null) {
+                callbackExecutor.execute(() -> {
+                    try {
+                        adminCallback.onGetChatHistoryOfCommunity();
+                    } catch (RemoteException e) {
+                        System.err.println("Failed to notify admin: " + e.getMessage());
+                    }
+                });
+            }
+
+            return "{}";
+
+        } catch (Exception e) {
+            System.err.println("Error in getChatHistoryOfCommunity: " + e.getMessage());
+            e.printStackTrace();
+            return "{}";
+        }
     }
 
     //USER/ADMIN PRIVATE CHATTING METHODS
@@ -1646,50 +2032,48 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
     public void createGroupChat(String jsonString) throws RemoteException{
         String creator;
         String groupName;
-        java.util.List<String> members = new java.util.ArrayList<>();
 
         try {
             JsonObject json = JsonParser.parseString(jsonString).getAsJsonObject();
             creator = json.get("creator").getAsString();
             groupName = json.get("groupName").getAsString();
 
-            if (json.has("members") && json.get("members").isJsonArray()) {
-                for (var el : json.get("members").getAsJsonArray()) {
-                    String m = el.getAsString().trim();
-                    if (!m.isEmpty() && !members.contains(m)) {
-                        members.add(m);
-                    }
-                }
-            }
         } catch (Exception e) {
             System.err.println("Server Error: Failed to parse createGroupChat JSON: " + jsonString);
             throw new RemoteException("Invalid create group format.", e);
-        }
-
-        // Ensure creator is included
-        if (!members.contains(creator)) {
-            members.add(creator);
         }
 
         String groupID = "grp-" + System.currentTimeMillis();
 
         fileLock.writeLock().lock();
         try {
-            // Create GroupChat object for each member
-            for (String member : members) {
-                Client client = findClient(member);
-                if (client == null) {
-                    System.out.println("Warning: Skipping unknown member in group creation: " + member);
-                    continue;
-                }
-                if (client.getGroupChats() == null) {
-                    client.setGroupChats(new ArrayList<>());
-                }
-                // Build receivers list (all members)
-                java.util.List<String> receivers = new java.util.ArrayList<>(members);
-                GroupChat gc = new GroupChat(groupID, groupName, receivers, new ArrayList<>());
-                client.getGroupChats().add(gc);
+            // Create GroupChat ONLY for the creator; others are NOT auto-added
+            Client creatorClient = findClient(creator);
+            if (creatorClient == null) {
+                throw new RemoteException("Creator not found: " + creator);
             }
+
+            if (creatorClient.getGroupChats() == null) {
+                creatorClient.setGroupChats(new ArrayList<>());
+            }
+
+            // Prevent duplicate group names for the same creator
+            for (GroupChat existing : creatorClient.getGroupChats()) {
+                if (existing.getGroupName() != null && existing.getGroupName().equalsIgnoreCase(groupName)) {
+                    ClientCallbackInterface cb = clientCallbacks.get(creator);
+                    if (cb != null) {
+                        callbackExecutor.execute(() -> {
+                            try { cb.onFailedGroupCreation(); } catch (RemoteException ignored) {}
+                        });
+                    }
+                    return;
+                }
+            }
+
+            java.util.List<String> receivers = new java.util.ArrayList<>();
+            receivers.add(creator);
+            GroupChat gc = new GroupChat(groupID, groupName, receivers, new ArrayList<>());
+            creatorClient.getGroupChats().add(gc);
 
             // Persist to file
             serverJSONHandler.writeClientAccountFile("src/main/resources/JSONFiles/ClientAccounts.json", clientAccountsList);
@@ -1702,18 +2086,12 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
             fileLock.writeLock().unlock();
         }
 
-        // Notify online members
-        for (String member : members) {
-            ClientCallbackInterface cb = clientCallbacks.get(member);
-            if (cb != null) {
-                callbackExecutor.execute(() -> {
-                    try {
-                        cb.onSuccessfulGroupCreation();
-                    } catch (RemoteException e) {
-                        System.err.println("Failed to notify group creation to " + member + ": " + e.getMessage());
-                    }
-                });
-            }
+        // Notify creator only
+        ClientCallbackInterface cb = clientCallbacks.get(creator);
+        if (cb != null) {
+            callbackExecutor.execute(() -> {
+                try { cb.onSuccessfulGroupCreation(); } catch (RemoteException ignored) {}
+            });
         }
     }
 
@@ -1729,11 +2107,62 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
 
     //USER/ADMIN COMMUNITY CHATTING METHODS
     @Override
-    public void sendCommunityMessage(String jsonString) throws RemoteException{
+    public void sendCommunityMessage(String jsonString) throws RemoteException {
+        System.out.println(">>> Admin sendCommunityMessage called");
 
+        try {
+            JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
+            String sender = jsonObject.get("sender").getAsString();
+            String message = jsonObject.get("message").getAsString();
+
+            // Notify admin callback
+            AdminCallbackInterface adminCallback = adminCallbacks.get(sender);
+            if (adminCallback != null) {
+                callbackExecutor.execute(() -> {
+                    try {
+                        adminCallback.onCommunityMessageSent();
+                    } catch (RemoteException e) {
+                        System.err.println("Failed to notify admin: " + e.getMessage());
+                    }
+                });
+            }
+
+            // Notify all connected clients (optional)
+            for (Map.Entry<String, ClientCallbackInterface> entry : clientCallbacks.entrySet()) {
+                callbackExecutor.execute(() -> {
+                    try {
+                        // If you have a community message callback for clients
+                        // entry.getValue().onCommunityMessageReceived(message);
+                    } catch (Exception e) {
+                        System.err.println("Failed to notify client: " + e.getMessage());
+                    }
+                });
+            }
+
+            System.out.println("✓ Community message sent from " + sender + ": " + message);
+
+        } catch (Exception e) {
+            System.err.println("Error in sendCommunityMessage: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     //HELPERS
+    public void registerAdminCallback(String username, AdminCallbackInterface callback) throws RemoteException {
+        if (username == null || callback == null) {
+            throw new RemoteException("Username and callback cannot be null");
+        }
+        adminCallbacks.put(username, callback);
+        System.out.println("✓ Admin callback registered for: " + username);
+    }
+
+    public void unregisterAdminCallback(String username) throws RemoteException {
+        if (username == null) {
+            throw new RemoteException("Username cannot be null");
+        }
+        adminCallbacks.remove(username);
+        System.out.println("✓ Admin callback unregistered for: " + username);
+    }
     private Client findClient(String username) {
         if (clientAccountsList != null && clientAccountsList.getClients() != null) {
             for (Client c : clientAccountsList.getClients()) {
