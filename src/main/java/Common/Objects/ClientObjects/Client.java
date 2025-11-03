@@ -11,14 +11,10 @@ public class Client implements Serializable {
     private String verificationCode;
     private List<String> friends;
     private List<Conversation> conversations;
-
-    @SerializedName("groupchats")  // Match your JSON field name
     private List<GroupChat> groupChats;
-
     private List<FriendRequest> incomingFriendRequests;
     private List<FriendRequest> outgoingFriendRequests;
 
-    // No-arg constructor for Gson
     public Client() {
         this.friends = new ArrayList<>();
         this.conversations = new ArrayList<>();

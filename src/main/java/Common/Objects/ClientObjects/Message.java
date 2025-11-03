@@ -5,19 +5,17 @@ import java.util.List;
 
 public class Message implements Serializable {
     private String sender;
-    private String receiver;  // For private messages
-    private List<String> receivers;  // For group messages
+    private String receiver;
+    private List<String> receivers;
     private String content;
-    private String fileData;  // Base64 encoded file data
-    private String fileName;  // Original file name
-    private boolean isFile;   // Flag to indicate if this is a file message
+    private String fileData;
+    private String fileName;
+    private boolean isFile;
 
-    // No-arg constructor for Gson
     public Message() {
         this.isFile = false;
     }
 
-    // Constructor for private text message
     public Message(String sender, String receiver, String content) {
         this.sender = sender;
         this.receiver = receiver;
@@ -25,7 +23,6 @@ public class Message implements Serializable {
         this.isFile = false;
     }
 
-    // Constructor for group text message
     public Message(String sender, List<String> receivers, String content) {
         this.sender = sender;
         this.receivers = receivers;
@@ -33,7 +30,6 @@ public class Message implements Serializable {
         this.isFile = false;
     }
 
-    // Constructor for private file message
     public Message(String sender, String receiver, String fileName, String fileData, boolean isFile) {
         this.sender = sender;
         this.receiver = receiver;
@@ -43,7 +39,6 @@ public class Message implements Serializable {
         this.content = "[FILE: " + fileName + "]";
     }
 
-    // Constructor for group file message
     public Message(String sender, List<String> receivers, String fileName, String fileData, boolean isFile) {
         this.sender = sender;
         this.receivers = receivers;

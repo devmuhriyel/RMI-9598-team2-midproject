@@ -3,9 +3,9 @@ package ClientMVC.ClientController;
 import ClientMVC.ClientCallbackImplementation;
 import ClientMVC.ClientModel.UnifiedClientModel;
 import ClientMVC.ClientView.Account.AccountView;
+import ClientMVC.ClientView.Chat.ChatView;
 import ClientMVC.ClientView.Home.HomeJFXController;
 import ClientMVC.ClientView.Home.HomeView;
-import ClientMVC.ClientView.Chat.ChatView;
 import Common.Objects.ClientObjects.Client;
 import Common.Objects.ClientObjects.FriendRequest;
 import Common.Objects.ClientObjects.GroupChat;
@@ -34,7 +34,7 @@ public class HomeController {
         callback.setClientHomeController(this);
 
         initialize();
-        loadClientData(); // Load data immediately after initialization
+        loadClientData();
     }
 
     private void initialize() {
@@ -66,25 +66,31 @@ public class HomeController {
         });
 
         ui.setFriendClickListener(friendName -> {
-            try {
-                openChatWithFriend(friendName);
-                view.openChatWithFriend();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            System.out.println("Friend clicked: " + friendName);
+            Platform.runLater(() -> {
+                try {
+                    openChatWithFriend(friendName);
+                } catch (IOException e) {
+                    System.err.println("Failed to open chat: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            });
         });
 
         ui.setGroupClickListener(groupName -> {
-            try {
-                if (groupName.equals("Community Chat")) {
-                    openCommunityChat();
-                } else {
-                    openGroupChat(groupName);
+            System.out.println("Group clicked: " + groupName);
+            Platform.runLater(() -> {
+                try {
+                    if (groupName.equals("Community Chat")) {
+                        openCommunityChat();
+                    } else {
+                        openGroupChat(groupName);
+                    }
+                } catch (IOException e) {
+                    System.err.println("Failed to open group chat: " + e.getMessage());
+                    e.printStackTrace();
                 }
-                view.openChatWithFriend();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            });
         });
 
         ui.setAddFriendListener(username -> {
@@ -105,11 +111,9 @@ public class HomeController {
         if (clientData != null) {
             System.out.println("Loading client data into HomeView...");
 
-            // Set username
             model.setUsername(clientData.getUsername());
             ui.setUserLabel(clientData.getUsername());
 
-            // Load friends list
             List<String> friends = clientData.getFriends();
             if (friends != null && !friends.isEmpty()) {
                 ui.setFriends(friends);
@@ -119,7 +123,6 @@ public class HomeController {
                 System.out.println("✓ No friends to load");
             }
 
-            // Load group chats
             List<GroupChat> groupChats = clientData.getGroupChats();
             if (groupChats != null && !groupChats.isEmpty()) {
                 List<String> groupNames = new ArrayList<>();
@@ -176,11 +179,8 @@ public class HomeController {
     }
 
     public void refreshUserData() {
-        // Reload client data from callback
         loadClientData();
     }
-
-    // In HomeController.java
 
     public void updateFriendsList(List<String> friends) {
         Platform.runLater(() -> {
@@ -190,16 +190,80 @@ public class HomeController {
         });
     }
 
+    // FIXED: Complete chat opening implementation
     private void openChatWithFriend(String friendName) throws IOException {
-        // TODO: Implement chat view opening
+        System.out.println("Opening chat with: " + friendName);
+        try {
+            ChatView chatView = new ChatView();
+            Stage chatStage = new Stage();
+            chatView.start(chatStage);
+
+            ChatController chatController = new ChatController(
+                    model,
+                    chatView,
+                    chatView.getFXController(),
+                    clientCallback
+            );
+
+            clientCallback.setClientChatController(chatController);
+            chatController.setCurrentChatPartner(friendName);
+            chatController.loadChatHistory(friendName);
+
+            System.out.println("✓ Chat window opened for: " + friendName);
+
+        } catch (Exception e) {
+            System.err.println("Error opening chat with " + friendName);
+            e.printStackTrace();
+        }
     }
 
     private void openGroupChat(String groupName) throws IOException {
-        // TODO: Implement group chat view opening
+        System.out.println("Opening group chat: " + groupName);
+        try {
+            // Find the group ID from client data
+            Client clientData = clientCallback.getClientData();
+            String groupID = null;
+
+            if (clientData != null && clientData.getGroupChats() != null) {
+                for (GroupChat gc : clientData.getGroupChats()) {
+                    if (gc.getGroupName().equals(groupName)) {
+                        groupID = gc.getGroupID();
+                        break;
+                    }
+                }
+            }
+
+            if (groupID == null) {
+                System.err.println("Could not find group ID for: " + groupName);
+                return;
+            }
+
+            ChatView chatView = new ChatView();
+            Stage chatStage = new Stage();
+            chatView.start(chatStage);
+
+            ChatController chatController = new ChatController(
+                    model,
+                    chatView,
+                    chatView.getFXController(),
+                    clientCallback
+            );
+
+            clientCallback.setClientChatController(chatController);
+            chatController.setCurrentGroupChat(groupID, groupName);
+            chatController.loadGroupChatHistory(groupID);
+
+            System.out.println("✓ Group chat window opened for: " + groupName);
+
+        } catch (Exception e) {
+            System.err.println("Error opening group chat " + groupName);
+            e.printStackTrace();
+        }
     }
 
     private void openCommunityChat() throws IOException {
-        // TODO: Implement community chat view opening
+        System.out.println("Opening community chat");
+        // TODO: Implement community chat
     }
 
     private List<String> filterList(List<String> source, String queryLower) {

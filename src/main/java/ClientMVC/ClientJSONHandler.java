@@ -21,9 +21,8 @@ public class ClientJSONHandler {
         this.gson = new Gson();
     }
 
-    // REMOVED OLD BROKEN METHOD, USE GSON INSTEAD
     public String createLoginJSON(String username, String password){
-        java.util.Map<String, String> loginData = new java.util.HashMap<>();
+        Map<String, String> loginData = new HashMap<>();
         loginData.put("username", username);
         loginData.put("password", password);
         return gson.toJson(loginData);

@@ -4,45 +4,89 @@
       "username": "alice",
       "password": "alice123",
       "verificationCode": "superman",
-      "friends": ["gian", "diana"],
+      "friends": [
+        "gian",
+        "diana"
+      ],
       "conversations": [
         {
           "recipient": "gian",
           "messages": [
             {
-              "sender": "bob",
+              "sender": "alice",
               "receiver": "gian",
               "content": "Hello from alice!",
               "isFile": false
             },
             {
-              "sender": "bob",
+              "sender": "alice",
               "receiver": "gian",
               "content": "Hello from alice!",
               "isFile": false
             },
             {
-              "sender": "bob",
+              "sender": "alice",
               "receiver": "gian",
               "content": "Hello from alice!",
               "isFile": false
             },
             {
-              "sender": "bob",
+              "sender": "alice",
               "receiver": "gian",
               "content": "Hello from alice!",
               "isFile": false
             },
             {
-              "sender": "bob",
+              "sender": "alice",
               "receiver": "gian",
               "content": "Hello from alice!",
               "isFile": false
             },
             {
-              "sender": "bob",
+              "sender": "alice",
               "receiver": "gian",
               "content": "Hello from alice!",
+              "isFile": false
+            },
+            {
+              "sender": "alice",
+              "receiver": "gian",
+              "content": "hi from alice",
+              "isFile": false
+            },
+            {
+              "sender": "alice",
+              "receiver": "gian",
+              "content": "hi gian",
+              "isFile": false
+            },
+            {
+              "sender": "gian",
+              "receiver": "alice",
+              "content": "hello alice",
+              "isFile": false
+            },
+            {
+              "sender": "alice",
+              "receiver": "gian",
+              "content": "hello uli pre",
+              "isFile": false
+            },
+            {
+              "sender": "alice",
+              "receiver": "gian",
+              "content": "hellooo?",
+              "isFile": false
+            }
+          ]
+        },
+        {
+          "recipient": "diana",
+          "messages": [
+            {
+              "sender": "alice",
+              "receiver": "diana",
+              "content": "hello diana",
               "isFile": false
             }
           ]
@@ -52,13 +96,13 @@
       "incomingFriendRequests": [
         {
           "requester": "gian",
-          "responder": "bob",
+          "responder": "alice",
           "status": "pending"
         }
       ],
       "outgoingFriendRequests": [
         {
-          "requester": "bob",
+          "requester": "alice",
           "responder": "diana",
           "status": "pending"
         }
@@ -68,45 +112,75 @@
       "username": "gian",
       "password": "gian123",
       "verificationCode": "batman",
-      "friends": [],
+      "friends": ["alice"],
       "conversations": [
         {
-          "recipient": "bob",
+          "recipient": "alice",
           "messages": [
             {
-              "sender": "bob",
+              "sender": "alice",
               "receiver": "gian",
               "content": "Hello from alice!",
               "isFile": false
             },
             {
-              "sender": "bob",
+              "sender": "alice",
               "receiver": "gian",
               "content": "Hello from alice!",
               "isFile": false
             },
             {
-              "sender": "bob",
+              "sender": "alice",
               "receiver": "gian",
               "content": "Hello from alice!",
               "isFile": false
             },
             {
-              "sender": "bob",
+              "sender": "alice",
               "receiver": "gian",
               "content": "Hello from alice!",
               "isFile": false
             },
             {
-              "sender": "bob",
+              "sender": "alice",
               "receiver": "gian",
               "content": "Hello from alice!",
               "isFile": false
             },
             {
-              "sender": "bob",
+              "sender": "alice",
               "receiver": "gian",
               "content": "Hello from alice!",
+              "isFile": false
+            },
+            {
+              "sender": "alice",
+              "receiver": "gian",
+              "content": "hi from alice",
+              "isFile": false
+            },
+            {
+              "sender": "alice",
+              "receiver": "gian",
+              "content": "hi gian",
+              "isFile": false
+            },
+            {
+              "sender": "gian",
+              "receiver": "alice",
+              "content": "hello alice",
+              "isFile": false
+            },
+            {
+              "sender": "alice",
+              "receiver": "gian",
+              "content": "hello uli pre",
+              "isFile": false
+            },
+            {
+              "sender": "alice",
+              "receiver": "gian",
+              "content": "hellooo?",
               "isFile": false
             }
           ]
@@ -120,8 +194,22 @@
       "username": "diana",
       "password": "diana123",
       "verificationCode": "wonderwoman",
-      "friends": [],
-      "conversations": [],
+      "friends": [
+        "alice"
+      ],
+      "conversations": [
+        {
+          "recipient": "alice",
+          "messages": [
+            {
+              "sender": "alice",
+              "receiver": "diana",
+              "content": "hello diana",
+              "isFile": false
+            }
+          ]
+        }
+      ],
       "groupchats": [],
       "incomingFriendRequests": [],
       "outgoingFriendRequests": []

@@ -7,10 +7,9 @@ import java.util.List;
 public class GroupChat implements Serializable {
     private String groupID;
     private String groupName;
-    private List<String> receivers;  // Keep this name to match your JSON
+    private List<String> receivers;
     private List<Message> messages;
 
-    // No-arg constructor for Gson
     public GroupChat() {
         this.receivers = new ArrayList<>();
         this.messages = new ArrayList<>();

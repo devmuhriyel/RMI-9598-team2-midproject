@@ -251,7 +251,12 @@ public class ChatController {
 
     //History Methods
     public void loadChatHistory(String receiver) throws RemoteException {
+        this.currentChatPartner = receiver;
+        this.isGroupChat = false;
+
+        System.out.println("Loading chat history with: " + receiver);
         chatJFXController.clearMessages();
+        chatJFXController.setLabel(receiver);
         model.getChatHistoryWith(
                 model.createJSONStringRequest("request", "GET_CHAT_HISTORY", model.getUsername()),
                 model.getUsername(),

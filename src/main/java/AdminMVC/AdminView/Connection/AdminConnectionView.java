@@ -15,7 +15,6 @@ public class AdminConnectionView extends Application {
     @Override
     public void start(Stage stage) {
         try {
-            // Fixed: Load the correct FXML file for admin connection
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/FXMLFiles/AdminConnection.fxml"));
             Parent root = loader.load();
             fxController = loader.getController();

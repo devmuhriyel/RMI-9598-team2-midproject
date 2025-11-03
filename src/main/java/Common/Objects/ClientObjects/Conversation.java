@@ -8,7 +8,6 @@ public class Conversation implements Serializable {
     private String recipient;
     private List<Message> messages;
 
-    // No-arg constructor for Gson
     public Conversation() {
         this.messages = new ArrayList<>();
     }
