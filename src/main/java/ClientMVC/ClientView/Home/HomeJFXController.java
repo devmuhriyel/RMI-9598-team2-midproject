@@ -217,7 +217,7 @@ public class HomeJFXController {
             createGroupBtn.setStyle("-fx-background-color: #dedcff; -fx-text-fill: black; -fx-padding: 10;");
             createGroupBtn.setOnAction(event -> {
                 System.out.println("Create new group clicked");
-                // Show dialog to get group name
+                // Prompt ONLY for the group name (no members prompt)
                 TextInputDialog dialog = new TextInputDialog("");
                 dialog.setTitle("Create Group");
                 dialog.setHeaderText("Create a new group chat");

@@ -10,6 +10,8 @@ import Common.Objects.ClientObjects.Conversation;
 import Common.Objects.ClientObjects.GroupChat;
 import Common.Objects.ClientObjects.Message;
 import com.google.gson.Gson;
+import javafx.application.Platform;
+import javafx.scene.control.Alert;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -375,7 +377,18 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     }
 
     @Override
-    public void onFailedGroupCreation() throws RemoteException {}
+    public void onFailedGroupCreation() throws RemoteException {
+        System.out.println("Callback: Group creation failed.");
+        Platform.runLater(() -> {
+            try {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Group Creation Failed");
+                alert.setHeaderText(null);
+                alert.setContentText("Unable to create the group. Try a different name.");
+                alert.showAndWait();
+            } catch (Exception ignored) {}
+        });
+    }
 
     @Override
     public void onSuccessfulMemberAdded() throws RemoteException {}

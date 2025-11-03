@@ -11,12 +11,10 @@ import Common.Objects.ClientObjects.FriendRequest;
 import Common.Objects.ClientObjects.GroupChat;
 import com.google.gson.Gson;
 import javafx.application.Platform;
-import javafx.scene.control.TextInputDialog;
 import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.rmi.RemoteException;
-import java.util.Optional;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -177,45 +175,16 @@ public class HomeController {
     }
 
     private void createGroup(String groupName) {
-        TextInputDialog dialog = new TextInputDialog("");
-        dialog.setTitle("Create Group");
-        dialog.setHeaderText("Create new group: " + groupName);
-        dialog.setContentText("Enter comma-separated usernames to add to the group (optional):");
-
-        Optional<String> result = dialog.showAndWait();
-        if (result.isPresent()) {
-            String membersInput = result.get().trim();
-            List<String> members = new ArrayList<>();
-            if (!membersInput.isEmpty()) {
-                String[] membersArray = membersInput.split(",");
-                for (String member : membersArray) {
-                    String trimmedMember = member.trim();
-                    if (!trimmedMember.isEmpty() && !trimmedMember.equals(model.getUsername())) {
-                        members.add(trimmedMember);
-                    }
-                }
-            }
-            try {
-                // Build JSON payload for server
-                StringBuilder json = new StringBuilder();
-                json.append("{")
-                        .append("\"creator\":\"").append(model.getUsername()).append("\",")
-                        .append("\"groupName\":\"").append(groupName).append("\",")
-                        .append("\"members\":[");
-                for (int i = 0; i < members.size(); i++) {
-                    if (i > 0) json.append(',');
-                    json.append("\"").append(members.get(i)).append("\"");
-                }
-                json.append("]}");
-
-                model.createGroupChat(json.toString());
-            } catch (Exception e) {
-                System.err.println("Failed to create group: " + e.getMessage());
-                e.printStackTrace();
-            }
-            // Optimistically refresh local UI; server callback will also refresh
-            refreshUserData();
+        try {
+            // Build minimal JSON payload: only creator and groupName
+            String json = "{\"creator\":\"" + model.getUsername() + "\",\"groupName\":\"" + groupName + "\"}";
+            model.createGroupChat(json);
+        } catch (Exception e) {
+            System.err.println("Failed to create group: " + e.getMessage());
+            e.printStackTrace();
         }
+        // Optimistically refresh local UI; server callback will also refresh
+        refreshUserData();
     }
 
     public void refreshUserData() {
