@@ -164,9 +164,9 @@ public class HomeController {
         Optional<String> result = dialog.showAndWait();
         if (result.isPresent()) {
             String membersInput = result.get().trim();
+            List<String> members = new ArrayList<>();
             if (!membersInput.isEmpty()) {
                 String[] membersArray = membersInput.split(",");
-                List<String> members = new ArrayList<>();
                 for (String member : membersArray) {
                     String trimmedMember = member.trim();
                     if (!trimmedMember.isEmpty() && !trimmedMember.equals(model.getUsername())) {
@@ -174,12 +174,44 @@ public class HomeController {
                     }
                 }
             }
+            try {
+                // Build JSON payload for server
+                StringBuilder json = new StringBuilder();
+                json.append("{")
+                        .append("\"creator\":\"").append(model.getUsername()).append("\",")
+                        .append("\"groupName\":\"").append(groupName).append("\",")
+                        .append("\"members\":[");
+                for (int i = 0; i < members.size(); i++) {
+                    if (i > 0) json.append(',');
+                    json.append("\"").append(members.get(i)).append("\"");
+                }
+                json.append("]}");
+
+                model.createGroupChat(json.toString());
+            } catch (Exception e) {
+                System.err.println("Failed to create group: " + e.getMessage());
+                e.printStackTrace();
+            }
+            // Optimistically refresh local UI; server callback will also refresh
             refreshUserData();
         }
     }
 
     public void refreshUserData() {
-        loadClientData();
+        // Keep username current
+        ui.setUserLabel(model.getUsername());
+        try {
+            List<GroupChat> updatedGroups = model.getGroupChatHistories("{}", model.getUsername());
+            List<String> groupNames = new ArrayList<>();
+            if (updatedGroups != null) {
+                for (GroupChat gc : updatedGroups) {
+                    groupNames.add(gc.getGroupName());
+                }
+            }
+            ui.setGroups(groupNames);
+        } catch (Exception e) {
+            System.err.println("Failed to refresh group data: " + e.getMessage());
+        }
     }
 
     public void updateFriendsList(List<String> friends) {

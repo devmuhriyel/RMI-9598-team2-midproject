@@ -168,7 +168,14 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
             // Save to file
             serverJSONHandler.writeClientAccountFile("src/main/resources/JSONFiles/ClientAccounts.json", clientAccountsList);
             
+            // Register the client's callback on the server
+            clientCallbacks.put(username, clientCallback);
+            System.out.println("✓ Callback registered for new user: " + username);
+            
             System.out.println("Client signup successful: " + username);
+            
+            // Send the client's data via callback (notify client of successful signup)
+            // The callback is now registered, so server can send data back to client
             clientCallback.onSuccessfulSignUp();
             
         } catch (Exception e) {
@@ -1637,7 +1644,77 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
 
     @Override
     public void createGroupChat(String jsonString) throws RemoteException{
+        String creator;
+        String groupName;
+        java.util.List<String> members = new java.util.ArrayList<>();
 
+        try {
+            JsonObject json = JsonParser.parseString(jsonString).getAsJsonObject();
+            creator = json.get("creator").getAsString();
+            groupName = json.get("groupName").getAsString();
+
+            if (json.has("members") && json.get("members").isJsonArray()) {
+                for (var el : json.get("members").getAsJsonArray()) {
+                    String m = el.getAsString().trim();
+                    if (!m.isEmpty() && !members.contains(m)) {
+                        members.add(m);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Server Error: Failed to parse createGroupChat JSON: " + jsonString);
+            throw new RemoteException("Invalid create group format.", e);
+        }
+
+        // Ensure creator is included
+        if (!members.contains(creator)) {
+            members.add(creator);
+        }
+
+        String groupID = "grp-" + System.currentTimeMillis();
+
+        fileLock.writeLock().lock();
+        try {
+            // Create GroupChat object for each member
+            for (String member : members) {
+                Client client = findClient(member);
+                if (client == null) {
+                    System.out.println("Warning: Skipping unknown member in group creation: " + member);
+                    continue;
+                }
+                if (client.getGroupChats() == null) {
+                    client.setGroupChats(new ArrayList<>());
+                }
+                // Build receivers list (all members)
+                java.util.List<String> receivers = new java.util.ArrayList<>(members);
+                GroupChat gc = new GroupChat(groupID, groupName, receivers, new ArrayList<>());
+                client.getGroupChats().add(gc);
+            }
+
+            // Persist to file
+            serverJSONHandler.writeClientAccountFile("src/main/resources/JSONFiles/ClientAccounts.json", clientAccountsList);
+
+        } catch (Exception e) {
+            System.err.println("Error during createGroupChat: " + e.getMessage());
+            e.printStackTrace();
+            throw new RemoteException("Failed to create group", e);
+        } finally {
+            fileLock.writeLock().unlock();
+        }
+
+        // Notify online members
+        for (String member : members) {
+            ClientCallbackInterface cb = clientCallbacks.get(member);
+            if (cb != null) {
+                callbackExecutor.execute(() -> {
+                    try {
+                        cb.onSuccessfulGroupCreation();
+                    } catch (RemoteException e) {
+                        System.err.println("Failed to notify group creation to " + member + ": " + e.getMessage());
+                    }
+                });
+            }
+        }
     }
 
     @Override
