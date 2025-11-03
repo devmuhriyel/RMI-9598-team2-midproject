@@ -47,47 +47,6 @@
               "receiver": "gian",
               "content": "Hello from alice!",
               "isFile": false
-            },
-            {
-              "sender": "alice",
-              "receiver": "gian",
-              "content": "hi from alice",
-              "isFile": false
-            },
-            {
-              "sender": "alice",
-              "receiver": "gian",
-              "content": "hi gian",
-              "isFile": false
-            },
-            {
-              "sender": "gian",
-              "receiver": "alice",
-              "content": "hello alice",
-              "isFile": false
-            },
-            {
-              "sender": "alice",
-              "receiver": "gian",
-              "content": "hello uli pre",
-              "isFile": false
-            },
-            {
-              "sender": "alice",
-              "receiver": "gian",
-              "content": "hellooo?",
-              "isFile": false
-            }
-          ]
-        },
-        {
-          "recipient": "diana",
-          "messages": [
-            {
-              "sender": "alice",
-              "receiver": "diana",
-              "content": "hello diana",
-              "isFile": false
             }
           ]
         }
@@ -112,7 +71,7 @@
       "username": "gian",
       "password": "gian123",
       "verificationCode": "batman",
-      "friends": ["alice"],
+      "friends": [],
       "conversations": [
         {
           "recipient": "alice",
@@ -194,23 +153,9 @@
       "username": "diana",
       "password": "diana123",
       "verificationCode": "wonderwoman",
-      "friends": [
-        "alice"
-      ],
-      "conversations": [
-        {
-          "recipient": "alice",
-          "messages": [
-            {
-              "sender": "alice",
-              "receiver": "diana",
-              "content": "hello diana",
-              "isFile": false
-            }
-          ]
-        }
-      ],
-      "groupchats": [],
+      "friends": [],
+      "conversations": [],
+      "groupChats": [],
       "incomingFriendRequests": [],
       "outgoingFriendRequests": []
     },
@@ -238,6 +183,16 @@
       "username": "wally",
       "password": "west123",
       "verificationCode": "kidFlash",
+      "friends": [],
+      "conversations": [],
+      "groupchats": [],
+      "incomingFriendRequests": [],
+      "outgoingFriendRequests": []
+    },
+    {
+      "username": "Carlitoo",
+      "password": "car1234",
+      "verificationCode": "9874",
       "friends": [],
       "conversations": [],
       "groupchats": [],

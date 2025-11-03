@@ -46,12 +46,18 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
 
     @Override
     public void onSuccessfulSignUp() throws RemoteException {
-
+        System.out.println("Server says signup success!");
+        if (clientSignupController != null) {
+            clientSignupController.onSuccessfulSignUpFromRemote();
+        }
     }
 
     @Override
     public void onFailedSignUp() throws RemoteException {
-
+        System.out.println("Server says signup failed!");
+        if (clientSignupController != null) {
+            clientSignupController.onFailedSignUpFromRemote();
+        }
     }
 
     @Override
@@ -361,7 +367,12 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     }
 
     @Override
-    public void onSuccessfulGroupCreation() throws RemoteException {}
+    public void onSuccessfulGroupCreation() throws RemoteException {
+        System.out.println("Callback: Group created successfully. Refreshing home data.");
+        if (clientHomeController != null) {
+            clientHomeController.refreshUserData();
+        }
+    }
 
     @Override
     public void onFailedGroupCreation() throws RemoteException {}

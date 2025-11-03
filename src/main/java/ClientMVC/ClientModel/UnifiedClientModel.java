@@ -212,4 +212,8 @@ public class UnifiedClientModel {
         serverConnection.registerClientCallback(username, callback);
     }
 
+    public ClientCallbackImplementation getCallback() {
+        return callback;
+    }
+
 }
