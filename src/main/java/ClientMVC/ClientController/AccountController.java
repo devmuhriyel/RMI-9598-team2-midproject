@@ -76,17 +76,25 @@ public class AccountController {
         });
 
         accountJFXController.setLogoutAccountButtonListener(() -> {
-            view.getStage().close();
-            LoginView loginView = new LoginView();
-            Stage loginStage = new Stage();
             try {
-                loginView.start(loginStage);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-            //new LoginController(loginView, clientService, loginView.getFXController(), clientCallback);
+                String username = model.getUsername();
+                if (username != null && !username.isEmpty()) {
+                    String jsonString = "{\"action\":\"logout\", \"username\":\"" + username + "\"}";
+                    model.logOut(username, jsonString);
+                    clientCallback.onSuccessfulLogout();
+                }
 
+                view.getStage().hide();
+                Stage loginStage = ClientMVC.ClientView.Login.LoginView.getPrimaryStage();
+                if (loginStage != null) {
+                    loginStage.show();
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         });
+
 
         // Setup callback handlers FIRST (Controller receives callbacks directly)
         setupCallbackHandlers();
