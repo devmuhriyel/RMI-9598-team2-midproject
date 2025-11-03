@@ -60,5 +60,5 @@ public interface ClientInterface extends Remote {
     void unregisterClientCallback(String username) throws RemoteException;
 
 
-
+    List<String> getAllUsernames() throws RemoteException;
 }

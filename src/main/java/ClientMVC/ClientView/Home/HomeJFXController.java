@@ -67,6 +67,7 @@ public class HomeJFXController {
             });
         }
     }
+
     public void setAddFriendListener(Consumer<String> listener) {
         this.addFriendListener = listener;
     }
@@ -233,11 +234,27 @@ public class HomeJFXController {
             messagesArea1.getChildren().add(createGroupBtn);
         });
     }
-    
+
     public void setCreateGroupListener(Consumer<String> listener) {
         this.createGroupListener = listener;
     }
+
     public void setAccountButtonListener(Runnable listener) {
         this.accountButtonListener = listener;
+    }
+
+
+    private List<String> allUsers = Collections.emptyList();
+
+    public void setAllUsers(List<String> users) {
+        if (users == null) {
+            this.allUsers = Collections.emptyList();
+        } else {
+            this.allUsers = new ArrayList<>(users);
+        }
+    }
+
+    public List<String> getAllUsers() {
+        return allUsers;
     }
 }

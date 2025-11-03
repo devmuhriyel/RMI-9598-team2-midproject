@@ -1770,4 +1770,12 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
         clientCallbacks.remove(username);
         System.out.println("✓ Callback unregistered for user: " + username);
     }
+
+    @Override
+    public List<String> getAllUsernames() throws RemoteException {
+        System.out.println("RMI: Client requested all usernames.");
+        List<String> allUsernames = new ArrayList<>(allUsers.keySet());
+        System.out.println("RMI: Returning " + allUsernames.size() + " usernames.");
+        return allUsernames;
+    }
 }

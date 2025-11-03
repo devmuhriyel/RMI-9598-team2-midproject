@@ -53,15 +53,17 @@ public class HomeController {
                 }
             });
         });
-
         ui.setSearchListener(queryText -> {
             String q = (queryText == null) ? "" : queryText.trim().toLowerCase();
+            List<String> allUsers = ui.getAllUsers();
+
             if (q.isEmpty()) {
                 ui.renderFriends(ui.getOriginalFriends());
                 ui.renderGroups(ui.getOriginalGroups());
                 return;
             }
-            ui.renderFriends(filterList(ui.getOriginalFriends(), q));
+            List<String> filteredUsers = filterList(allUsers, q);
+            ui.renderFriends(filteredUsers);
             ui.renderGroups(filterList(ui.getOriginalGroups(), q));
         });
 
@@ -106,6 +108,9 @@ public class HomeController {
         ui.setCreateGroupListener(this::createGroup);
     }
 
+    // =========================================================
+    // === UPDATED loadClientData() to fetch ALL users ===
+    // =========================================================
     private void loadClientData() {
         Client clientData = clientCallback.getClientData();
         if (clientData != null) {
@@ -136,11 +141,27 @@ public class HomeController {
                 System.out.println("✓ No groups to load");
             }
 
+            // --- NEW: Load ALL users for Search ---
+            try {
+                // NOTE: This call relies on the model.fetchAllUsernames() method you must implement
+                List<String> allUsersInSystem = model.fetchAllUsernames();
+
+                if (allUsersInSystem != null) {
+                    ui.setAllUsers(allUsersInSystem); // Pass the complete list of ALL users to the View
+                    System.out.println("✓ Loaded all users for search.");
+                }
+            } catch (RemoteException e) {
+                System.err.println("Failed to load all usernames: " + e.getMessage());
+                e.printStackTrace();
+            }
+            // ------------------------------------
+
             System.out.println("✓ Client data loaded successfully for: " + clientData.getUsername());
         } else {
             System.err.println("⚠ Warning: No client data available to load");
         }
     }
+    // =========================================================
 
     private void sendFriendRequest(String targetusername) throws RemoteException {
         System.out.println("Sending friend request to: " + targetusername);
@@ -222,7 +243,6 @@ public class HomeController {
         });
     }
 
-    // FIXED: Complete chat opening implementation
     private void openChatWithFriend(String friendName) throws IOException {
         System.out.println("Opening chat with: " + friendName);
         try {

@@ -216,4 +216,12 @@ public class UnifiedClientModel {
         return callback;
     }
 
+
+    public List<String> fetchAllUsernames() throws RemoteException {
+        if (serverConnection != null) {
+            return serverConnection.getAllUsernames();
+        } else {
+            throw new RemoteException("RMI Server Service is not available.");
+        }
+    }
 }
