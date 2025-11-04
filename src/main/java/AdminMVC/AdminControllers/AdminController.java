@@ -368,6 +368,23 @@ public class AdminController {
         // Only letters and numbers allowed (no symbols, no spaces)
         return password.matches("^[a-zA-Z0-9]+$");
     }
+
+    private boolean isUsernameDuplicate(String username) {
+        List<Map<String, String>> allUsers = ui.getOriginalUsers();
+        if (allUsers == null) {
+            return false;
+        }
+
+        for (Map<String, String> user : allUsers) {
+            if (user != null && user.get("username") != null) {
+                if (user.get("username").equalsIgnoreCase(username)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     private void editSelectedUser() {
         Map<String, String> selectedUser = ui.getSelectedUser();
         if (selectedUser == null) {
@@ -449,13 +466,6 @@ public class AdminController {
     }
 
     private void showCommunityMessages() {
-        try {
-            model.getCommunityMessages();
-        } catch (RemoteException e) {
-            notifyUIOfError("Failed to load community messages: " + e.getMessage());
-            return;
-        }
-
         Platform.runLater(() -> {
             Dialog<String> communityDialog = new Dialog<>();
             communityDialog.setTitle("Community Chat");
@@ -487,46 +497,82 @@ public class AdminController {
             communityDialog.getDialogPane().setContent(content);
             communityDialog.getDialogPane().getButtonTypes().addAll(ButtonType.CLOSE);
 
-            loadCommunityMessages(messagesArea);
+            // Join community chat when dialog opens
+            try {
+                String adminUsername = model.getAdminUsername();
+                System.out.println("DEBUG: Admin joining community chat: " + adminUsername);
+                model.joinCommunityChat(adminUsername);
+            } catch (RemoteException e) {
+                notifyUIOfError("Failed to join community chat: " + e.getMessage());
+            }
 
+            // Load initial messages
+            loadCommunityMessagesForAdmin(messagesArea);
+
+            // Send button handler
             sendButton.setOnAction(event -> {
                 String messageText = messageField.getText().trim();
                 if (!messageText.isEmpty()) {
                     try {
+                        System.out.println("DEBUG: Sending message from admin: " + model.getAdminUsername());
                         model.sendCommunityMessage(messageText);
+                        messageField.clear();
+
+                        // Add a small delay before refreshing
+                        Timeline refreshTimeline = new Timeline(new KeyFrame(Duration.millis(500),
+                                e -> loadCommunityMessagesForAdmin(messagesArea)));
+                        refreshTimeline.play();
                     } catch (RemoteException e) {
                         notifyUIOfError("Failed to send message: " + e.getMessage());
                     }
-                    messageField.clear();
-                    Timeline refreshTimeline = new Timeline(new KeyFrame(Duration.millis(500),
-                            e -> loadCommunityMessages(messagesArea)));
-                    refreshTimeline.play();
                 }
             });
 
+            // Enter key to send
             messageField.setOnKeyPressed(event -> {
                 if (event.getCode() == javafx.scene.input.KeyCode.ENTER) {
                     sendButton.fire();
                 }
             });
 
+            // Refresh button handler
             refreshButton.setOnAction(event -> {
-                try {
-                    model.getCommunityMessages();
-                } catch (RemoteException e) {
-                    notifyUIOfError("Failed to refresh messages: " + e.getMessage());
-                }
-                loadCommunityMessages(messagesArea);
+                loadCommunityMessagesForAdmin(messagesArea);
             });
 
+            // Auto-refresh every 3 seconds
             Timeline autoRefresh = new Timeline(new KeyFrame(Duration.seconds(3),
-                    event -> loadCommunityMessages(messagesArea)));
+                    event -> loadCommunityMessagesForAdmin(messagesArea)));
             autoRefresh.setCycleCount(Timeline.INDEFINITE);
             autoRefresh.play();
 
-            communityDialog.setOnCloseRequest(event -> autoRefresh.stop());
+            // Leave community chat when dialog closes
+            communityDialog.setOnCloseRequest(event -> {
+                autoRefresh.stop();
+                try {
+                    String adminUsername = model.getAdminUsername();
+                    System.out.println("DEBUG: Admin leaving community chat: " + adminUsername);
+                    // You'll need to add this method to the model
+                    model.leaveCommunityChat(adminUsername);
+                } catch (RemoteException e) {
+                    System.err.println("Failed to leave community chat: " + e.getMessage());
+                }
+            });
+
             communityDialog.showAndWait();
         });
+    }
+    private void loadCommunityMessagesForAdmin(TextArea messagesArea) {
+        if (model.getCommunityMessagesList() != null && !model.getCommunityMessagesList().isEmpty()) {
+            Platform.runLater(() -> {
+                StringBuilder messageText = new StringBuilder();
+                for (String message : model.getCommunityMessagesList()) {
+                    messageText.append(message).append("\n");
+                }
+                messagesArea.setText(messageText.toString());
+                messagesArea.setScrollTop(Double.MAX_VALUE);
+            });
+        }
     }
 
     private void loadCommunityMessages(TextArea messagesArea) {

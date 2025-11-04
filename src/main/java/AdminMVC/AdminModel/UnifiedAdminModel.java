@@ -361,6 +361,89 @@ public class UnifiedAdminModel {
         server.verifyCode(jsonString);
     }
 
+    public void createNewUser(String username, String password) throws RemoteException {
+        System.out.println(">>> Model: createNewUser called with username: " + username);
+
+        // Validate username format (only letters and numbers)
+        if (username == null || username.trim().isEmpty() || username.length() < 3) {
+            System.out.println("✗ Validation failed: Username length issue");
+            Platform.runLater(() -> {
+                if (operationResultListener != null) {
+                    operationResultListener.accept("Invalid username. Must be at least 3 characters.");
+                }
+            });
+            return;
+        }
+
+        if (!username.matches("^[a-zA-Z0-9]+$")) {
+            System.out.println("✗ Validation failed: Username contains invalid characters");
+            Platform.runLater(() -> {
+                if (operationResultListener != null) {
+                    operationResultListener.accept("Invalid username. Only letters and numbers allowed (no symbols or spaces).");
+                }
+            });
+            return;
+        }
+
+        // Validate password format (only letters and numbers)
+        if (password == null || password.trim().isEmpty() || password.length() < 4) {
+            System.out.println("✗ Validation failed: Password length issue");
+            Platform.runLater(() -> {
+                if (operationResultListener != null) {
+                    operationResultListener.accept("Invalid password. Must be at least 4 characters.");
+                }
+            });
+            return;
+        }
+
+        if (!password.matches("^[a-zA-Z0-9]+$")) {
+            System.out.println("✗ Validation failed: Password contains invalid characters");
+            Platform.runLater(() -> {
+                if (operationResultListener != null) {
+                    operationResultListener.accept("Invalid password. Only letters and numbers allowed (no symbols or spaces).");
+                }
+            });
+            return;
+        }
+
+        System.out.println("✓ Validations passed, sending to server...");
+        System.out.println("  Username: " + username);
+        System.out.println("  Password: " + password);
+        System.out.println("  Admin: " + adminUsername);
+
+        Map<String, String> createData = new HashMap<>();
+        createData.put("username", username);
+        createData.put("password", password);
+        createData.put("admin", adminUsername);
+        String jsonString = new com.google.gson.Gson().toJson(createData);
+
+        System.out.println("  JSON: " + jsonString);
+
+        if (server == null) {
+            System.err.println("✗ Server is null!");
+            Platform.runLater(() -> {
+                if (operationResultListener != null) {
+                    operationResultListener.accept("Server not connected!");
+                }
+            });
+            return;
+        }
+
+        try {
+            System.out.println("  Calling server.signUp()...");
+            server.signUp(username, password, "", jsonString, callback);
+            System.out.println("✓ Server call completed");
+        } catch (Exception e) {
+            System.err.println("✗ Exception during server call: " + e.getMessage());
+            e.printStackTrace();
+            Platform.runLater(() -> {
+                if (operationResultListener != null) {
+                    operationResultListener.accept("Failed to create user: " + e.getMessage());
+                }
+            });
+        }
+    }
+
     // GROUP MANAGEMENT METHODS
     public void getAllGroupsFromServer() throws RemoteException {
         if (server == null) return;
@@ -406,12 +489,44 @@ public class UnifiedAdminModel {
         if (server == null || message == null || message.trim().isEmpty()) return;
 
         Map<String, String> messageData = new HashMap<>();
-        messageData.put("sender", adminUsername);
+        messageData.put("sender", adminUsername);  // Use stored admin username
         messageData.put("message", message);
         String jsonString = new com.google.gson.Gson().toJson(messageData);
-        //server.sendCommunityMessage(jsonString);
-    }
 
+        System.out.println("DEBUG: Sending community message from admin: " + adminUsername);
+        System.out.println("DEBUG: Message: " + message);
+
+        // FIX: Actually call the server method (it was commented out)
+        server.sendCommunityMessage(adminUsername, message, jsonString);
+    }
+    public void receiveCommunityMessage(String messageJson) {
+        Platform.runLater(() -> {
+            try {
+                com.google.gson.Gson gson = new com.google.gson.Gson();
+                com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(messageJson).getAsJsonObject();
+
+                String sender = jsonObject.get("sender").getAsString();
+                String content = jsonObject.has("content") ? jsonObject.get("content").getAsString() : "";
+
+                // Format: "sender: message"
+                String formattedMessage = sender + ": " + content;
+
+                if (communityMessagesList != null) {
+                    communityMessagesList.add(formattedMessage);
+                    System.out.println("✓ Admin received community message: " + formattedMessage);
+                }
+
+                // Notify listener
+                if (communityMessagesUpdateListener != null) {
+                    communityMessagesUpdateListener.accept("COMMUNITY_MESSAGES_UPDATED");
+                }
+
+            } catch (Exception e) {
+                System.err.println("Error processing community message: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
+    }
     // DATA UPDATE METHODS - FIXED TO USE AdminJSONHandler
     public void updateUsersList(List<Client> clients) {
         Platform.runLater(() -> {
@@ -437,6 +552,27 @@ public class UnifiedAdminModel {
 
             System.out.println("✓ Updated users list: " + allUsers.size() + " users");
         });
+    }
+
+    public void joinCommunityChat(String username) throws RemoteException {
+        if (server == null) return;
+
+        System.out.println("Model: Admin joining community chat: " + username);
+        server.joinCommunityChat(username, callback);
+    }
+
+    public void leaveCommunityChat(String username) throws RemoteException {
+        if (server == null) return;
+
+        System.out.println("Model: Admin leaving community chat: " + username);
+        // You'll need to add this overloaded method to AdminInterface
+        // For now, we can call it through sendAdminCommand or create a wrapper
+        try {
+            // Assuming the server has a method to handle this
+            server.logOut(username, adminJSONHandler.createJSONStringRequest("request", "LEAVE_COMMUNITY", username));
+        } catch (Exception e) {
+            System.err.println("Error leaving community chat: " + e.getMessage());
+        }
     }
 
     public void updateActiveUsersList(List<String> activeUsernames) {
