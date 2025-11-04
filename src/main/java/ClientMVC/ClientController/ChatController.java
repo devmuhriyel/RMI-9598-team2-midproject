@@ -57,7 +57,12 @@ public class ChatController {
                     System.err.println("Failed to leave community chat: " + e.getMessage());
                 }
             }
-            // Handle home button click - close window
+            // Close the chat window to return to Home
+            try {
+                if (chatJFXController.getHomeButton() != null) {
+                    chatJFXController.getHomeButton().getScene().getWindow().hide();
+                }
+            } catch (Exception ignored) { }
         });
 
         chatJFXController.setFileButtonListener(() -> {
