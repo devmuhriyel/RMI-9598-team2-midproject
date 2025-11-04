@@ -46,6 +46,9 @@ public class HomeJFXController {
     private Consumer<String> searchListener;
     private Consumer<String> createGroupListener;
     private java.util.function.BiConsumer<String, List<String>> createGroupWithMembersListener;
+    private java.util.function.BiConsumer<String, String> addMemberToGroupListener;
+    private java.util.function.BiConsumer<String, String> removeMemberFromGroupListener;
+    private java.util.function.Function<String, List<String>> groupMembersProvider;
 
     @FXML
     private void initialize() {
@@ -206,13 +209,96 @@ public class HomeJFXController {
                 for (String group : groups) {
                     Button groupBtn = new Button("👥 " + group);
                     groupBtn.setMaxWidth(Double.MAX_VALUE);
+                    groupBtn.setPrefWidth(Double.MAX_VALUE);
+                    groupBtn.setMinHeight(28);
                     groupBtn.setOnAction(event -> {
                         if (groupClickListener != null) {
                             groupClickListener.accept(group);
                         }
                         System.out.println("Selected group: " + group);
                     });
-                    messagesArea1.getChildren().add(groupBtn);
+
+                    // Add/Remove member controls
+                    Button addBtn = new Button("+");
+                    addBtn.setOnAction(e -> {
+                        List<String> friends = getOriginalFriends();
+                        List<String> currentMembers = groupMembersProvider != null ? groupMembersProvider.apply(group) : new ArrayList<>();
+                        List<String> candidates = new ArrayList<>();
+                        if (friends != null) {
+                            for (String f : friends) {
+                                if (f != null && !currentMembers.contains(f)) candidates.add(f);
+                            }
+                        }
+                        if (candidates.isEmpty()) {
+                            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                            alert.setTitle(null);
+                            alert.setHeaderText(null);
+                            alert.setContentText("No friends available to add.");
+                            alert.showAndWait();
+                            return;
+                        }
+                        javafx.scene.control.ChoiceDialog<String> dialog = new javafx.scene.control.ChoiceDialog<>(candidates.get(0), candidates);
+                        dialog.setTitle("Add Member");
+                        dialog.setHeaderText("Add a member to '" + group + "'");
+                        dialog.setContentText("Choose friend:");
+                        dialog.showAndWait().ifPresent(selected -> {
+                            if (addMemberToGroupListener != null) {
+                                addMemberToGroupListener.accept(group, selected);
+                            }
+                        });
+                    });
+
+                    Button removeBtn = new Button("-");
+                    removeBtn.setOnAction(e -> {
+                        List<String> currentMembers = groupMembersProvider != null ? groupMembersProvider.apply(group) : new ArrayList<>();
+                        if (currentMembers == null || currentMembers.isEmpty()) {
+                            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                            alert.setTitle(null);
+                            alert.setHeaderText(null);
+                            alert.setContentText("No members to remove.");
+                            alert.showAndWait();
+                            return;
+                        }
+                        javafx.scene.control.ChoiceDialog<String> dialog = new javafx.scene.control.ChoiceDialog<>(currentMembers.get(0), currentMembers);
+                        dialog.setTitle("Remove Member");
+                        dialog.setHeaderText("Remove a member from '" + group + "'");
+                        dialog.setContentText("Choose member:");
+                        dialog.showAndWait().ifPresent(selected -> {
+                            if (removeMemberFromGroupListener != null) {
+                                removeMemberFromGroupListener.accept(group, selected);
+                            }
+                        });
+                    });
+
+                    // Tighten spacing and match heights to the group button
+                    addBtn.setFocusTraversable(false);
+                    removeBtn.setFocusTraversable(false);
+                    addBtn.setStyle("-fx-padding: 2 8 2 8; -fx-background-insets: 0; -fx-font-weight: bold; -fx-font-size: 14px;");
+                    removeBtn.setStyle("-fx-padding: 2 8 2 8; -fx-background-insets: 0; -fx-font-weight: bold; -fx-font-size: 14px;");
+                    addBtn.minHeightProperty().bind(groupBtn.heightProperty());
+                    addBtn.maxHeightProperty().bind(groupBtn.heightProperty());
+                    removeBtn.minHeightProperty().bind(groupBtn.heightProperty());
+                    removeBtn.maxHeightProperty().bind(groupBtn.heightProperty());
+
+                    // Use a StackPane to have a full-width group bar centered, with +/− aligned to the right
+                    javafx.scene.layout.StackPane row = new javafx.scene.layout.StackPane();
+                    row.setAlignment(javafx.geometry.Pos.CENTER);
+                    javafx.scene.layout.StackPane.setAlignment(groupBtn, javafx.geometry.Pos.CENTER);
+                    javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
+                    spacer.setMinWidth(14);
+                    spacer.setPrefWidth(14);
+                    spacer.setMaxWidth(14);
+                    javafx.scene.layout.HBox controls = new javafx.scene.layout.HBox(0, addBtn, spacer, removeBtn);
+                    controls.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
+                    controls.setPadding(new javafx.geometry.Insets(0, 8, 0, 0));
+                    controls.setPickOnBounds(false);
+                    javafx.scene.layout.StackPane.setAlignment(controls, javafx.geometry.Pos.CENTER_RIGHT);
+
+                    javafx.scene.layout.StackPane.setMargin(controls, new javafx.geometry.Insets(0, 0, 0, 0));
+                    javafx.scene.layout.VBox.setVgrow(row, javafx.scene.layout.Priority.NEVER);
+                    javafx.scene.layout.HBox.setHgrow(groupBtn, javafx.scene.layout.Priority.ALWAYS);
+                    row.getChildren().addAll(groupBtn, controls);
+                    messagesArea1.getChildren().add(row);
                 }
             }
 
@@ -301,5 +387,17 @@ public class HomeJFXController {
 
     public List<String> getAllUsers() {
         return allUsers;
+    }
+
+    public void setAddMemberToGroupListener(java.util.function.BiConsumer<String, String> listener) {
+        this.addMemberToGroupListener = listener;
+    }
+
+    public void setRemoveMemberFromGroupListener(java.util.function.BiConsumer<String, String> listener) {
+        this.removeMemberFromGroupListener = listener;
+    }
+
+    public void setGroupMembersProvider(java.util.function.Function<String, List<String>> provider) {
+        this.groupMembersProvider = provider;
     }
 }

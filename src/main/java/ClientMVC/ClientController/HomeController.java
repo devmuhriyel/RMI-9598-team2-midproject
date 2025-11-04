@@ -105,6 +105,23 @@ public class HomeController {
 
         // Prefer new flow: name + select members from friends
         ui.setCreateGroupWithMembersListener(this::createGroupWithMembers);
+
+        // Group member management listeners
+        ui.setAddMemberToGroupListener((groupName, member) -> {
+            try {
+                addMemberToGroup(groupName, member);
+            } catch (RemoteException e) {
+                System.err.println("Failed to add member: " + e.getMessage());
+            }
+        });
+        ui.setRemoveMemberFromGroupListener((groupName, member) -> {
+            try {
+                removeMemberFromGroup(groupName, member);
+            } catch (RemoteException e) {
+                System.err.println("Failed to remove member: " + e.getMessage());
+            }
+        });
+        ui.setGroupMembersProvider(this::getMembersOfGroupByName);
     }
 
     // =========================================================
@@ -227,6 +244,50 @@ public class HomeController {
         } catch (Exception e) {
             System.err.println("Failed to refresh group data: " + e.getMessage());
         }
+    }
+
+    private List<String> getMembersOfGroupByName(String groupName) {
+        try {
+            Client data = clientCallback.getClientData();
+            if (data != null && data.getGroupChats() != null) {
+                for (GroupChat gc : data.getGroupChats()) {
+                    if (gc != null && groupName.equals(gc.getGroupName())) {
+                        return new ArrayList<>(gc.getReceivers());
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+        // Fallback: try fresh fetch
+        try {
+            List<GroupChat> updated = model.getGroupChatHistories("{}", model.getUsername());
+            if (updated != null) {
+                for (GroupChat gc : updated) {
+                    if (gc != null && groupName.equals(gc.getGroupName())) {
+                        return new ArrayList<>(gc.getReceivers());
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+        return new ArrayList<>();
+    }
+
+    private void addMemberToGroup(String groupName, String newMember) throws RemoteException {
+        // Build JSON using groupName (server also accepts groupID, but name is fine here)
+        String json = "{" +
+                "\"requester\":\"" + model.getUsername() + "\"," +
+                "\"groupName\":\"" + groupName + "\"," +
+                "\"newMember\":\"" + newMember + "\"" +
+                "}";
+        model.addUserToGroup(json);
+    }
+
+    private void removeMemberFromGroup(String groupName, String member) throws RemoteException {
+        String json = "{" +
+                "\"requester\":\"" + model.getUsername() + "\"," +
+                "\"groupName\":\"" + groupName + "\"," +
+                "\"member\":\"" + member + "\"" +
+                "}";
+        model.removeUserFromGroup(json);
     }
 
     public void updateFriendsList(List<String> friends) {

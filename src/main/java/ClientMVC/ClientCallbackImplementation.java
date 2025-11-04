@@ -412,16 +412,56 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     }
 
     @Override
-    public void onSuccessfulMemberAdded() throws RemoteException {}
+    public void onSuccessfulMemberAdded() throws RemoteException {
+        System.out.println("Callback: Member added successfully. Refreshing home data.");
+        if (clientHomeController != null) {
+            javafx.application.Platform.runLater(() -> {
+                try {
+                    clientHomeController.refreshUserData();
+                } catch (Exception ignored) {}
+            });
+        }
+    }
 
     @Override
-    public void onFailedMemberAdded() throws RemoteException {}
+    public void onFailedMemberAdded() throws RemoteException {
+        System.out.println("Callback: Failed to add member.");
+        javafx.application.Platform.runLater(() -> {
+            try {
+                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+                alert.setTitle("Add Member Failed");
+                alert.setHeaderText(null);
+                alert.setContentText("Could not add the selected user to the group. Please check permissions and try again.");
+                alert.showAndWait();
+            } catch (Exception ignored) {}
+        });
+    }
 
     @Override
-    public void onSuccessfulMemberRemoved() throws RemoteException {}
+    public void onSuccessfulMemberRemoved() throws RemoteException {
+        System.out.println("Callback: Member removed successfully. Refreshing home data.");
+        if (clientHomeController != null) {
+            javafx.application.Platform.runLater(() -> {
+                try {
+                    clientHomeController.refreshUserData();
+                } catch (Exception ignored) {}
+            });
+        }
+    }
 
     @Override
-    public void onFailedMemberRemoved() throws RemoteException {}
+    public void onFailedMemberRemoved() throws RemoteException {
+        System.out.println("Callback: Failed to remove member.");
+        javafx.application.Platform.runLater(() -> {
+            try {
+                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+                alert.setTitle("Remove Member Failed");
+                alert.setHeaderText(null);
+                alert.setContentText("Could not remove the selected user from the group. Please try again.");
+                alert.showAndWait();
+            } catch (Exception ignored) {}
+        });
+    }
 
     @Override
     public void onCommunityMessageSent(String message, String jsonString) throws RemoteException {
