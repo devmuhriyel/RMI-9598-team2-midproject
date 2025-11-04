@@ -199,11 +199,12 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     @Override
     public void onFriendRequestReceived() throws RemoteException {
         System.out.println("Callback: New friend request received!");
-        if (clientAccountController != null) {
-            // TODO: Optionally show a notification to the user
-        }
         if (clientHomeController != null) {
-            // TODO: Show notification badge
+        }
+        if (clientAccountController != null) {
+            Platform.runLater(() -> {
+                clientAccountController.handleNewFriendRequestReceived();
+            });
         }
     }
 
@@ -211,18 +212,23 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     public void onFriendAccepted() throws RemoteException {
         System.out.println("Callback: Friend request accepted!");
         if (clientAccountController != null) {
-            // TODO: Handle friend accepted
+            Platform.runLater(() -> {
+                clientAccountController.handleFriendAcceptedSuccess();
+            });
         }
         if (clientHomeController != null) {
             clientHomeController.refreshUserData();
         }
     }
 
+
     @Override
     public void onFriendDeclined() throws RemoteException {
         System.out.println("Callback: Friend request declined!");
         if (clientAccountController != null) {
-            // TODO: Handle friend declined
+            Platform.runLater(() -> {
+                clientAccountController.handleFriendDeclinedNotification();
+            });
         }
     }
 
@@ -230,7 +236,9 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     public void onFriendDeleted() throws RemoteException {
         System.out.println("Callback: Friend removed from list!");
         if (clientAccountController != null) {
-            // TODO: Handle friend removed
+            Platform.runLater(() -> {
+                clientAccountController.handleFriendDeletionSuccess();
+            });
         }
         if (clientHomeController != null) {
             clientHomeController.refreshUserData();
@@ -241,7 +249,9 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     public void onCancelFriendRequest() throws RemoteException {
         System.out.println("Callback: Friend request cancelled!");
         if (clientAccountController != null) {
-            // TODO: Handle request cancelled
+            javafx.application.Platform.runLater(() -> {
+                clientAccountController.showSuccessAlert("Request Canceled", "Your friend request has been successfully canceled.");
+            });
         }
     }
 

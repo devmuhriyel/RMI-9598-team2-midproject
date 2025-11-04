@@ -890,6 +890,12 @@ public class AccountJFXController {
     public void setCancelSentRequestListener(Consumer<String> listener) {
         this.cancelSentRequestListener = listener;
     }
+    public Consumer<Void> getReceivedRequestsListener() {
+        return receivedRequestsListener;
+    }
+    public Runnable getFriendsButtonListener() {
+        return friendsButtonListener;
+    }
 
     private void showSuccessAlert(String title, String message) {
         javafx.scene.control.Alert alert = new javafx.scene.control.Alert(Alert.AlertType.INFORMATION);

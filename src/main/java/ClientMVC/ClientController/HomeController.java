@@ -213,7 +213,6 @@ public class HomeController {
     }
 
     public void refreshUserData() {
-        // Keep username current
         ui.setUserLabel(model.getUsername());
         try {
             List<GroupChat> updatedGroups = model.getGroupChatHistories("{}", model.getUsername());
@@ -226,6 +225,13 @@ public class HomeController {
             ui.setGroups(groupNames);
         } catch (Exception e) {
             System.err.println("Failed to refresh group data: " + e.getMessage());
+        }
+        try {
+            String jsonString = String.format("{\"username\":\"%s\"}", model.getUsername());
+            model.getFriendsList(jsonString);
+            System.out.println("✓ Requested updated friends list from server.");
+        } catch (RemoteException e) {
+            System.err.println("Failed to request updated friends list: " + e.getMessage());
         }
     }
 
