@@ -4,6 +4,7 @@ import Common.Objects.AdminObjects.Admin;
 import Common.Objects.AdminObjects.AdminAccountsList;
 import Common.Objects.ClientObjects.Client;
 import Common.Objects.ClientObjects.ClientAccountsList;
+import Common.Objects.ClientObjects.GroupChat;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
@@ -303,8 +304,242 @@ public class AdminJSONHandler {
 
         return false;
     }
+    public boolean deleteGroup(String groupName) {
+        System.out.println(">>> AdminJSONHandler.deleteGroup() called for: " + groupName);
 
+        ClientAccountsList clientAccountsList = readClientAccountFile();
+        if (clientAccountsList == null || clientAccountsList.getClients() == null) {
+            System.err.println("✗ Failed to read client accounts file");
+            return false;
+        }
 
+        boolean groupFound = false;
+        int totalRemoved = 0;
+
+        // Go through EVERY client and remove this group from their groupChats
+        for (Client client : clientAccountsList.getClients()) {
+            if (client.getGroupChats() != null) {
+                // Count how many groups this client has before removal
+                int beforeSize = client.getGroupChats().size();
+
+                // Remove the group if it matches the groupName
+                client.getGroupChats().removeIf(group ->
+                        group.getGroupName() != null && group.getGroupName().equals(groupName)
+                );
+
+                // Check if we actually removed something
+                int afterSize = client.getGroupChats().size();
+                if (beforeSize > afterSize) {
+                    groupFound = true;
+                    totalRemoved++;
+                    System.out.println("  ✓ Removed group '" + groupName + "' from user: " + client.getUsername());
+                }
+            }
+        }
+
+        if (groupFound) {
+            // THIS IS THE KEY PART - Save the changes to the JSON file
+            writeClientAccountFile(clientAccountsList);
+            System.out.println("✓ SUCCESS: Group '" + groupName + "' deleted from " + totalRemoved + " users and saved to JSON");
+            return true;
+        } else {
+            System.out.println("✗ FAILED: Group '" + groupName + "' not found in any user's group list");
+            return false;
+        }
+    }
+    public boolean deleteGroupFromAllUsers(String groupName, String ownerUsername) {
+        System.out.println(">>> AdminJSONHandler: deleteGroupFromAllUsers called");
+        System.out.println("    Group to delete: " + groupName);
+        System.out.println("    Owner: " + ownerUsername);
+
+        ClientAccountsList clientAccountsList = readClientAccountFile();
+        if (clientAccountsList == null || clientAccountsList.getClients() == null) {
+            System.err.println("✗ Failed to read client accounts file");
+            return false;
+        }
+
+        boolean groupFound = false;
+        int totalRemoved = 0;
+
+        // Iterate through all clients and remove the group from their groupChats
+        for (Client client : clientAccountsList.getClients()) {
+            if (client.getGroupChats() != null) {
+                int initialSize = client.getGroupChats().size();
+
+                // Remove the group if it matches the groupName
+                boolean removed = client.getGroupChats().removeIf(group ->
+                        group.getGroupName() != null && group.getGroupName().equals(groupName)
+                );
+
+                if (removed) {
+                    groupFound = true;
+                    totalRemoved++;
+                    System.out.println("  ✓ Removed group from user: " + client.getUsername());
+                }
+            }
+        }
+
+        if (groupFound) {
+            // Write the updated data back to the JSON file
+            writeClientAccountFile(clientAccountsList);
+            System.out.println("✓ Group '" + groupName + "' deleted from " + totalRemoved + " users");
+            return true;
+        } else {
+            System.out.println("✗ Group '" + groupName + "' not found in any user's group list");
+            return false;
+        }
+    }
+
+    public boolean deleteGroupByID(String groupID) {
+        System.out.println(">>> AdminJSONHandler.deleteGroupByID() called for: " + groupID);
+
+        ClientAccountsList clientAccountsList = readClientAccountFile();
+        if (clientAccountsList == null || clientAccountsList.getClients() == null) {
+            System.err.println("✗ Failed to read client accounts file");
+            return false;
+        }
+
+        boolean groupFound = false;
+        int totalRemoved = 0;
+
+        for (Client client : clientAccountsList.getClients()) {
+            if (client.getGroupChats() != null) {
+                int beforeSize = client.getGroupChats().size();
+
+                client.getGroupChats().removeIf(group ->
+                        group.getGroupID() != null && group.getGroupID().equals(groupID)
+                );
+
+                int afterSize = client.getGroupChats().size();
+                if (beforeSize > afterSize) {
+                    groupFound = true;
+                    totalRemoved++;
+                    System.out.println("  ✓ Removed group ID '" + groupID + "' from user: " + client.getUsername());
+                }
+            }
+        }
+
+        if (groupFound) {
+            writeClientAccountFile(clientAccountsList);
+            System.out.println("✓ SUCCESS: Group ID '" + groupID + "' deleted from " + totalRemoved + " users and saved to JSON");
+            return true;
+        } else {
+            System.out.println("✗ FAILED: Group ID '" + groupID + "' not found");
+            return false;
+        }
+    }
+
+    public Map<String, Object> getGroupInfo(String groupName) {
+        ClientAccountsList clientAccountsList = readClientAccountFile();
+        if (clientAccountsList == null || clientAccountsList.getClients() == null) {
+            return null;
+        }
+
+        // Find the group in any user's groupChats
+        for (Client client : clientAccountsList.getClients()) {
+            if (client.getGroupChats() != null) {
+                for (GroupChat group : client.getGroupChats()) {
+                    if (group.getGroupName() != null && group.getGroupName().equals(groupName)) {
+                        Map<String, Object> groupInfo = new HashMap<>();
+                        groupInfo.put("groupID", group.getGroupID());
+                        groupInfo.put("groupName", group.getGroupName());
+                        groupInfo.put("owner", client.getUsername()); // First user found is likely the owner
+                        groupInfo.put("members", group.getReceivers());
+                        groupInfo.put("memberCount", group.getReceivers() != null ? group.getReceivers().size() : 0);
+                        return groupInfo;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public boolean isGroupOwner(String username, String groupName) {
+        ClientAccountsList clientAccountsList = readClientAccountFile();
+        if (clientAccountsList == null || clientAccountsList.getClients() == null) {
+            return false;
+        }
+
+        Client client = getClientByUsername(username);
+        if (client == null || client.getGroupChats() == null) {
+            return false;
+        }
+
+        // Check if this user has the group and is the first to have it (owner)
+        for (GroupChat group : client.getGroupChats()) {
+            if (group.getGroupName() != null && group.getGroupName().equals(groupName)) {
+                // Additional logic: you could check if the user's username matches
+                // the group creator stored elsewhere, or use other criteria
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public boolean createClient(String username, String password, String verificationCode) {
+        System.out.println(">>> AdminJSONHandler: createClient called");
+        System.out.println("    Username: " + username);
+        System.out.println("    Password: " + password);
+        System.out.println("    VerificationCode: " + verificationCode);
+
+        if (!validateUsername(username) || !validatePassword(password)) {
+            System.err.println("✗ Validation failed in AdminJSONHandler");
+            return false;
+        }
+
+        ClientAccountsList clientAccountsList = readClientAccountFile();
+        if (clientAccountsList == null) {
+            System.out.println("Creating new ClientAccountsList");
+            clientAccountsList = new ClientAccountsList();
+        }
+        if (clientAccountsList.getClients() == null) {
+            System.out.println("Initializing clients list");
+            clientAccountsList.setClients(new java.util.ArrayList<>());
+        }
+
+        // Check if user already exists
+        for (Client client : clientAccountsList.getClients()) {
+            if (client.getUsername().equalsIgnoreCase(username)) {
+                System.err.println("✗ Client already exists: " + username);
+                return false;
+            }
+        }
+
+        // Generate verification code if not provided
+        if (verificationCode == null || verificationCode.trim().isEmpty()) {
+            verificationCode = String.valueOf((int)(Math.random() * 9000) + 1000);
+            System.out.println("Generated verification code: " + verificationCode);
+        }
+
+        // Create new client with proper initialization
+        Client newClient = new Client(username, password, verificationCode);
+
+        // Initialize all collections to prevent null issues
+        if (newClient.getFriends() == null) {
+            newClient.setFriends(new java.util.ArrayList<>());
+        }
+        if (newClient.getConversations() == null) {
+            newClient.setConversations(new java.util.ArrayList<>());
+        }
+        if (newClient.getGroupChats() == null) {
+            newClient.setGroupChats(new java.util.ArrayList<>());
+        }
+        if (newClient.getIncomingFriendRequests() == null) {
+            newClient.setIncomingFriendRequests(new java.util.ArrayList<>());
+        }
+        if (newClient.getOutgoingFriendRequests() == null) {
+            newClient.setOutgoingFriendRequests(new java.util.ArrayList<>());
+        }
+
+        clientAccountsList.getClients().add(newClient);
+
+        System.out.println("Writing to file...");
+        writeClientAccountFile(clientAccountsList);
+        System.out.println("✓ Client created successfully: " + username);
+        return true;
+    }
 
     // ========== VALIDATION METHODS (UPDATED) ==========
 

@@ -643,7 +643,7 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
 
     @Override
     public void deleteGroup(String jsonString) throws RemoteException {
-        System.out.println(">>> Admin deleteGroup called");
+        System.out.println(">>> Server: deleteGroup called");
 
         try {
             JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
@@ -657,24 +657,33 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
             try {
                 boolean groupDeleted = false;
 
-                // Remove group from all users
+                // Remove group from all users IN MEMORY (for the running server)
                 for (Client client : clientAccountsList.getClients()) {
                     if (client.getGroupChats() != null) {
-                        boolean removed = client.getGroupChats().removeIf(g ->
+                        int beforeSize = client.getGroupChats().size();
+
+                        client.getGroupChats().removeIf(g ->
                                 g.getGroupName().equals(groupName));
-                        if (removed) {
+
+                        int afterSize = client.getGroupChats().size();
+                        if (beforeSize > afterSize) {
                             groupDeleted = true;
                         }
                     }
                 }
 
+                // Save to JSON file (THIS IS CRITICAL!)
                 if (groupDeleted) {
-                    serverJSONHandler.writeClientAccountFile("src/main/resources/JSONFiles/ClientAccounts.json", clientAccountsList);
-                    System.out.println("✓ Group deleted: " + groupName);
+                    serverJSONHandler.writeClientAccountFile(
+                            "src/main/resources/JSONFiles/ClientAccounts.json",
+                            clientAccountsList
+                    );
+                    System.out.println("✓ Server: Group deleted from memory and saved to JSON: " + groupName);
                 } else {
-                    System.out.println("✗ Group not found: " + groupName);
+                    System.out.println("✗ Server: Group not found: " + groupName);
                 }
 
+                // Notify admin callback
                 if (adminCallback != null) {
                     callbackExecutor.execute(() -> {
                         try {
@@ -2319,244 +2328,12 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
 
     @Override
     public void addUserToGroup(String jsonString) throws RemoteException{
-        String requester;
-        String groupID = null;
-        String groupName = null;
-        String newMember;
 
-        try {
-            JsonObject json = JsonParser.parseString(jsonString).getAsJsonObject();
-            requester = json.has("requester") ? json.get("requester").getAsString() :
-                    (json.has("adder") ? json.get("adder").getAsString() : null);
-            if (json.has("groupID")) groupID = json.get("groupID").getAsString();
-            if (json.has("groupName")) groupName = json.get("groupName").getAsString();
-            newMember = json.has("newMember") ? json.get("newMember").getAsString() :
-                    (json.has("member") ? json.get("member").getAsString() : null);
-        } catch (Exception e) {
-            throw new RemoteException("Invalid addUserToGroup JSON", e);
-        }
-
-        if (requester == null || newMember == null || (groupID == null && groupName == null)) {
-            throw new RemoteException("Missing requester/newMember/group identifier");
-        }
-
-        fileLock.writeLock().lock();
-        try {
-            Client requesterClient = allUsers.get(requester);
-            Client targetClient = allUsers.get(newMember);
-            if (requesterClient == null || targetClient == null) {
-                notifyMemberAddResult(requester, false);
-                return;
-            }
-
-            if (requesterClient.getGroupChats() == null) requesterClient.setGroupChats(new ArrayList<>());
-
-            // Locate group on requester side
-            GroupChat requesterGroup = null;
-            for (GroupChat gc : requesterClient.getGroupChats()) {
-                if ((groupID != null && groupID.equals(gc.getGroupID())) ||
-                        (groupName != null && groupName.equals(gc.getGroupName()))) {
-                    requesterGroup = gc;
-                    break;
-                }
-            }
-            if (requesterGroup == null) {
-                notifyMemberAddResult(requester, false);
-                return;
-            }
-
-            // Ensure requester is in the group and enforce friend-only add
-            if (!requesterGroup.isMember(requester)) {
-                notifyMemberAddResult(requester, false);
-                return;
-            }
-            if (requesterClient.getFriends() == null || !requesterClient.getFriends().contains(newMember)) {
-                notifyMemberAddResult(requester, false);
-                return;
-            }
-
-            // If already a member, treat as failure to avoid duplicates
-            if (requesterGroup.isMember(newMember)) {
-                notifyMemberAddResult(requester, false);
-                return;
-            }
-
-            String resolvedGroupID = requesterGroup.getGroupID();
-            String resolvedGroupName = requesterGroup.getGroupName();
-
-            // Build updated member list
-            java.util.List<String> updatedMembers = new ArrayList<>(requesterGroup.getReceivers());
-            if (!updatedMembers.contains(newMember)) {
-                updatedMembers.add(newMember);
-            }
-
-            // Update all existing members' group entries to include the new member
-            for (String member : requesterGroup.getReceivers()) {
-                Client memberClient = allUsers.get(member);
-                if (memberClient == null || memberClient.getGroupChats() == null) continue;
-                for (GroupChat gc : memberClient.getGroupChats()) {
-                    if (resolvedGroupID.equals(gc.getGroupID())) {
-                        // set unified receivers list
-                        gc.setReceivers(new ArrayList<>(updatedMembers));
-                        break;
-                    }
-                }
-            }
-
-            // Add a group entry for the new member
-            if (targetClient.getGroupChats() == null) targetClient.setGroupChats(new ArrayList<>());
-            GroupChat newMemberGroup = null;
-            for (GroupChat gc : targetClient.getGroupChats()) {
-                if (resolvedGroupID.equals(gc.getGroupID())) { newMemberGroup = gc; break; }
-            }
-            if (newMemberGroup == null) {
-                newMemberGroup = new GroupChat(resolvedGroupID, resolvedGroupName, new ArrayList<>(updatedMembers), new ArrayList<>());
-                targetClient.getGroupChats().add(newMemberGroup);
-            } else {
-                newMemberGroup.setReceivers(new ArrayList<>(updatedMembers));
-            }
-
-            // Persist
-            serverJSONHandler.writeClientAccountFile("src/main/resources/JSONFiles/ClientAccounts.json", clientAccountsList);
-
-            // Callback
-            notifyMemberAddResult(requester, true);
-
-        } catch (Exception e) {
-            notifyMemberAddResultSafe(requester, false);
-            throw new RemoteException("Failed to add user to group", e);
-        } finally {
-            fileLock.writeLock().unlock();
-        }
     }
 
     @Override
     public void removeUserFromGroup(String jsonString) throws RemoteException{
-        String requester;
-        String groupID = null;
-        String groupName = null;
-        String memberToRemove;
 
-        try {
-            JsonObject json = JsonParser.parseString(jsonString).getAsJsonObject();
-            requester = json.has("requester") ? json.get("requester").getAsString() :
-                    (json.has("remover") ? json.get("remover").getAsString() : null);
-            if (json.has("groupID")) groupID = json.get("groupID").getAsString();
-            if (json.has("groupName")) groupName = json.get("groupName").getAsString();
-            memberToRemove = json.has("member") ? json.get("member").getAsString() :
-                    (json.has("target") ? json.get("target").getAsString() : null);
-        } catch (Exception e) {
-            throw new RemoteException("Invalid removeUserFromGroup JSON", e);
-        }
-
-        if (requester == null || memberToRemove == null || (groupID == null && groupName == null)) {
-            throw new RemoteException("Missing requester/member/group identifier");
-        }
-
-        fileLock.writeLock().lock();
-        try {
-            Client requesterClient = allUsers.get(requester);
-            Client targetClient = allUsers.get(memberToRemove);
-            if (requesterClient == null || targetClient == null) {
-                notifyMemberRemoveResult(requester, false);
-                return;
-            }
-
-            if (requesterClient.getGroupChats() == null) requesterClient.setGroupChats(new ArrayList<>());
-
-            // Locate group on requester side
-            GroupChat requesterGroup = null;
-            for (GroupChat gc : requesterClient.getGroupChats()) {
-                if ((groupID != null && groupID.equals(gc.getGroupID())) ||
-                        (groupName != null && groupName.equals(gc.getGroupName()))) {
-                    requesterGroup = gc;
-                    break;
-                }
-            }
-            if (requesterGroup == null) {
-                notifyMemberRemoveResult(requester, false);
-                return;
-            }
-
-            if (!requesterGroup.isMember(requester)) {
-                notifyMemberRemoveResult(requester, false);
-                return;
-            }
-
-            if (!requesterGroup.isMember(memberToRemove)) {
-                notifyMemberRemoveResult(requester, false);
-                return;
-            }
-
-            String resolvedGroupID = requesterGroup.getGroupID();
-
-            // Build updated member list
-            java.util.List<String> updatedMembers = new ArrayList<>(requesterGroup.getReceivers());
-            updatedMembers.remove(memberToRemove);
-
-            // Update all remaining members
-            for (String member : requesterGroup.getReceivers()) {
-                Client memberClient = allUsers.get(member);
-                if (memberClient == null || memberClient.getGroupChats() == null) continue;
-                for (GroupChat gc : memberClient.getGroupChats()) {
-                    if (resolvedGroupID.equals(gc.getGroupID())) {
-                        if (!member.equals(memberToRemove)) {
-                            gc.setReceivers(new ArrayList<>(updatedMembers));
-                        }
-                    }
-                }
-            }
-
-            // Remove the group from the removed member entirely
-            if (targetClient.getGroupChats() != null) {
-                targetClient.getGroupChats().removeIf(gc -> resolvedGroupID.equals(gc.getGroupID()));
-            }
-
-            // Persist
-            serverJSONHandler.writeClientAccountFile("src/main/resources/JSONFiles/ClientAccounts.json", clientAccountsList);
-
-            // Callback
-            notifyMemberRemoveResult(requester, true);
-
-        } catch (Exception e) {
-            notifyMemberRemoveResultSafe(requester, false);
-            throw new RemoteException("Failed to remove user from group", e);
-        } finally {
-            fileLock.writeLock().unlock();
-        }
-    }
-
-    // Helper callbacks for add/remove member results
-    private void notifyMemberAddResult(String requester, boolean success) {
-        ClientCallbackInterface cb = clientCallbacks.get(requester);
-        if (cb != null) {
-            callbackExecutor.execute(() -> {
-                try {
-                    if (success) cb.onSuccessfulMemberAdded();
-                    else cb.onFailedMemberAdded();
-                } catch (RemoteException ignored) {}
-            });
-        }
-    }
-
-    private void notifyMemberAddResultSafe(String requester, boolean success) {
-        try { notifyMemberAddResult(requester, success); } catch (Exception ignored) {}
-    }
-
-    private void notifyMemberRemoveResult(String requester, boolean success) {
-        ClientCallbackInterface cb = clientCallbacks.get(requester);
-        if (cb != null) {
-            callbackExecutor.execute(() -> {
-                try {
-                    if (success) cb.onSuccessfulMemberRemoved();
-                    else cb.onFailedMemberRemoved();
-                } catch (RemoteException ignored) {}
-            });
-        }
-    }
-
-    private void notifyMemberRemoveResultSafe(String requester, boolean success) {
-        try { notifyMemberRemoveResult(requester, success); } catch (Exception ignored) {}
     }
 
     //USER/ADMIN COMMUNITY CHATTING METHODS

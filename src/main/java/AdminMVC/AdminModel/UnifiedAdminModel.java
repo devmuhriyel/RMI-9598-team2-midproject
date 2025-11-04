@@ -318,11 +318,23 @@ public class UnifiedAdminModel {
     public void deleteGroup(String groupName, String owner) throws RemoteException {
         if (server == null) return;
 
+        // STEP 1: Delete from JSON file FIRST using AdminJSONHandler
+        System.out.println(">>> Model: Deleting group from JSON file: " + groupName);
+        boolean deletedFromJSON = adminJSONHandler.deleteGroup(groupName);
+
+        if (deletedFromJSON) {
+            System.out.println("✓ Group deleted from JSON file successfully");
+        } else {
+            System.err.println("✗ Failed to delete group from JSON file");
+        }
+
+        // STEP 2: Delete from server memory and notify other admins
         Map<String, String> deleteData = new HashMap<>();
         deleteData.put("groupName", groupName);
         deleteData.put("owner", owner);
         deleteData.put("admin", adminUsername);
         String jsonString = new com.google.gson.Gson().toJson(deleteData);
+
         server.deleteGroup(jsonString);
     }
 
