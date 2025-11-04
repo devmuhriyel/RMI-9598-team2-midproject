@@ -74,7 +74,8 @@ public class AdminCallbackImplementation extends UnicastRemoteObject implements 
 
     @Override
     public void onReceiveGroupsList(String groupsJson) throws RemoteException {
-        System.out.println("✓ Received groups data from server");
+        System.out.println("✓ Admin Callback: Received groups data from server");
+
         Platform.runLater(() -> {
             if (model != null) {
                 try {
@@ -82,32 +83,59 @@ public class AdminCallbackImplementation extends UnicastRemoteObject implements 
                     List<Map<String, String>> groupsList = new ArrayList<>();
 
                     JsonArray groupsArray = JsonParser.parseString(groupsJson).getAsJsonArray();
+                    System.out.println("  → Parsing " + groupsArray.size() + " groups from JSON array");
+
                     for (int i = 0; i < groupsArray.size(); i++) {
                         JsonObject group = groupsArray.get(i).getAsJsonObject();
                         Map<String, String> groupMap = new HashMap<>();
-                        groupMap.put("groupName", group.has("groupName") ? group.get("groupName").getAsString() : "");
-                        groupMap.put("groupID", group.has("groupID") ? group.get("groupID").getAsString() : "");
-                        groupMap.put("username", group.has("owner") ? group.get("owner").getAsString() : "");
 
-                        // Count members if available
+                        // Group Name
+                        String groupName = group.has("groupName") ? group.get("groupName").getAsString() : "Unknown";
+                        groupMap.put("groupName", groupName);
+
+                        // Group ID
+                        String groupID = group.has("groupID") ? group.get("groupID").getAsString() : "";
+                        groupMap.put("groupID", groupID);
+
+                        // Owner - NOW COMES DIRECTLY FROM SERVER
+                        String owner = group.has("owner") ? group.get("owner").getAsString() : "Unknown";
+                        groupMap.put("owner", owner);
+
+                        // Members - Get all members as comma-separated list
+                        StringBuilder membersBuilder = new StringBuilder();
+                        int memberCount = 0;
+
                         if (group.has("receivers") && group.get("receivers").isJsonArray()) {
-                            int memberCount = group.get("receivers").getAsJsonArray().size();
-                            groupMap.put("memberCount", String.valueOf(memberCount));
-                        } else {
-                            groupMap.put("memberCount", "0");
+                            JsonArray receivers = group.get("receivers").getAsJsonArray();
+                            memberCount = receivers.size();
+
+                            for (int j = 0; j < receivers.size(); j++) {
+                                if (j > 0) membersBuilder.append(", ");
+                                membersBuilder.append(receivers.get(j).getAsString());
+                            }
                         }
 
+                        String members = membersBuilder.length() > 0 ? membersBuilder.toString() : "No members";
+                        groupMap.put("members", members);
+                        groupMap.put("memberCount", String.valueOf(memberCount));
+
                         groupsList.add(groupMap);
+
+                        System.out.println("    [" + (i+1) + "] Group: " + groupName +
+                                " | Owner: " + owner +
+                                " | Members: " + members);
                     }
 
-                    System.out.println("  → Parsed " + groupsList.size() + " groups");
+                    System.out.println("  ✓ Successfully parsed " + groupsList.size() + " groups");
+
                     model.updateGroupsList(groupsList);
+
                 } catch (Exception e) {
                     System.err.println("✗ Error parsing groups data: " + e.getMessage());
                     e.printStackTrace();
                 }
             } else {
-                System.err.println("✗ Model is null in onReceiveGroupsList");
+                System.err.println("✗ Model is null in onReceiveGroupsList!");
             }
         });
     }

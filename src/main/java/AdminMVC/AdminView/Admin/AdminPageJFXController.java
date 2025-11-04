@@ -80,19 +80,29 @@ public class AdminPageJFXController {
         }
 
         if (groupsTable != null && groupOwnerCol != null && groupNameCol != null && memberCountCol != null) {
-            groupOwnerCol.setCellValueFactory(cellData -> {
-                Map<String, String> group = cellData.getValue();
-                return new javafx.beans.property.SimpleStringProperty(group.get("username")); // owner
-            });
+            // Group Name Column
             groupNameCol.setCellValueFactory(cellData -> {
                 Map<String, String> group = cellData.getValue();
                 return new javafx.beans.property.SimpleStringProperty(group.get("groupName"));
             });
+
+            // Owner Column
+            groupOwnerCol.setCellValueFactory(cellData -> {
+                Map<String, String> group = cellData.getValue();
+                return new javafx.beans.property.SimpleStringProperty(group.get("owner"));
+            });
+
+            // Members Column - Display comma-separated list of members
             memberCountCol.setCellValueFactory(cellData -> {
                 Map<String, String> group = cellData.getValue();
-                return new javafx.beans.property.SimpleStringProperty(group.get("memberCount"));
+                String members = group.get("members");
+                return new javafx.beans.property.SimpleStringProperty(members != null ? members : "");
             });
+
+            // Optional: Make the members column wider for better visibility
+            memberCountCol.setPrefWidth(200);
         }
+
         if (searchField != null) {
             searchField.textProperty().addListener((observable, oldValue, newValue) -> {
                 if (searchListener != null) {
@@ -179,7 +189,6 @@ public class AdminPageJFXController {
         return null;
     }
 
-
     public boolean isShowingActiveUsersOnly() {
         return showingActiveUsersOnly;
     }
@@ -195,7 +204,6 @@ public class AdminPageJFXController {
     public Button getSearchButton() {
         return searchButton;
     }
-
 
     public Button getAddButton() {
         return AddButton;
