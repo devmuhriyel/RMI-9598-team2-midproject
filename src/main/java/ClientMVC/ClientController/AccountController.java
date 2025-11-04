@@ -78,19 +78,38 @@ public class AccountController {
         });
         accountJFXController.setAcceptRequestListener(friendName -> {
             try {
-                model.acceptFriendRequest(friendName);
+                // FIX: Construct JSON object with both requester (friendName) and responder (current user)
+                String jsonString = String.format(
+                        "{\"requester\":\"%s\", \"responder\":\"%s\"}",
+                        friendName,
+                        model.getUsername()
+                );
+
+                System.out.println("DEBUG: Sending Accept Request JSON: " + jsonString);
+
+                // Pass the JSON string to the model/server
+                model.acceptFriendRequest(jsonString);
             } catch (RemoteException e) {
                 throw new RuntimeException(e);
             }
         });
         accountJFXController.setDeclineRequestListener(friendName -> {
             try {
-                model.rejectFriendRequest(friendName);
+                // FIX: Construct JSON object with both requester (friendName) and responder (current user)
+                String jsonString = String.format(
+                        "{\"requester\":\"%s\", \"responder\":\"%s\"}",
+                        friendName,
+                        model.getUsername()
+                );
+
+                System.out.println("DEBUG: Sending Decline Request JSON: " + jsonString);
+
+                // Pass the JSON string to the model/server
+                model.rejectFriendRequest(jsonString);
             } catch (RemoteException e) {
                 throw new RuntimeException(e);
             }
         });
-
         accountJFXController.setBackButtonListener(() -> {
             view.getStage().close();
             HomeView homeView = new HomeView();
@@ -351,7 +370,7 @@ public class AccountController {
     }
 
     // ==================== UTILITY METHODS ====================
-    private void showSuccessAlert(String title, String message) {
+    public void showSuccessAlert(String title, String message) {
         javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
                 javafx.scene.control.Alert.AlertType.INFORMATION
         );
@@ -364,36 +383,24 @@ public class AccountController {
 
     // ==================== FRIEND LIST & REQUESTS ====================
 
-    // === Method to handle the Unfriend action ===
+
     public void handleUnfriendAction(String friendToRemove) {
         System.out.println("Controller: Processing unfriend request for: " + friendToRemove);
 
         Platform.runLater(() -> {
-            // Prompt user for confirmation
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
             alert.setTitle("Confirm Unfriend");
             alert.setHeaderText("Are you sure you want to unfriend " + friendToRemove + "?");
             alert.setContentText("This action cannot be undone.");
-
             Optional<ButtonType> result = alert.showAndWait();
-
             if (result.isPresent() && result.get() == ButtonType.OK) {
                 try {
-                    // Build JSON: requires the requester (current user) and the responder (friendToRemove)
                     String jsonString = String.format(
                             "{\"requester\":\"%s\",\"responder\":\"%s\"}",
                             model.getUsername(),
                             friendToRemove
                     );
-
                     model.removeFromFriendsList(jsonString);
-
-                    // Show confirmation and re-trigger list fetch
-                    showSuccessAlert("Unfriended", friendToRemove + " has been removed from your friends list.");
-
-                    // Re-trigger the button logic to refresh the view immediately
-                    accountJFXController.showFriends();
-
                 } catch (RemoteException e) {
                     System.err.println("Error sending unfriend request: " + e.getMessage());
                     e.printStackTrace();
@@ -404,14 +411,59 @@ public class AccountController {
             }
         });
     }
-    // ===================================================
 
-    // Method to handle the friends list update from callback
+    public void handleFriendDeletionSuccess() {
+        showSuccessAlert("Unfriended Successfully", "The user has been successfully removed from your friends list.");
+        accountJFXController.showFriends();
+        Runnable fetchFriendsListener = accountJFXController.getFriendsButtonListener();
+        if (fetchFriendsListener != null) {
+            fetchFriendsListener.run();
+        } else {
+            System.err.println("Friends button listener is null, cannot refresh list.");
+        }
+    }
+
     public void handleFriendsListUpdate(List<String> friends) {
         Platform.runLater(() -> {
             System.out.println("AccountController: Received and rendering friends list.");
             accountJFXController.renderFriendsList(friends);
         });
+    }
+
+    public void handleFriendAcceptedSuccess() {
+        showSuccessAlert("Friend Request Accepted", "You are now friends with the requester!");
+        if (accountJFXController.getReceivedRequestsListener() != null) {
+            System.out.println("Controller: Re-fetching received requests list after acceptance.");
+            accountJFXController.getReceivedRequestsListener().accept(null);
+        }
+        try {
+            String jsonString = String.format("{\"username\":\"%s\"}", model.getUsername());
+            System.out.println("Controller: Re-fetching Friends List after acceptance.");
+            model.getFriendsList(jsonString);
+        } catch (RemoteException e) {
+            System.err.println("Error requesting friends list after acceptance: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public void handleFriendDeclinedNotification() {
+        showSuccessAlert("Request Declined", "A friend request you sent was declined.");
+        try {
+            String jsonString = String.format("{\"username\":\"%s\"}", model.getUsername());
+            System.out.println("Controller: Re-fetching Sent Requests List after decline notification.");
+            model.getSentFriendRequests(jsonString);
+        } catch (RemoteException e) {
+            System.err.println("Error requesting sent requests list after decline: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public void handleNewFriendRequestReceived() {
+        System.out.println("Controller: Handling new friend request callback.");
+        Platform.runLater(() -> {
+            showSuccessAlert("New Friend Request", "You have received a new friend request!");
+        });
+        accountJFXController.getReceivedRequestsListener().accept(null);
     }
 
     public void handleReceivedFriendRequests(List<String> receivedRequests) {

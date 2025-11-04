@@ -35,7 +35,6 @@ public class AdminController {
         setupPasswordResetHandling();
         refreshData();
     }
-
     private void setupSearchListener() {
         ui.setSearchListener(queryText -> {
             String q = (queryText == null) ? "" : queryText.trim().toLowerCase();
@@ -325,6 +324,13 @@ public class AdminController {
 
     private void refreshData() {
         try {
+            System.out.println("DEBUG: Refreshing data with adminUsername: " + model.getAdminUsername());
+
+            if (model.getAdminUsername() == null || model.getAdminUsername().isEmpty()) {
+                System.err.println("✗ Cannot refresh data: adminUsername not set!");
+                return;
+            }
+
             model.getAllClientsFromServer();
             model.getAllGroupsFromServer();
         } catch (RemoteException e) {
@@ -613,6 +619,7 @@ public class AdminController {
 
     public void handleSuccessfulLogin() {
         System.out.println("✓ Controller: Handling successful login");
+        // NOW call refreshData() after login when adminUsername is set
         refreshData();
     }
 

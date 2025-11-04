@@ -95,6 +95,35 @@
               "receiver": "diana",
               "content": "hello diana",
               "isFile": false
+            },
+            {
+              "sender": "alice",
+              "receiver": "diana",
+              "content": "ay assignment?",
+              "isFile": false
+            },
+            {
+              "sender": "diana",
+              "receiver": "alice",
+              "content": "ata?",
+              "isFile": false
+            },
+            {
+              "sender": "alice",
+              "receiver": "diana",
+              "content": "okok",
+              "isFile": false
+            }
+          ]
+        },
+        {
+          "recipient": "Clark",
+          "messages": [
+            {
+              "sender": "Clark",
+              "receiver": "alice",
+              "content": "wazzup alice",
+              "isFile": false
             }
           ]
         }
@@ -116,15 +145,6 @@
               "isFile": false
             }
           ]
-        },
-        {
-          "groupID": "grp-1762266120637",
-          "groupName": "chatt",
-          "receivers": [
-            "alice",
-            "gian"
-          ],
-          "messages": []
         }
       ],
       "incomingFriendRequests": [
@@ -132,15 +152,14 @@
           "requester": "gian",
           "responder": "alice",
           "status": "pending"
-        }
-      ],
-      "outgoingFriendRequests": [
+        },
         {
-          "requester": "alice",
-          "responder": "diana",
+          "requester": "diana",
+          "responder": "alice",
           "status": "pending"
         }
-      ]
+      ],
+      "outgoingFriendRequests": []
     },
     {
       "username": "gian",
@@ -248,7 +267,9 @@
       "username": "diana",
       "password": "diana123",
       "verificationCode": "wonderwoman",
-      "friends": [],
+      "friends": [
+        "Clark"
+      ],
       "conversations": [
         {
           "recipient": "alice",
@@ -258,13 +279,37 @@
               "receiver": "diana",
               "content": "hello diana",
               "isFile": false
+            },
+            {
+              "sender": "alice",
+              "receiver": "diana",
+              "content": "ay assignment?",
+              "isFile": false
+            },
+            {
+              "sender": "diana",
+              "receiver": "alice",
+              "content": "ata?",
+              "isFile": false
+            },
+            {
+              "sender": "alice",
+              "receiver": "diana",
+              "content": "okok",
+              "isFile": false
             }
           ]
         }
       ],
       "groupChats": [],
       "incomingFriendRequests": [],
-      "outgoingFriendRequests": []
+      "outgoingFriendRequests": [
+        {
+          "requester": "diana",
+          "responder": "alice",
+          "status": "pending"
+        }
+      ]
     },
     {
       "username": "hal",
@@ -280,8 +325,22 @@
       "username": "Clark",
       "password": "Kent123",
       "verificationCode": "Superman",
-      "friends": [],
-      "conversations": [],
+      "friends": [
+        "diana"
+      ],
+      "conversations": [
+        {
+          "recipient": "alice",
+          "messages": [
+            {
+              "sender": "Clark",
+              "receiver": "alice",
+              "content": "wazzup alice",
+              "isFile": false
+            }
+          ]
+        }
+      ],
       "groupChats": [],
       "incomingFriendRequests": [],
       "outgoingFriendRequests": []
@@ -314,14 +373,6 @@
         {
           "groupID": "grp-1762261691539",
           "groupName": "yeahh",
-          "receivers": [
-            "Carlitoo"
-          ],
-          "messages": []
-        },
-        {
-          "groupID": "grp-1762266030051",
-          "groupName": "nicee",
           "receivers": [
             "Carlitoo"
           ],

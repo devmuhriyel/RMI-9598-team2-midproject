@@ -14,10 +14,7 @@ import com.google.gson.JsonSyntaxException;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -454,56 +451,109 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
     @Override
     public void searchGroups(String jsonString) throws RemoteException {
         System.out.println(">>> Admin searchGroups called");
+        System.out.println("DEBUG: Received JSON: " + jsonString);  // See what JSON is sent
 
         try {
             JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
             String keyword = jsonObject.has("keyword") ? jsonObject.get("keyword").getAsString() : "";
             String admin = jsonObject.has("admin") ? jsonObject.get("admin").getAsString() : "";
 
+            System.out.println("DEBUG: Keyword: '" + keyword + "'");
+            System.out.println("DEBUG: Admin: '" + admin + "'");
+            System.out.println("DEBUG: Available admin callbacks: " + adminCallbacks.keySet());
+
             AdminCallbackInterface adminCallback = adminCallbacks.get(admin);
             if (adminCallback == null) {
-                System.out.println("No admin callback found for: " + admin);
+                System.out.println("✗ No admin callback found for: '" + admin + "'");
+                System.out.println("✗ This is why groups aren't being sent to UI!");
                 return;
             }
 
+            System.out.println("✓ Admin callback found!");
+
             fileLock.readLock().lock();
             try {
-                List<GroupChat> matchingGroups = new ArrayList<>();
+                // Map to track group ownership: groupID -> owner username
+                Map<String, String> groupOwners = new HashMap<>();
+                // Map to store unique groups: groupID -> GroupChat
+                Map<String, GroupChat> uniqueGroups = new LinkedHashMap<>();
 
-                // Search through all users' group chats
+                // First pass: Find the owner of each group
+                // The owner is the FIRST client we encounter who has this group
                 for (Client client : allUsers.values()) {
                     if (client.getGroupChats() != null) {
                         for (GroupChat group : client.getGroupChats()) {
-                            if (keyword.isEmpty() ||
-                                    (group.getGroupName() != null && group.getGroupName().toLowerCase().contains(keyword.toLowerCase()))) {
-                                // Check if group already added
-                                boolean exists = false;
-                                for (GroupChat g : matchingGroups) {
-                                    if (g.getGroupID().equals(group.getGroupID())) {
-                                        exists = true;
-                                        break;
-                                    }
-                                }
-                                if (!exists) {
-                                    matchingGroups.add(group);
-                                }
+                            String groupID = group.getGroupID();
+
+                            // If we haven't seen this group before, this client is the owner
+                            if (!groupOwners.containsKey(groupID)) {
+                                groupOwners.put(groupID, client.getUsername());
+                                uniqueGroups.put(groupID, group);
+
+                                System.out.println("  → Found group: " + group.getGroupName() +
+                                        " | Owner: " + client.getUsername() +
+                                        " | Members: " + group.getReceivers());
                             }
                         }
                     }
                 }
 
-                System.out.println("✓ Found " + matchingGroups.size() + " groups matching: " + keyword);
+                // Second pass: Filter by keyword if provided
+                List<JsonObject> filteredGroups = new ArrayList<>();
 
-                // SEND THE DATA TO ADMIN
+                for (Map.Entry<String, GroupChat> entry : uniqueGroups.entrySet()) {
+                    GroupChat group = entry.getValue();
+                    String owner = groupOwners.get(entry.getKey());
+
+                    // Apply keyword filter
+                    if (keyword.isEmpty() ||
+                            (group.getGroupName() != null &&
+                                    group.getGroupName().toLowerCase().contains(keyword.toLowerCase()))) {
+
+                        // Create JSON object with all required fields
+                        JsonObject groupJson = new JsonObject();
+                        groupJson.addProperty("groupID", group.getGroupID());
+                        groupJson.addProperty("groupName", group.getGroupName());
+                        groupJson.addProperty("owner", owner);  // Add owner explicitly
+
+                        // Add receivers array (members)
+                        com.google.gson.JsonArray receiversArray = new com.google.gson.JsonArray();
+                        if (group.getReceivers() != null) {
+                            for (String receiver : group.getReceivers()) {
+                                receiversArray.add(receiver);
+                            }
+                        }
+                        groupJson.add("receivers", receiversArray);
+
+                        // Add member count
+                        groupJson.addProperty("memberCount",
+                                group.getReceivers() != null ? group.getReceivers().size() : 0);
+
+                        filteredGroups.add(groupJson);
+                    }
+                }
+
+                System.out.println("✓ Found " + filteredGroups.size() + " groups matching: '" + keyword + "'");
+
+                // Convert to JSON array
+                com.google.gson.JsonArray groupsArray = new com.google.gson.JsonArray();
+                for (JsonObject groupJson : filteredGroups) {
+                    groupsArray.add(groupJson);
+                }
+
                 Gson gson = new Gson();
-                String groupsJson = gson.toJson(matchingGroups);
+                String groupsJson = gson.toJson(groupsArray);
+
+                System.out.println("  → Sending groups JSON to admin");
 
                 callbackExecutor.execute(() -> {
                     try {
                         adminCallback.onReceiveGroupsList(groupsJson);
                         adminCallback.onSearchGroupResults();
+                        System.out.println("  ✓ Successfully sent groups to admin");
                     } catch (RemoteException e) {
                         System.err.println("Failed to send group search results to admin: " + e.getMessage());
+                        e.printStackTrace();
                     }
                 });
 

@@ -14,7 +14,8 @@ import java.util.*;
 import java.util.function.Consumer;
 
 public class UnifiedAdminModel {
-    private boolean isLoadingData = false;
+    private boolean isLoadingUsers = false;  // SEPARATE FLAG FOR USERS
+    private boolean isLoadingGroups = false; // SEPARATE FLAG FOR GROUPS
     private ObservableList<Map<String, String>> allUsers;
     private ObservableList<Map<String, String>> allGroups;
     private ObservableList<String> activeUsers;
@@ -252,23 +253,23 @@ public class UnifiedAdminModel {
     public void getAllClientsFromServer() throws RemoteException {
         if (server == null) return;
 
-        if (isLoadingData) {  // ADD THIS CHECK
-            System.out.println("⚠ Already loading data, skipping duplicate request");
+        if (isLoadingUsers) {  // CHECK USERS FLAG
+            System.out.println("⚠ Already loading users, skipping duplicate request");
             return;
         }
 
-        isLoadingData = true;  // SET FLAG
+        isLoadingUsers = true;  // SET USERS FLAG
 
         System.out.println("DEBUG: adminUsername = '" + adminUsername + "'");
         String jsonString = adminJSONHandler.createJSONStringRequest("request", "GET_ALL_USERS", adminUsername);
         System.out.println("DEBUG: Sending JSON to server: " + jsonString);
         server.searchUsers(jsonString);
 
-        // Reset flag after a short delay
+        // Reset flag after delay
         new Thread(() -> {
             try {
-                Thread.sleep(1000);  // Wait 1 second
-                isLoadingData = false;
+                Thread.sleep(1000);
+                isLoadingUsers = false;
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -448,13 +449,27 @@ public class UnifiedAdminModel {
     public void getAllGroupsFromServer() throws RemoteException {
         if (server == null) return;
 
-        if (isLoadingData) {  // ADD THIS CHECK
-            System.out.println("⚠ Already loading data, skipping duplicate request");
+        if (isLoadingGroups) {  // CHECK GROUPS FLAG
+            System.out.println("⚠ Already loading groups, skipping duplicate request");
             return;
         }
 
+        isLoadingGroups = true;  // SET GROUPS FLAG
+
+        System.out.println("DEBUG: Requesting groups for admin: '" + adminUsername + "'");
         String jsonString = adminJSONHandler.createJSONStringRequest("request", "GET_ALL_GROUPS", adminUsername);
+        System.out.println("DEBUG: Sending groups JSON to server: " + jsonString);
         server.searchGroups(jsonString);
+
+        // Reset flag after delay
+        new Thread(() -> {
+            try {
+                Thread.sleep(1000);
+                isLoadingGroups = false;
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }).start();
     }
 
     // CHAT HISTORY METHODS
