@@ -261,7 +261,24 @@
       "verificationCode": "9874",
       "friends": [],
       "conversations": [],
-      "groupChats": [],
+      "groupChats": [
+        {
+          "groupID": "grp-1762260050449",
+          "groupName": "yesssss",
+          "receivers": [
+            "Carlitoo"
+          ],
+          "messages": []
+        },
+        {
+          "groupID": "grp-1762261691539",
+          "groupName": "yeahh",
+          "receivers": [
+            "Carlitoo"
+          ],
+          "messages": []
+        }
+      ],
       "incomingFriendRequests": [
         {
           "requester": "alice",

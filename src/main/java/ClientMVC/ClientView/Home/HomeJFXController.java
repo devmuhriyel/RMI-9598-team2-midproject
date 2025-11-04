@@ -8,6 +8,9 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import javafx.scene.control.TextInputDialog;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.ButtonType;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,6 +45,7 @@ public class HomeJFXController {
     private List<String> originalGroups = Collections.emptyList();
     private Consumer<String> searchListener;
     private Consumer<String> createGroupListener;
+    private java.util.function.BiConsumer<String, List<String>> createGroupWithMembersListener;
 
     @FXML
     private void initialize() {
@@ -217,7 +221,7 @@ public class HomeJFXController {
             createGroupBtn.setStyle("-fx-background-color: #dedcff; -fx-text-fill: black; -fx-padding: 10;");
             createGroupBtn.setOnAction(event -> {
                 System.out.println("Create new group clicked");
-                // Prompt ONLY for the group name (no members prompt)
+                // Prompt for the group name
                 TextInputDialog dialog = new TextInputDialog("");
                 dialog.setTitle("Create Group");
                 dialog.setHeaderText("Create a new group chat");
@@ -226,7 +230,44 @@ public class HomeJFXController {
                 Optional<String> result = dialog.showAndWait();
                 if (result.isPresent() && !result.get().trim().isEmpty()) {
                     String groupName = result.get().trim();
-                    if (createGroupListener != null) {
+                    // Next: prompt to select members from friends
+                    List<String> friends = getOriginalFriends();
+                    Dialog<List<String>> membersDialog = new Dialog<>();
+                    membersDialog.setTitle("Select Group Members");
+                    membersDialog.setHeaderText("Select friends to add to '" + groupName + "' (optional)");
+
+                    VBox box = new VBox(6);
+                    List<CheckBox> checkBoxes = new ArrayList<>();
+                    if (friends != null) {
+                        for (String friend : friends) {
+                            CheckBox cb = new CheckBox(friend);
+                            checkBoxes.add(cb);
+                            box.getChildren().add(cb);
+                        }
+                    }
+                    membersDialog.getDialogPane().setContent(box);
+                    membersDialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+                    membersDialog.setResultConverter(button -> {
+                        if (button == ButtonType.OK) {
+                            List<String> selected = new ArrayList<>();
+                            for (CheckBox cb : checkBoxes) {
+                                if (cb.isSelected()) {
+                                    selected.add(cb.getText());
+                                }
+                            }
+                            return selected;
+                        }
+                        return null;
+                    });
+
+                    Optional<List<String>> selectedMembersOpt = membersDialog.showAndWait();
+                    List<String> selectedMembers = selectedMembersOpt.orElse(Collections.emptyList());
+
+                    if (createGroupWithMembersListener != null) {
+                        createGroupWithMembersListener.accept(groupName, selectedMembers);
+                    } else if (createGroupListener != null) {
+                        // Fallback to legacy behavior if new listener not set
                         createGroupListener.accept(groupName);
                     }
                 }
@@ -237,6 +278,10 @@ public class HomeJFXController {
 
     public void setCreateGroupListener(Consumer<String> listener) {
         this.createGroupListener = listener;
+    }
+
+    public void setCreateGroupWithMembersListener(java.util.function.BiConsumer<String, List<String>> listener) {
+        this.createGroupWithMembersListener = listener;
     }
 
     public void setAccountButtonListener(Runnable listener) {

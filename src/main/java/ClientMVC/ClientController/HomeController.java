@@ -103,7 +103,8 @@ public class HomeController {
             }
         });
 
-        ui.setCreateGroupListener(this::createGroup);
+        // Prefer new flow: name + select members from friends
+        ui.setCreateGroupWithMembersListener(this::createGroupWithMembers);
     }
 
     // =========================================================
@@ -176,14 +177,38 @@ public class HomeController {
 
     private void createGroup(String groupName) {
         try {
-            // Build minimal JSON payload: only creator and groupName
             String json = "{\"creator\":\"" + model.getUsername() + "\",\"groupName\":\"" + groupName + "\"}";
             model.createGroupChat(json);
         } catch (Exception e) {
             System.err.println("Failed to create group: " + e.getMessage());
             e.printStackTrace();
         }
-        // Optimistically refresh local UI; server callback will also refresh
+        refreshUserData();
+    }
+
+    private void createGroupWithMembers(String groupName, List<String> members) {
+        try {
+            StringBuilder sb = new StringBuilder();
+            sb.append("{");
+            sb.append("\"creator\":\"").append(model.getUsername()).append("\",");
+            sb.append("\"groupName\":\"").append(groupName).append("\",");
+            sb.append("\"members\":[");
+            if (members != null) {
+                boolean first = true;
+                for (String m : members) {
+                    if (m == null || m.trim().isEmpty()) continue;
+                    if (!first) sb.append(",");
+                    sb.append("\"").append(m.trim()).append("\"");
+                    first = false;
+                }
+            }
+            sb.append("]}");
+
+            model.createGroupChat(sb.toString());
+        } catch (Exception e) {
+            System.err.println("Failed to create group with members: " + e.getMessage());
+            e.printStackTrace();
+        }
         refreshUserData();
     }
 
@@ -254,6 +279,23 @@ public class HomeController {
                 }
             }
 
+            // Fallback: refresh from server and try to resolve ID by name again
+            if (groupID == null) {
+                System.out.println("Group ID missing in local data; fetching latest groups from server...");
+                try {
+                    List<GroupChat> updated = model.getGroupChatHistories("{}", model.getUsername());
+                    if (updated != null) {
+                        for (GroupChat gc : updated) {
+                            if (gc != null && groupName.equals(gc.getGroupName())) {
+                                groupID = gc.getGroupID();
+                                break;
+                            }
+                        }
+                    }
+                } catch (Exception fetchErr) {
+                    System.err.println("Failed to fetch latest group list: " + fetchErr.getMessage());
+                }
+            }
             if (groupID == null) {
                 System.err.println("Could not find group ID for: " + groupName);
                 return;
