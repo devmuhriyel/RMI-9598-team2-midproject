@@ -12,30 +12,24 @@ import java.util.Collections;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class ConnectionModel {
-
-    // Stores the remote service stub (the client's proxy for the server)
     private volatile ClientInterface remoteServiceStub;
     private volatile String ip;
     private volatile int port;
     private volatile boolean connected;
     private final ReentrantLock connectionLock = new ReentrantLock();
-
-    // The binding name must be exactly what the server uses to bind its service
     private static final String RMI_BINDING_NAME = "ChatServer";
 
     public ConnectionModel() {
-        // --- NEW: Auto-Configure RMI Hostname ---
-        // We only run this if the user hasn't already set the property manually
+
         if (System.getProperty("java.rmi.server.hostname") == null) {
             if (!configureRmiHostname()) {
                 System.err.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
                 System.err.println("FATAL: Could not automatically find a suitable IP for RMI.");
                 System.err.println("The application will likely fail to receive callbacks.");
                 System.err.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                // You could show an error Alert here
+
             }
         }
-        // --- End New Logic ---
     }
 
     public enum ConnectionStatus {
@@ -44,8 +38,8 @@ public class ConnectionModel {
         INVALID_PORT_FORMAT,
         INVALID_IP_FORMAT,
         INVALID_PORT_RANGE,
-        CONNECTION_FAILED,      // For Registry connection or general RMI network errors
-        RMI_LOOKUP_FAILED       // For when the service name isn't found in the Registry
+        CONNECTION_FAILED,
+        RMI_LOOKUP_FAILED
     }
 
     public static class ConnectionResult {
@@ -67,7 +61,6 @@ public class ConnectionModel {
             this.connected = false;
             this.remoteServiceStub = null; // Reset stub
 
-            // --- Input Validation ---
             if (ip == null || ip.trim().isEmpty() || portText == null || portText.trim().isEmpty()) {
                 return new ConnectionResult(ConnectionStatus.EMPTY_FIELDS, "IP address and Port cannot be empty.");
             }
@@ -91,33 +84,24 @@ public class ConnectionModel {
                 return new ConnectionResult(ConnectionStatus.INVALID_IP_FORMAT, "Invalid IP address format.");
             }
 
-            // --- RMI Connection Logic ---
             try {
-                // 1. Get the reference to the RMI Registry
                 Registry registry = LocateRegistry.getRegistry(ip, port);
-
-                // 2. Look up the remote object and cast it to the common interface
                 remoteServiceStub = (ClientInterface) registry.lookup(RMI_BINDING_NAME);
-
                 this.connected = true;
                 this.ip = ip;
                 this.port = port;
                 return new ConnectionResult(ConnectionStatus.SUCCESS, "RMI service successfully retrieved.");
 
             } catch (java.rmi.ConnectException e) {
-                // Thrown if the Registry service is not running or network is unreachable
                 return new ConnectionResult(ConnectionStatus.CONNECTION_FAILED,
                         "Failed to connect to RMI Registry: " + e.getMessage());
             } catch (java.rmi.NotBoundException e) {
-                // Thrown if the binding name is incorrect or the service hasn't been started on the server
                 return new ConnectionResult(ConnectionStatus.RMI_LOOKUP_FAILED,
                         "Service '" + RMI_BINDING_NAME + "' not found in Registry.");
             } catch (RemoteException e) {
-                // General RMI communication error
                 return new ConnectionResult(ConnectionStatus.CONNECTION_FAILED,
                         "RMI Communication Error: " + e.getMessage());
             } catch (ClassCastException e) {
-                // Should only happen if the stub retrieved is not a ClientInterface
                 return new ConnectionResult(ConnectionStatus.RMI_LOOKUP_FAILED,
                         "RMI Service found but has wrong type (check stub versions).");
             }
@@ -127,7 +111,6 @@ public class ConnectionModel {
         }
     }
 
-    /** Returns the remote service stub. The caller (Controller) must use this to call remote methods. */
     public ClientInterface getRemoteServiceStub() {
         connectionLock.lock();
         try {
@@ -137,26 +120,16 @@ public class ConnectionModel {
         }
     }
 
-    // --- NEW: IP Auto-Finder Logic ---
-
-    /**
-     * Tries to find the correct IP and set the RMI hostname property.
-     * @return true if a valid IP was found and set, false otherwise.
-     */
     private boolean configureRmiHostname() {
-        // Priority 1: Find Radmin VPN IP (which starts with 26.)
         String radminIp = findIpByPrefix("26.");
         if (radminIp != null) {
             System.setProperty("java.rmi.server.hostname", radminIp);
-            System.out.println("✓ RMI Hostname auto-set to Radmin IP: " + radminIp);
             return true;
         }
 
-        // Priority 2: If no Radmin, find a standard LAN IP (192.168.x.x, 10.x.x.x, etc.)
         String lanIp = findSiteLocalIp();
         if (lanIp != null) {
             System.setProperty("java.rmi.server.hostname", lanIp);
-            System.out.println("✓ RMI Hostname auto-set to LAN IP: " + lanIp);
             return true;
         }
 
@@ -164,9 +137,6 @@ public class ConnectionModel {
         return false;
     }
 
-    /**
-     * Scans all network interfaces for an IPv4 address starting with the given prefix.
-     */
     private String findIpByPrefix(String prefix) {
         try {
             for (NetworkInterface ni : Collections.list(NetworkInterface.getNetworkInterfaces())) {
@@ -185,20 +155,14 @@ public class ConnectionModel {
         } catch (Exception e) {
             System.err.println("Error while scanning network interfaces: " + e.getMessage());
         }
-        return null; // Not found
+        return null;
     }
-
-    /**
-     * Scans all network interfaces for a private "site-local" (LAN) IPv4 address.
-     */
     private String findSiteLocalIp() {
         try {
             for (NetworkInterface ni : Collections.list(NetworkInterface.getNetworkInterfaces())) {
-                // Ignore down, loopback, and virtual adapters
                 if (!ni.isUp() || ni.isLoopback() || ni.isVirtual()) continue;
 
                 for (InetAddress addr : Collections.list(ni.getInetAddresses())) {
-                    // We only want IPv4 addresses that are "site-local" (e.g., 192.168.x.x)
                     if (addr instanceof Inet4Address && addr.isSiteLocalAddress()) {
                         return addr.getHostAddress(); // Found it
                     }
@@ -207,6 +171,6 @@ public class ConnectionModel {
         } catch (Exception e) {
             System.err.println("Error while scanning network interfaces: " + e.getMessage());
         }
-        return null; // Not found
+        return null;
     }
 }

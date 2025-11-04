@@ -21,7 +21,6 @@ public class AdminLoginController {
         this.view = loginView;
         this.model = unifiedModel;
 
-        // Connect callback to this controller AND set the model
         if (model.getCallback() instanceof AdminCallbackImplementation) {
             AdminCallbackImplementation callback = (AdminCallbackImplementation) model.getCallback();
             callback.setAdminLoginController(this);
@@ -30,7 +29,6 @@ public class AdminLoginController {
 
         model.setLoginResponseListener(this::handleLoginResponse);
         model.setVerificationCodeValidListener(this::handleVerificationCodeValid);
-        model.setPasswordResetListener(this::handlePasswordResetListener);
         model.setOperationResultListener(this::handleGeneralNotification);
         initialize();
     }
@@ -48,17 +46,8 @@ public class AdminLoginController {
         });
     }
 
-    public void handleSuccessfulLogin() {
-        Platform.runLater(() -> {
-            System.out.println("✓ AdminLoginController: Login successful");
-            // This will be called from the callback
-            // The actual UI transition happens in handleLoginResponse
-        });
-    }
-
     public void handleFailedLogin() {
         Platform.runLater(() -> {
-            System.out.println("✗ AdminLoginController: Login failed");
             loginJFXController.showAlert(Alert.AlertType.ERROR,
                     "Login Failed",
                     "Invalid username or password");
@@ -66,16 +55,8 @@ public class AdminLoginController {
         });
     }
 
-    public void handleSuccessfulCodeVerification() {
-        Platform.runLater(() -> {
-            System.out.println("✓ AdminLoginController: Code verification successful");
-            // Handle successful verification
-        });
-    }
-
     public void handleFailedCodeVerification() {
         Platform.runLater(() -> {
-            System.out.println("✗ AdminLoginController: Code verification failed");
             loginJFXController.showAlert(Alert.AlertType.ERROR,
                     "Verification Failed",
                     "Invalid verification code");
@@ -100,7 +81,6 @@ public class AdminLoginController {
         try {
             String xmlMessage = "<Request><type>ADMIN_REQUEST_PASSWORD_RESET_WITH_CODE</type><content>" +
                     username + "![]!" + verificationCode + "</content></Request>";
-            System.out.println("Sending admin password reset request: " + xmlMessage);
             model.sendAdminCommand(xmlMessage);
         } catch (Exception e) {
             System.err.println("Error sending admin password reset request: " + e.getMessage());
@@ -142,18 +122,11 @@ public class AdminLoginController {
         try {
             String xmlMessage = "<Request><type>ADMIN_RESET_PASSWORD</type><content>" +
                     username + "![]!" + newPassword + "</content></Request>";
-            System.out.println("Sending admin password reset: " + xmlMessage);
             model.sendAdminCommand(xmlMessage);
         } catch (Exception e) {
             System.err.println("Error sending admin password reset: " + e.getMessage());
             e.printStackTrace();
         }
-    }
-
-    private void handlePasswordResetListener(String username) {
-        Platform.runLater(() -> {
-            System.out.println("Password reset requested for admin: " + username);
-        });
     }
 
     private void handleGeneralNotification(String message) {
@@ -203,8 +176,6 @@ public class AdminLoginController {
     public void handleLoginResponse(String response) {
         Platform.runLater(() -> {
             if ("LOGIN_SUCCESS".equals(response)) {
-                System.out.println("✓ Login successful, transitioning to admin view...");
-
                 try {
                     Stage loginStage = (Stage) loginJFXController.getLoginButton().getScene().getWindow();
                     String loggedInUsername = loginJFXController.getUsername();
@@ -220,14 +191,8 @@ public class AdminLoginController {
                     if (model.getCallback() instanceof AdminCallbackImplementation) {
                         ((AdminCallbackImplementation) model.getCallback()).setAdminController(adminController);
                     }
-
-                    // Load data ONLY ONCE
-                    model.loadData();  // This should be the ONLY place calling loadData()
-
+                    model.loadData();
                     loginStage.close();
-
-                    System.out.println("✓ Admin view displayed successfully");
-
                 } catch (Exception e) {
                     System.err.println("✗ Error showing admin view: " + e.getMessage());
                     e.printStackTrace();

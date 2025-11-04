@@ -60,7 +60,6 @@ public class UnifiedClientModel {
     }
 
     //USER ACCOUNT SETTINGS UI METHODS
-    // -=-=-=-=-=Change Username=-=-=-=-=- \\
     public void changeUsername(String newUsername) throws RemoteException {
         String jsonRequest = String.format(
                 "{\"currentUsername\":\"%s\",\"newUsername\":\"%s\"}",
@@ -68,11 +67,9 @@ public class UnifiedClientModel {
                 newUsername
         );
 
-        System.out.println("Model: Sending username change request to server");
         serverConnection.changeUsername(jsonRequest);
     }
 
-    // -=-=-=-=-=Change Password=-=-=-=-=- \\
     public void changePasswordWithOldPassword(String oldPassword, String newPassword) throws RemoteException {
         String jsonRequest = String.format(
                 "{\"username\":\"%s\",\"oldPassword\":\"%s\",\"newPassword\":\"%s\"}",
@@ -80,13 +77,10 @@ public class UnifiedClientModel {
                 oldPassword,
                 newPassword
         );
-
-        System.out.println("Model: Sending password change request to server");
         serverConnection.changePasswordWithOldPassword(jsonRequest);
     }
 
     //USER FRIEND REQUESTS UI METHODS
-
     public void sendFriendRequest(String jsonString) throws RemoteException {
         serverConnection.sendFriendRequest(jsonString);
     }
@@ -95,16 +89,13 @@ public class UnifiedClientModel {
     }
 
     public void getSentFriendRequests(String jsonString) throws RemoteException {
-        System.out.println("Model: Requesting sent friend requests");
          serverConnection.getSentFriendRequests(jsonString);
     }
 
     public void getReceivedFriendRequests(String jsonString) throws RemoteException {
-        System.out.println("Model: Requesting received friend requests");
         serverConnection.getReceivedFriendRequests(jsonString);
     }
     public void getFriendsList(String jsonString) throws RemoteException {
-        System.out.println("Model: Requesting friends list");
         serverConnection.getFriends(jsonString);
     }
 
@@ -147,7 +138,6 @@ public class UnifiedClientModel {
 
     public void sendPrivateFile(String sender, String receiver, File file, String jsonString) throws RemoteException{
         try {
-            // Read file and encode to Base64
             byte[] fileBytes = Files.readAllBytes(file.toPath());
             String fileData = Base64.getEncoder().encodeToString(fileBytes);
             String fileName = file.getName();
@@ -226,7 +216,7 @@ public class UnifiedClientModel {
     public String createJSONStringRequest(String logType, String msgContent, String sender){
         return jsonHandler.createJSONStringRequest(logType, msgContent, sender);
     }
-    // Helper method to save received file
+
     public void saveReceivedFile(String fileName, String fileData, String savePath) throws IOException {
         byte[] fileBytes = Base64.getDecoder().decode(fileData);
         File outputFile = new File(savePath, fileName);

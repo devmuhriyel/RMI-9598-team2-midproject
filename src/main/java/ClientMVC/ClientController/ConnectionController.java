@@ -25,7 +25,6 @@ public class ConnectionController {
         this.connectionJFXController = jfxController;
 
         try {
-            // This callback creation will now use the IP set by the ConnectionModel
             this.clientCallback = new ClientCallbackImplementation();
         } catch (RemoteException e) {
             throw new RuntimeException("Failed to export client callback", e);
@@ -37,26 +36,17 @@ public class ConnectionController {
     public void connect() {
         String ip = connectionJFXController.getIpAddress();
         String portText = connectionJFXController.getPortText();
-
         ConnectionModel.ConnectionResult result = model.connect(ip, portText);
-
         switch (result.getStatus()) {
             case SUCCESS:
                 Platform.runLater(() -> {
                     try {
-                        // 1) Get remote service
                         ClientInterface clientService = model.getRemoteServiceStub();
-
-                        // 2) Close connection window
                         Stage stage = (Stage) connectionJFXController.getConnectButton().getScene().getWindow();
                         stage.close();
-
-                        // 3) Open Login View
                         LoginView loginView = new LoginView();
                         Stage loginStage = new Stage();
                         loginView.start(loginStage);
-
-                        // 4) Pass the EXISTING EXPORTED callback to LoginController
                         new LoginController(
                                 loginView,
                                 clientService,
@@ -70,7 +60,6 @@ public class ConnectionController {
                 });
                 break;
 
-            // --- Error Handling ---
             case EMPTY_FIELDS:
                 connectionJFXController.showEmptyFieldsLabel();
                 break;

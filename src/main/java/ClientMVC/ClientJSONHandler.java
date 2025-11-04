@@ -1,13 +1,6 @@
 package ClientMVC;
 
-import Common.Objects.ClientObjects.Client;
-import Common.Objects.ClientObjects.ClientAccountsList;
-import Common.Objects.ClientObjects.FriendRequest;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.util.HashMap;
 import java.util.Map;
 

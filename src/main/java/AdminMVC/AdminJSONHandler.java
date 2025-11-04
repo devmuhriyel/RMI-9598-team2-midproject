@@ -43,9 +43,7 @@ public class AdminJSONHandler {
         request.put("logType", logType);
         request.put("messageType", msgType);
         request.put("admin", admin);
-
         String json = gson.toJson(request);
-        System.out.println("DEBUG: Created JSON request: " + json);
         return json;
     }
 
@@ -110,7 +108,6 @@ public class AdminJSONHandler {
             try (FileWriter writer = new FileWriter(file)) {
                 gson.toJson(adminAccountsList, writer);
                 writer.flush();
-                System.out.println("Successfully wrote admin accounts to file");
             }
         } catch (IOException e) {
             System.err.println("Error writing admin accounts file: " + e.getMessage());
@@ -163,11 +160,8 @@ public class AdminJSONHandler {
     // ========== CLIENT ACCOUNT METHODS ==========
 
     public ClientAccountsList readClientAccountFile() {
-        System.out.println(">>> AdminJSONHandler: readClientAccountFile called");
         try {
             File file = new File(CLIENT_FILE_PATH);
-            System.out.println("    Reading from: " + file.getAbsolutePath());
-
             if (!file.exists()) {
                 System.err.println("✗ Client accounts file not found: " + CLIENT_FILE_PATH);
                 return null;
@@ -189,7 +183,6 @@ public class AdminJSONHandler {
                     }
 
                     accounts.setClients(clients);
-                    System.out.println("✓ Successfully read " + clients.size() + " client accounts");
                 } else {
                     System.err.println("✗ 'clientAccounts' key not found in JSON");
                 }
@@ -204,32 +197,18 @@ public class AdminJSONHandler {
     }
 
     public void writeClientAccountFile(ClientAccountsList clientAccountsList) {
-        System.out.println(">>> AdminJSONHandler: writeClientAccountFile called");
-        System.out.println("    Number of clients to write: " +
-                (clientAccountsList != null && clientAccountsList.getClients() != null ?
-                        clientAccountsList.getClients().size() : 0));
-
         try {
             File file = new File(CLIENT_FILE_PATH);
-            System.out.println("    File path: " + file.getAbsolutePath());
-
-            // Create parent directories if they don't exist
             File parentDir = file.getParentFile();
             if (parentDir != null && !parentDir.exists()) {
-                System.out.println("    Creating parent directories...");
                 parentDir.mkdirs();
             }
 
             try (FileWriter writer = new FileWriter(file)) {
-                // Create wrapper object to match JSON structure
                 Map<String, Object> wrapper = new HashMap<>();
                 wrapper.put("clientAccounts", clientAccountsList.getClients());
-
                 gson.toJson(wrapper, writer);
                 writer.flush();
-                System.out.println("✓ Successfully wrote client accounts to file");
-                System.out.println("    File exists: " + file.exists());
-                System.out.println("    File size: " + file.length() + " bytes");
             }
         } catch (IOException e) {
             System.err.println("✗ Error writing client accounts file: " + e.getMessage());
@@ -269,7 +248,6 @@ public class AdminJSONHandler {
 
         if (removed) {
             writeClientAccountFile(clientAccountsList);
-            System.out.println("Client deleted: " + username);
             return true;
         }
 
@@ -298,7 +276,6 @@ public class AdminJSONHandler {
 
         if (found) {
             writeClientAccountFile(clientAccountsList);
-            System.out.println("Client password changed: " + username);
             return true;
         }
 
@@ -548,12 +525,10 @@ public class AdminJSONHandler {
             return false;
         }
 
-        // Must be at least 3 characters
         if (username.length() < 3) {
             return false;
         }
 
-        // Only letters and numbers allowed (no symbols, no spaces)
         return username.matches("^[a-zA-Z0-9]+$");
     }
 
@@ -561,13 +536,9 @@ public class AdminJSONHandler {
         if (password == null || password.trim().isEmpty()) {
             return false;
         }
-
-        // Must be at least 4 characters
         if (password.length() < 4) {
             return false;
         }
-
-        // Only letters and numbers allowed (no symbols, no spaces)
         return password.matches("^[a-zA-Z0-9]+$");
     }
 

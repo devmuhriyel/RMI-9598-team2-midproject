@@ -57,16 +57,6 @@ public class AdminXMLHandler {
                 xmlString = xmlString.substring(1);
             }
 
-            if (!xmlString.startsWith("<") || !xmlString.endsWith(">")) {
-                System.out.println("Not a valid XML message: " + xmlString.substring(0, Math.min(100, xmlString.length())));
-                return null;
-            }
-
-            if (!isBalancedXML(xmlString)) {
-                System.out.println("XML appears to be truncated or malformed");
-                return null;
-            }
-
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
             Document doc = builder.parse(new ByteArrayInputStream(xmlString.getBytes("UTF-8")));
@@ -90,11 +80,6 @@ public class AdminXMLHandler {
             xmlString = xmlString.trim();
             if (xmlString.startsWith("\uFEFF")) {
                 xmlString = xmlString.substring(1);
-            }
-
-            if (!xmlString.startsWith("<") || !xmlString.endsWith(">")) {
-                System.out.println("Not valid XML format: " + xmlString.substring(0, Math.min(100, xmlString.length())));
-                return null;
             }
 
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();

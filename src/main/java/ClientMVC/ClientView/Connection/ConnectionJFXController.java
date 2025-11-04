@@ -150,7 +150,6 @@ public class ConnectionJFXController {
 
     @FXML
     private void handleConnect() {
-        System.out.println("[DEBUG] handleConnect() triggered from FXML.");
         if (connectButtonListener != null) {
             connectButtonListener.run();
         }

@@ -158,13 +158,8 @@ public class HomeJFXController {
 
                     // FIXED: Check if listener exists and add debug logging
                     addBtn.setOnAction(event -> {
-                        System.out.println("Add button clicked for user: " + user);
-                        System.out.println("addFriendListener is null: " + (addFriendListener == null));
-
                         if (addFriendListener != null) {
-                            System.out.println("Calling addFriendListener for user: " + user);
                             addFriendListener.accept(user);
-
                             Alert alert = new Alert(Alert.AlertType.INFORMATION);
                             alert.setTitle(null);
                             alert.setHeaderText(null);
@@ -172,8 +167,6 @@ public class HomeJFXController {
                             alert.getDialogPane().setPrefSize(250, 100);
                             alert.showAndWait();
                         } else {
-                            System.err.println("ERROR: addFriendListener is null!");
-                            // Show error to user
                             Alert alert = new Alert(Alert.AlertType.ERROR);
                             alert.setTitle("Error");
                             alert.setHeaderText(null);
@@ -181,8 +174,6 @@ public class HomeJFXController {
                             alert.showAndWait();
                         }
                     });
-
-                    // Layout: horizontal box for userBtn and addBtn
                     javafx.scene.layout.HBox hbox = new javafx.scene.layout.HBox(5, userBtn, addBtn);
                     friendsList.getChildren().add(hbox);
                 }
@@ -193,8 +184,6 @@ public class HomeJFXController {
     public void renderGroups(List<String> groups) {
         Platform.runLater(() -> {
             messagesArea1.getChildren().clear();
-
-            // Always show Community Chat first (this is the global chat)
             Button communityBtn = new Button("Community Chat");
             communityBtn.setMaxWidth(Double.MAX_VALUE);
             communityBtn.setStyle("-fx-background-color: #e8f5e8; -fx-text-fill: black; -fx-padding: 10;");
@@ -202,7 +191,6 @@ public class HomeJFXController {
                 if (groupClickListener != null) {
                     groupClickListener.accept("Community Chat");
                 }
-                System.out.println("Selected Community Chat");
             });
             messagesArea1.getChildren().add(communityBtn);
             if (groups != null && !groups.isEmpty()) {
@@ -215,7 +203,6 @@ public class HomeJFXController {
                         if (groupClickListener != null) {
                             groupClickListener.accept(group);
                         }
-                        System.out.println("Selected group: " + group);
                     });
 
                     // Add/Remove member controls
@@ -306,8 +293,6 @@ public class HomeJFXController {
             createGroupBtn.setMaxWidth(Double.MAX_VALUE);
             createGroupBtn.setStyle("-fx-background-color: #dedcff; -fx-text-fill: black; -fx-padding: 10;");
             createGroupBtn.setOnAction(event -> {
-                System.out.println("Create new group clicked");
-                // Prompt for the group name
                 TextInputDialog dialog = new TextInputDialog("");
                 dialog.setTitle("Create Group");
                 dialog.setHeaderText("Create a new group chat");
@@ -316,7 +301,6 @@ public class HomeJFXController {
                 Optional<String> result = dialog.showAndWait();
                 if (result.isPresent() && !result.get().trim().isEmpty()) {
                     String groupName = result.get().trim();
-                    // Next: prompt to select members from friends
                     List<String> friends = getOriginalFriends();
                     Dialog<List<String>> membersDialog = new Dialog<>();
                     membersDialog.setTitle("Select Group Members");
@@ -353,7 +337,6 @@ public class HomeJFXController {
                     if (createGroupWithMembersListener != null) {
                         createGroupWithMembersListener.accept(groupName, selectedMembers);
                     } else if (createGroupListener != null) {
-                        // Fallback to legacy behavior if new listener not set
                         createGroupListener.accept(groupName);
                     }
                 }

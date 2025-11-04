@@ -32,12 +32,9 @@ public class UnifiedAdminModel {
     private Consumer<String> activeUsersUpdateListener;
     private Consumer<String> communityMessagesUpdateListener;
     private Consumer<String> userStatsListener;
-
     private AdminInterface server;
     private AdminCallbackInterface callback;
     private String adminUsername;
-
-    // Track online users (received from server callbacks)
     private Set<String> onlineUsers;
 
     public UnifiedAdminModel(AdminInterface server, AdminCallbackInterface callback) {
@@ -55,9 +52,8 @@ public class UnifiedAdminModel {
         this.onlineUsers = new HashSet<>();
     }
     public void setAdminUsername(String username) {
-        this.adminUsername = username;
-        System.out.println("✓ Admin username set to: " + username);
-    }
+        this.adminUsername = username;}
+
     // AUTHENTICATION METHODS
     public void login(String username, String password) {
         try {
@@ -76,11 +72,7 @@ public class UnifiedAdminModel {
                 }
                 return;
             }
-
-            // **FIX: Store username BEFORE making the RMI call**
             this.adminUsername = username;
-            System.out.println("✓ Storing admin username: " + username);
-
             String jsonString = adminJSONHandler.createLoginJSON(username, password);
             server.logIn(username, jsonString, callback);
         } catch (RemoteException e) {
@@ -151,7 +143,6 @@ public class UnifiedAdminModel {
     }
 
     public void notifyLoginSuccess() {
-        System.out.println(">>> Model: Notifying login success");
         if (loginResponseListener != null) {
             Platform.runLater(() -> {
                 loginResponseListener.accept("LOGIN_SUCCESS");
@@ -162,7 +153,6 @@ public class UnifiedAdminModel {
     }
 
     public void notifyLoginFailure() {
-        System.out.println(">>> Model: Notifying login failure");
         if (loginResponseListener != null) {
             Platform.runLater(() -> {
                 loginResponseListener.accept("LOGIN_FAILED");
@@ -192,12 +182,10 @@ public class UnifiedAdminModel {
             boolean success = adminJSONHandler.changeAdminPassword(username, newPassword);
 
             if (success) {
-                System.out.println("✓ Admin password reset successful for: " + username);
                 if (operationResultListener != null) {
                     Platform.runLater(() -> operationResultListener.accept("ADMIN_PASSWORD_RESET_SUCCESS"));
                 }
             } else {
-                System.out.println("✗ Admin password reset failed for: " + username);
                 if (operationResultListener != null) {
                     Platform.runLater(() -> operationResultListener.accept("PASSWORD_RESET_FAILED"));
                 }
@@ -217,21 +205,8 @@ public class UnifiedAdminModel {
                 System.err.println("Cannot load data: Server not connected");
                 return;
             }
-
-            System.out.println("Loading admin data ONE TIME ONLY...");
-
-            // Load all users - this will trigger callbacks
             getAllClientsFromServer();
-
-            // Load all groups - this will trigger callbacks
             getAllGroupsFromServer();
-
-            // DON'T call these here - they're redundant
-            // getActiveClientsOnly();
-            // getCommunityMessages();
-
-            System.out.println("✓ Admin initial data load requested");
-
         } catch (RemoteException e) {
             System.err.println("Error loading admin data: " + e.getMessage());
             e.printStackTrace();
@@ -252,17 +227,8 @@ public class UnifiedAdminModel {
     // USER MANAGEMENT METHODS
     public void getAllClientsFromServer() throws RemoteException {
         if (server == null) return;
-
-        if (isLoadingUsers) {  // CHECK USERS FLAG
-            System.out.println("⚠ Already loading users, skipping duplicate request");
-            return;
-        }
-
-        isLoadingUsers = true;  // SET USERS FLAG
-
-        System.out.println("DEBUG: adminUsername = '" + adminUsername + "'");
+        isLoadingUsers = true;
         String jsonString = adminJSONHandler.createJSONStringRequest("request", "GET_ALL_USERS", adminUsername);
-        System.out.println("DEBUG: Sending JSON to server: " + jsonString);
         server.searchUsers(jsonString);
 
         // Reset flag after delay
@@ -375,11 +341,9 @@ public class UnifiedAdminModel {
     }
 
     public void createNewUser(String username, String password) throws RemoteException {
-        System.out.println(">>> Model: createNewUser called with username: " + username);
 
         // Validate username format (only letters and numbers)
         if (username == null || username.trim().isEmpty() || username.length() < 3) {
-            System.out.println("✗ Validation failed: Username length issue");
             Platform.runLater(() -> {
                 if (operationResultListener != null) {
                     operationResultListener.accept("Invalid username. Must be at least 3 characters.");
@@ -389,7 +353,6 @@ public class UnifiedAdminModel {
         }
 
         if (!username.matches("^[a-zA-Z0-9]+$")) {
-            System.out.println("✗ Validation failed: Username contains invalid characters");
             Platform.runLater(() -> {
                 if (operationResultListener != null) {
                     operationResultListener.accept("Invalid username. Only letters and numbers allowed (no symbols or spaces).");
@@ -400,7 +363,6 @@ public class UnifiedAdminModel {
 
         // Validate password format (only letters and numbers)
         if (password == null || password.trim().isEmpty() || password.length() < 4) {
-            System.out.println("✗ Validation failed: Password length issue");
             Platform.runLater(() -> {
                 if (operationResultListener != null) {
                     operationResultListener.accept("Invalid password. Must be at least 4 characters.");
@@ -410,7 +372,6 @@ public class UnifiedAdminModel {
         }
 
         if (!password.matches("^[a-zA-Z0-9]+$")) {
-            System.out.println("✗ Validation failed: Password contains invalid characters");
             Platform.runLater(() -> {
                 if (operationResultListener != null) {
                     operationResultListener.accept("Invalid password. Only letters and numbers allowed (no symbols or spaces).");
@@ -418,20 +379,11 @@ public class UnifiedAdminModel {
             });
             return;
         }
-
-        System.out.println("✓ Validations passed, sending to server...");
-        System.out.println("  Username: " + username);
-        System.out.println("  Password: " + password);
-        System.out.println("  Admin: " + adminUsername);
-
         Map<String, String> createData = new HashMap<>();
         createData.put("username", username);
         createData.put("password", password);
         createData.put("admin", adminUsername);
         String jsonString = new com.google.gson.Gson().toJson(createData);
-
-        System.out.println("  JSON: " + jsonString);
-
         if (server == null) {
             System.err.println("✗ Server is null!");
             Platform.runLater(() -> {
@@ -443,9 +395,7 @@ public class UnifiedAdminModel {
         }
 
         try {
-            System.out.println("  Calling server.signUp()...");
             server.signUp(username, password, "", jsonString, callback);
-            System.out.println("✓ Server call completed");
         } catch (Exception e) {
             System.err.println("✗ Exception during server call: " + e.getMessage());
             e.printStackTrace();
@@ -460,20 +410,10 @@ public class UnifiedAdminModel {
     // GROUP MANAGEMENT METHODS
     public void getAllGroupsFromServer() throws RemoteException {
         if (server == null) return;
-
-        if (isLoadingGroups) {  // CHECK GROUPS FLAG
-            System.out.println("⚠ Already loading groups, skipping duplicate request");
-            return;
-        }
-
         isLoadingGroups = true;  // SET GROUPS FLAG
-
-        System.out.println("DEBUG: Requesting groups for admin: '" + adminUsername + "'");
         String jsonString = adminJSONHandler.createJSONStringRequest("request", "GET_ALL_GROUPS", adminUsername);
-        System.out.println("DEBUG: Sending groups JSON to server: " + jsonString);
         server.searchGroups(jsonString);
 
-        // Reset flag after delay
         new Thread(() -> {
             try {
                 Thread.sleep(1000);
@@ -519,11 +459,6 @@ public class UnifiedAdminModel {
         messageData.put("sender", adminUsername);  // Use stored admin username
         messageData.put("message", message);
         String jsonString = new com.google.gson.Gson().toJson(messageData);
-
-        System.out.println("DEBUG: Sending community message from admin: " + adminUsername);
-        System.out.println("DEBUG: Message: " + message);
-
-        // FIX: Actually call the server method (it was commented out)
         server.sendCommunityMessage(adminUsername, message, jsonString);
     }
     public void receiveCommunityMessage(String messageJson) {
@@ -534,8 +469,6 @@ public class UnifiedAdminModel {
 
                 String sender = jsonObject.get("sender").getAsString();
                 String content = jsonObject.has("content") ? jsonObject.get("content").getAsString() : "";
-
-                // Format: "sender: message"
                 String formattedMessage = sender + ": " + content;
 
                 if (communityMessagesList != null) {
@@ -543,7 +476,6 @@ public class UnifiedAdminModel {
                     System.out.println("✓ Admin received community message: " + formattedMessage);
                 }
 
-                // Notify listener
                 if (communityMessagesUpdateListener != null) {
                     communityMessagesUpdateListener.accept("COMMUNITY_MESSAGES_UPDATED");
                 }
@@ -554,6 +486,7 @@ public class UnifiedAdminModel {
             }
         });
     }
+
     // DATA UPDATE METHODS - FIXED TO USE AdminJSONHandler
     public void updateUsersList(List<Client> clients) {
         Platform.runLater(() -> {
@@ -576,26 +509,17 @@ public class UnifiedAdminModel {
             if (dataUpdateListener != null) {
                 dataUpdateListener.accept("USERS_UPDATED");  // THIS TRIGGERS REFRESH
             }
-
-            System.out.println("✓ Updated users list: " + allUsers.size() + " users");
         });
     }
 
     public void joinCommunityChat(String username) throws RemoteException {
         if (server == null) return;
-
-        System.out.println("Model: Admin joining community chat: " + username);
         server.joinCommunityChat(username, callback);
     }
 
     public void leaveCommunityChat(String username) throws RemoteException {
         if (server == null) return;
-
-        System.out.println("Model: Admin leaving community chat: " + username);
-        // You'll need to add this overloaded method to AdminInterface
-        // For now, we can call it through sendAdminCommand or create a wrapper
         try {
-            // Assuming the server has a method to handle this
             server.logOut(username, adminJSONHandler.createJSONStringRequest("request", "LEAVE_COMMUNITY", username));
         } catch (Exception e) {
             System.err.println("Error leaving community chat: " + e.getMessage());
@@ -615,8 +539,6 @@ public class UnifiedAdminModel {
             if (activeUsersUpdateListener != null) {
                 activeUsersUpdateListener.accept("ACTIVE_USERS_UPDATED");
             }
-
-            System.out.println("✓ Updated active users: " + onlineUsers.size() + " online");
         });
     }
 

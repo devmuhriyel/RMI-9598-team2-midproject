@@ -66,7 +66,6 @@ public class HomeController {
         });
 
         ui.setFriendClickListener(friendName -> {
-            System.out.println("Friend clicked: " + friendName);
             Platform.runLater(() -> {
                 try {
                     openChatWithFriend(friendName);
@@ -78,7 +77,6 @@ public class HomeController {
         });
 
         ui.setGroupClickListener(groupName -> {
-            System.out.println("Group clicked: " + groupName);
             Platform.runLater(() -> {
                 try {
                     if (groupName.equals("Community Chat")) {
@@ -94,7 +92,6 @@ public class HomeController {
         });
 
         ui.setAddFriendListener(username -> {
-            System.out.println("HomeController: addFriend called with username: " + username);
             try {
                 sendFriendRequest(username);
             } catch (RemoteException e) {
@@ -124,21 +121,15 @@ public class HomeController {
         ui.setGroupMembersProvider(this::getMembersOfGroupByName);
     }
 
-    // =========================================================
-    // === UPDATED loadClientData() to fetch ALL users ===
-    // =========================================================
     private void loadClientData() {
         Client clientData = clientCallback.getClientData();
         if (clientData != null) {
-            System.out.println("Loading client data into HomeView...");
-
             model.setUsername(clientData.getUsername());
             ui.setUserLabel(clientData.getUsername());
 
             List<String> friends = clientData.getFriends();
             if (friends != null && !friends.isEmpty()) {
                 ui.setFriends(friends);
-                System.out.println("✓ Loaded " + friends.size() + " friends: " + friends);
             } else {
                 ui.setFriends(new ArrayList<>());
                 System.out.println("✓ No friends to load");
@@ -151,28 +142,20 @@ public class HomeController {
                     groupNames.add(gc.getGroupName());
                 }
                 ui.setGroups(groupNames);
-                System.out.println("✓ Loaded " + groupNames.size() + " groups: " + groupNames);
             } else {
                 ui.setGroups(new ArrayList<>());
-                System.out.println("✓ No groups to load");
             }
 
-            // --- NEW: Load ALL users for Search ---
             try {
-                // NOTE: This call relies on the model.fetchAllUsernames() method you must implement
                 List<String> allUsersInSystem = model.fetchAllUsernames();
-
                 if (allUsersInSystem != null) {
-                    ui.setAllUsers(allUsersInSystem); // Pass the complete list of ALL users to the View
-                    System.out.println("✓ Loaded all users for search.");
+                    ui.setAllUsers(allUsersInSystem);
                 }
             } catch (RemoteException e) {
                 System.err.println("Failed to load all usernames: " + e.getMessage());
                 e.printStackTrace();
             }
-            // ------------------------------------
 
-            System.out.println("✓ Client data loaded successfully for: " + clientData.getUsername());
         } else {
             System.err.println("⚠ Warning: No client data available to load");
         }
@@ -180,16 +163,13 @@ public class HomeController {
     // =========================================================
 
     private void sendFriendRequest(String targetusername) throws RemoteException {
-        System.out.println("Sending friend request to: " + targetusername);
+
         Gson gson = new Gson();
         String jsonString = gson.toJson(new FriendRequest(model.getUsername(), targetusername, "pending"));
         model.sendFriendRequest(jsonString);
     }
 
     public void handleFriendRequestSent(){
-        Platform.runLater(() -> {
-            System.out.println("Friend request sent successfully!");
-        });
     }
 
     private void createGroup(String groupName) {
@@ -298,14 +278,12 @@ public class HomeController {
 
     public void updateFriendsList(List<String> friends) {
         Platform.runLater(() -> {
-            System.out.println("HomeController: Received and updating friends list.");
             ui.setFriends(friends);
             ui.renderFriends(friends);
         });
     }
 
     private void openChatWithFriend(String friendName) throws IOException {
-        System.out.println("Opening chat with: " + friendName);
         try {
             ChatView chatView = new ChatView();
             Stage chatStage = new Stage();
@@ -321,9 +299,6 @@ public class HomeController {
             clientCallback.setClientChatController(chatController);
             chatController.setCurrentChatPartner(friendName);
             chatController.loadChatHistory(friendName);
-
-            System.out.println("✓ Chat window opened for: " + friendName);
-
         } catch (Exception e) {
             System.err.println("Error opening chat with " + friendName);
             e.printStackTrace();
@@ -331,7 +306,6 @@ public class HomeController {
     }
 
     private void openGroupChat(String groupName) throws IOException {
-        System.out.println("Opening group chat: " + groupName);
         try {
             // Find the group ID from client data
             Client clientData = clientCallback.getClientData();
@@ -345,10 +319,7 @@ public class HomeController {
                     }
                 }
             }
-
-            // Fallback: refresh from server and try to resolve ID by name again
             if (groupID == null) {
-                System.out.println("Group ID missing in local data; fetching latest groups from server...");
                 try {
                     List<GroupChat> updated = model.getGroupChatHistories("{}", model.getUsername());
                     if (updated != null) {
@@ -382,9 +353,6 @@ public class HomeController {
             clientCallback.setClientChatController(chatController);
             chatController.setCurrentGroupChat(groupID, groupName);
             chatController.loadGroupChatHistory(groupID);
-
-            System.out.println("✓ Group chat window opened for: " + groupName);
-
         } catch (Exception e) {
             System.err.println("Error opening group chat " + groupName);
             e.printStackTrace();
@@ -392,7 +360,6 @@ public class HomeController {
     }
 
     private void openCommunityChat() throws IOException {
-        System.out.println("Opening community chat");
         try {
             ChatView chatView = new ChatView();
             Stage chatStage = new Stage();
@@ -406,20 +373,14 @@ public class HomeController {
             );
 
             clientCallback.setClientChatController(chatController);
-            chatController.setCurrentCommunityChat(); // Set as community chat and join
-
-            // Handle window closing to leave community chat
+            chatController.setCurrentCommunityChat();
             chatStage.setOnCloseRequest(event -> {
                 try {
                     model.leaveCommunityChat(model.getUsername());
-                    System.out.println("✓ Left community chat on window close");
                 } catch (RemoteException e) {
                     System.err.println("Failed to leave community chat: " + e.getMessage());
                 }
             });
-
-            System.out.println("✓ Community chat window opened");
-
         } catch (Exception e) {
             System.err.println("Error opening community chat");
             e.printStackTrace();

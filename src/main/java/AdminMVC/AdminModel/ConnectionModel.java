@@ -134,19 +134,19 @@ public class ConnectionModel {
 
     public int getPort() { return port; }
 
-    // --- IP Auto-Finder Logic ---
 
     private boolean configureRmiHostname() {
+        //TESTER FOR VPN
         String radminIp = findIpByPrefix("26.");
         if (radminIp != null) {
             System.setProperty("java.rmi.server.hostname", radminIp);
-            System.out.println("✓ RMI Hostname auto-set to Radmin IP: " + radminIp);
             return true;
         }
+
+        //ACTUAL FOR SAME NETWORK
         String lanIp = findSiteLocalIp();
         if (lanIp != null) {
             System.setProperty("java.rmi.server.hostname", lanIp);
-            System.out.println("✓ RMI Hostname auto-set to LAN IP: " + lanIp);
             return true;
         }
         System.err.println("Warning: No Radmin or LAN IP found.");

@@ -66,8 +66,6 @@ public class LoginController {
                 loginData.put("username", username);
                 loginData.put("password", password);
                 String jsonString = gson.toJson(loginData);
-
-                System.out.println("Attempting login for: " + username);
                 model.logIn(username, jsonString, clientCallback);
 
             } catch (RemoteException e) {
@@ -82,7 +80,6 @@ public class LoginController {
 
     public void onSuccessfulLoginFromRemote() {
         Platform.runLater(() -> {
-            System.out.println("Login successful, transitioning to HomeView");
             view.login();
             try {
                 HomeView homeView = new HomeView();

@@ -52,9 +52,6 @@ public class ChatJFXController {
 
     @FXML
     public void initialize() {
-        System.out.println("ChatJFXController initialize() called");
-        System.out.println("File button is: " + (fileButton != null ? "NOT NULL" : "NULL"));
-
         if (sendButton != null) {
             sendButton.setOnAction(event -> {
                 if (sendButtonListener != null) {
@@ -72,14 +69,10 @@ public class ChatJFXController {
         }
 
         if (fileButton != null) {
-            System.out.println("Setting up file button listener");
             fileButton.setOnAction(event -> {
-                System.out.println("File button clicked!");
                 if (fileButtonListener != null) {
-                    System.out.println("File button listener is not null, calling it");
                     fileButtonListener.run();
                 } else {
-                    System.out.println("File button listener is NULL!");
                 }
             });
         }
@@ -108,12 +101,10 @@ public class ChatJFXController {
     public void handleFileSave(String fileName, String fileData, UnifiedClientModel model) {
         Platform.runLater(() -> {
             try {
-                // Create a file chooser for save location
                 FileChooser fileChooser = new FileChooser();
                 fileChooser.setTitle("Save File");
                 fileChooser.setInitialFileName(fileName);
 
-                // Set extension filter based on file name
                 String extension = getFileExtension(fileName);
                 if (!extension.isEmpty()) {
                     FileChooser.ExtensionFilter filter = new FileChooser.ExtensionFilter(
@@ -128,27 +119,20 @@ public class ChatJFXController {
                 File saveLocation = fileChooser.showSaveDialog(messageField.getScene().getWindow());
 
                 if (saveLocation == null) {
-                    System.out.println("File save cancelled by user");
                     return;
                 }
 
-                // Decode and save the file
                 model.saveReceivedFile(
                         fileName,
                         fileData,
                         saveLocation.getParent()
                 );
 
-                // Rename the saved file to match user's choice
                 File tempFile = new File(saveLocation.getParent(), fileName);
                 if (!saveLocation.getName().equals(fileName)) {
                     tempFile.renameTo(saveLocation);
                 }
-
-                System.out.println("✓ File saved: " + saveLocation.getAbsolutePath());
                 showSuccess("File saved successfully!");
-
-                // Ask if user wants to open the file
                 askToOpenFile(saveLocation);
 
             } catch (Exception e) {
@@ -319,7 +303,6 @@ public class ChatJFXController {
     }
 
     public void setFileButtonListener(Runnable fileButtonListener) {
-        System.out.println("Setting file button listener: " + (fileButtonListener != null ? "NOT NULL" : "NULL"));
         this.fileButtonListener = fileButtonListener;
     }
 

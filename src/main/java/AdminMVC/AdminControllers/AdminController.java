@@ -324,8 +324,6 @@ public class AdminController {
 
     private void refreshData() {
         try {
-            System.out.println("DEBUG: Refreshing data with adminUsername: " + model.getAdminUsername());
-
             if (model.getAdminUsername() == null || model.getAdminUsername().isEmpty()) {
                 System.err.println("✗ Cannot refresh data: adminUsername not set!");
                 return;
@@ -351,13 +349,9 @@ public class AdminController {
         if (username == null || username.trim().isEmpty()) {
             return false;
         }
-
-        // Must be at least 3 characters
         if (username.length() < 3) {
             return false;
         }
-
-        // Only letters and numbers allowed (no symbols, no spaces)
         return username.matches("^[a-zA-Z0-9]+$");
     }
 
@@ -365,13 +359,9 @@ public class AdminController {
         if (password == null || password.trim().isEmpty()) {
             return false;
         }
-
-        // Must be at least 4 characters
         if (password.length() < 4) {
             return false;
         }
-
-        // Only letters and numbers allowed (no symbols, no spaces)
         return password.matches("^[a-zA-Z0-9]+$");
     }
 
@@ -502,29 +492,19 @@ public class AdminController {
 
             communityDialog.getDialogPane().setContent(content);
             communityDialog.getDialogPane().getButtonTypes().addAll(ButtonType.CLOSE);
-
-            // Join community chat when dialog opens
             try {
                 String adminUsername = model.getAdminUsername();
-                System.out.println("DEBUG: Admin joining community chat: " + adminUsername);
                 model.joinCommunityChat(adminUsername);
             } catch (RemoteException e) {
                 notifyUIOfError("Failed to join community chat: " + e.getMessage());
             }
-
-            // Load initial messages
             loadCommunityMessagesForAdmin(messagesArea);
-
-            // Send button handler
             sendButton.setOnAction(event -> {
                 String messageText = messageField.getText().trim();
                 if (!messageText.isEmpty()) {
                     try {
-                        System.out.println("DEBUG: Sending message from admin: " + model.getAdminUsername());
                         model.sendCommunityMessage(messageText);
                         messageField.clear();
-
-                        // Add a small delay before refreshing
                         Timeline refreshTimeline = new Timeline(new KeyFrame(Duration.millis(500),
                                 e -> loadCommunityMessagesForAdmin(messagesArea)));
                         refreshTimeline.play();
@@ -533,31 +513,22 @@ public class AdminController {
                     }
                 }
             });
-
-            // Enter key to send
             messageField.setOnKeyPressed(event -> {
                 if (event.getCode() == javafx.scene.input.KeyCode.ENTER) {
                     sendButton.fire();
                 }
             });
-
-            // Refresh button handler
             refreshButton.setOnAction(event -> {
                 loadCommunityMessagesForAdmin(messagesArea);
             });
-
-            // Auto-refresh every 3 seconds
             Timeline autoRefresh = new Timeline(new KeyFrame(Duration.seconds(3),
                     event -> loadCommunityMessagesForAdmin(messagesArea)));
             autoRefresh.setCycleCount(Timeline.INDEFINITE);
             autoRefresh.play();
-
-            // Leave community chat when dialog closes
             communityDialog.setOnCloseRequest(event -> {
                 autoRefresh.stop();
                 try {
                     String adminUsername = model.getAdminUsername();
-                    System.out.println("DEBUG: Admin leaving community chat: " + adminUsername);
                     // You'll need to add this method to the model
                     model.leaveCommunityChat(adminUsername);
                 } catch (RemoteException e) {
@@ -618,13 +589,10 @@ public class AdminController {
     }
 
     public void handleSuccessfulLogin() {
-        System.out.println("✓ Controller: Handling successful login");
-        // NOW call refreshData() after login when adminUsername is set
         refreshData();
     }
 
     public void handleFailedLogin() {
-        System.out.println("✗ Controller: Handling failed login");
         showAlert("Login Failed", "Invalid username or password");
     }
 
@@ -668,15 +636,12 @@ public class AdminController {
     }
 
     public void handleGetChatHistoryOfUser() {
-        // Handle chat history display
     }
 
     public void handleGetChatHistoryOfGroup() {
-        // Handle group chat history display
     }
 
     public void handleGetChatHistoryOfCommunity() {
-        // Handle community chat history display
     }
 
     public void handleCommunityMessageSent() {

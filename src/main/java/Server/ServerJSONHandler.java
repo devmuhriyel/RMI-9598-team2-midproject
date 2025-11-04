@@ -3,7 +3,6 @@ package Server;
 import Common.Objects.AdminObjects.Admin;
 import Common.Objects.AdminObjects.AdminAccountsList;
 import Common.Objects.ClientObjects.*;
-import Common.Objects.LogObjects.LogsList;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -28,17 +27,12 @@ public class ServerJSONHandler {
         FileReader jsonReader;
         ClientAccountsList accounts = null;
         try{
-            System.out.println("Attempting to read client accounts from: " + fPath);
             File file = new File(fPath);
-
             if (!file.exists()) {
                 System.err.println("ERROR: File does not exist: " + fPath);
                 System.err.println("Absolute path: " + file.getAbsolutePath());
                 return null;
             }
-
-            System.out.println("File exists. Size: " + file.length() + " bytes");
-
             jsonReader = new FileReader(fPath);
             accounts = gsonObject.fromJson(jsonReader, ClientAccountsList.class);
 
@@ -49,7 +43,6 @@ public class ServerJSONHandler {
             } else {
                 System.out.println("SUCCESS: Loaded " + accounts.getClients().size() + " clients");
             }
-
             jsonReader.close();
 
         } catch (FileNotFoundException e) {
@@ -66,7 +59,6 @@ public class ServerJSONHandler {
         FileReader jsonReader;
         AdminAccountsList accounts = null;
         try{
-            System.out.println("Attempting to read admin accounts from: " + fPath);
             File file = new File(fPath);
 
             if (!file.exists()) {
@@ -74,9 +66,6 @@ public class ServerJSONHandler {
                 System.err.println("Absolute path: " + file.getAbsolutePath());
                 return null;
             }
-
-            System.out.println("File exists. Size: " + file.length() + " bytes");
-
             jsonReader = new FileReader(fPath);
             accounts = gsonObject.fromJson(jsonReader, AdminAccountsList.class);
 
@@ -105,66 +94,20 @@ public class ServerJSONHandler {
         try {
             File file = new File(fPath);
 
-            // Create parent directories if they don't exist
             File parentDir = file.getParentFile();
             if (parentDir != null && !parentDir.exists()) {
                 parentDir.mkdirs();
-                System.out.println("Created directories: " + parentDir.getAbsolutePath());
             }
-
-            // Use pretty printing for readable JSON
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
-
             try (FileWriter writer = new FileWriter(file)) {
                 gson.toJson(accounts, writer);
                 writer.flush();
-                System.out.println("✓ Successfully wrote client accounts to file: " + file.getAbsolutePath());
             }
-
         } catch (IOException e) {
             System.err.println("ERROR writing client accounts to file: " + fPath);
             System.err.println("Absolute path attempted: " + new File(fPath).getAbsolutePath());
             e.printStackTrace();
         }
-    }
-
-    public void writeAdminAccountFile(String fPath, AdminAccountsList accounts){
-        try {
-            File file = new File(fPath);
-
-            // Create parent directories if they don't exist
-            File parentDir = file.getParentFile();
-            if (parentDir != null && !parentDir.exists()) {
-                parentDir.mkdirs();
-                System.out.println("Created directories: " + parentDir.getAbsolutePath());
-            }
-
-            // Use pretty printing for readable JSON
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-
-            try (FileWriter writer = new FileWriter(file)) {
-                gson.toJson(accounts, writer);
-                writer.flush();
-                System.out.println("✓ Successfully wrote admin accounts to file: " + file.getAbsolutePath());
-            }
-
-        } catch (IOException e) {
-            System.err.println("ERROR writing admin accounts to file: " + fPath);
-            System.err.println("Absolute path attempted: " + new File(fPath).getAbsolutePath());
-            e.printStackTrace();
-        }
-    }
-
-    public LogsList readLogsListFile(String fPath){
-        FileReader jsonReader;
-        LogsList logsList = null;
-        try{
-            jsonReader = new FileReader(fPath);
-            logsList = gsonObject.fromJson(jsonReader, LogsList.class);
-        } catch (FileNotFoundException e) {
-            System.out.println("File not found");
-        }
-        return logsList;
     }
 
     //STATUS TRACKING METHODS
@@ -218,12 +161,4 @@ public class ServerJSONHandler {
     public String createJSONStringResponse(String logType, String msgType, String receiver){
         return "{ \\n \" logType \": \"" + logType + "\", \n \" messageType \": \"" + msgType + "\", \n \" receiver \": \n " + receiver + " \n}";
     }
-//    public Requests decodeClientRequest(LogsList logsList, String jsonString){
-//
-//        if(logsList == null){
-//
-//        }
-//
-//    }
-
 }

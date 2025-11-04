@@ -53,7 +53,6 @@ public class ChatController {
             if (isCommunityChat) {
                 try {
                     model.leaveCommunityChat(model.getUsername());
-                    System.out.println("✓ Left community chat");
                 } catch (RemoteException e) {
                     System.err.println("Failed to leave community chat: " + e.getMessage());
                 }
@@ -90,7 +89,6 @@ public class ChatController {
         if (isCommunityChat) {
             try {
                 model.leaveCommunityChat(model.getUsername());
-                System.out.println("✓ Left community chat");
             } catch (RemoteException e) {
                 System.err.println("Failed to leave community chat: " + e.getMessage());
             }
@@ -161,19 +159,6 @@ public class ChatController {
     public void sendPrivateMessage() throws RemoteException {
         String messageText = chatJFXController.getMessageField().getText();
         String receiver = chatJFXController.getReceiver().getText();
-
-        if (messageText == null || messageText.trim().isEmpty()) {
-            System.out.println("Cannot send empty message");
-            return;
-        }
-
-        if (receiver == null || receiver.trim().isEmpty()) {
-            System.out.println("No receiver selected");
-            return;
-        }
-
-        System.out.println("Sending message from " + model.getUsername() + " to " + receiver + ": " + messageText);
-
         model.sendPrivateMessage(
                 model.getUsername(),
                 receiver,
@@ -190,12 +175,8 @@ public class ChatController {
             String receiver = chatJFXController.getReceiver().getText();
 
             if (receiver == null || receiver.trim().isEmpty()) {
-                System.out.println("No receiver selected");
                 return;
             }
-
-            System.out.println("Sending file from " + model.getUsername() + " to " + receiver + ": " + file.getName());
-
             model.sendPrivateFile(
                     model.getUsername(),
                     receiver,
@@ -208,19 +189,6 @@ public class ChatController {
     //Group Messaging Methods
     public void sendGroupMessage() throws RemoteException {
         String messageText = chatJFXController.getMessageField().getText();
-
-        if (messageText == null || messageText.trim().isEmpty()) {
-            System.out.println("Cannot send empty message");
-            return;
-        }
-
-        if (currentGroupID == null || currentGroupID.trim().isEmpty()) {
-            System.out.println("No group selected");
-            return;
-        }
-
-        System.out.println("Sending group message from " + model.getUsername() + " to group " + currentGroupID + ": " + messageText);
-
         model.sendGroupMessage(
                 model.getUsername(),
                 currentGroupID,
@@ -235,12 +203,8 @@ public class ChatController {
         File file = chatJFXController.showFileChooser();
         if (file != null) {
             if (currentGroupID == null || currentGroupID.trim().isEmpty()) {
-                System.out.println("No group selected");
                 return;
             }
-
-            System.out.println("Sending file to group " + currentGroupID + ": " + file.getName());
-
             model.sendGroupFile(
                     model.getUsername(),
                     currentGroupID,
@@ -255,12 +219,8 @@ public class ChatController {
         String messageText = chatJFXController.getMessageField().getText();
 
         if (messageText == null || messageText.trim().isEmpty()) {
-            System.out.println("Cannot send empty message");
             return;
         }
-
-        System.out.println("Sending community message from " + model.getUsername() + ": " + messageText);
-
         model.sendCommunityMessage(
                 model.getUsername(),
                 messageText,
@@ -273,8 +233,6 @@ public class ChatController {
     public void sendCommunityFile() throws RemoteException {
         File file = chatJFXController.showFileChooser();
         if (file != null) {
-            System.out.println("Sending file to community chat: " + file.getName());
-
             model.sendCommunityFile(
                     model.getUsername(),
                     file,
@@ -292,7 +250,6 @@ public class ChatController {
                     model.getUsername()
             );
         });
-        System.out.println("Message sent successfully: " + message.getContent());
     }
 
     public void onPrivateMessageReceived(Message message) throws RemoteException {
@@ -303,7 +260,6 @@ public class ChatController {
                     model.getUsername()
             );
         });
-        System.out.println("Message received from " + message.getSender() + ": " + message.getContent());
     }
 
     public void onPrivateFileSent(Message message) throws RemoteException {
@@ -314,7 +270,6 @@ public class ChatController {
                     model.getUsername()
             );
         });
-        System.out.println("File sent successfully: " + message.getFileName());
     }
 
     public void onPrivateFileReceived(Message message) throws RemoteException {
@@ -325,7 +280,6 @@ public class ChatController {
                     model.getUsername()
             );
         });
-        System.out.println("File received from " + message.getSender() + ": " + message.getFileName());
     }
 
     //Group Message Callback Methods
@@ -337,7 +291,6 @@ public class ChatController {
                     model.getUsername()
             );
         });
-        System.out.println("Group message sent successfully: " + message.getContent());
     }
 
     public void onGroupMessageReceived(Message message) throws RemoteException {
@@ -348,7 +301,6 @@ public class ChatController {
                     model.getUsername()
             );
         });
-        System.out.println("Group message received from " + message.getSender() + ": " + message.getContent());
     }
 
     public void onGroupFileSent(Message message) throws RemoteException {
@@ -359,7 +311,6 @@ public class ChatController {
                     model.getUsername()
             );
         });
-        System.out.println("Group file sent successfully: " + message.getFileName());
     }
 
     public void onGroupFileReceived(Message message) throws RemoteException {
@@ -370,7 +321,6 @@ public class ChatController {
                     model.getUsername()
             );
         });
-        System.out.println("Group file received from " + message.getSender() + ": " + message.getFileName());
     }
 
     //Community Message Callback Methods
@@ -382,7 +332,6 @@ public class ChatController {
                     model.getUsername()
             );
         });
-        System.out.println("Community message sent successfully: " + message.getContent());
     }
 
     public void onCommunityMessageReceived(Message message) throws RemoteException {
@@ -401,7 +350,6 @@ public class ChatController {
                 );
             }
         });
-        System.out.println("Community message received from " + message.getSender());
     }
 
     //History Methods
@@ -449,7 +397,6 @@ public class ChatController {
                 }
             }
         });
-        System.out.println("Loaded chat history with " + chatWith.getRecipient());
     }
 
     public void onGetGroupChatHistories(List<GroupChat> allGroupChats) throws RemoteException {
@@ -477,7 +424,6 @@ public class ChatController {
                 }
             }
         });
-        System.out.println("Loaded group chat history for " + groupChatWith.getGroupName());
     }
 
     //Setup Methods
@@ -503,11 +449,8 @@ public class ChatController {
         this.currentChatPartner = null;
         this.currentGroupID = null;
         chatJFXController.setLabel("Community Chat");
-
-        // Join the community chat on server
         try {
             model.joinCommunityChat(model.getUsername(), clientCallback);
-            System.out.println("✓ Joined community chat");
         } catch (RemoteException e) {
             System.err.println("Failed to join community chat: " + e.getMessage());
             e.printStackTrace();

@@ -29,82 +29,57 @@ public class AdminCallbackImplementation extends UnicastRemoteObject implements 
 
     public void setAdminController(AdminController controller) {
         this.adminController = controller;
-        System.out.println("✓ AdminController set in callback");
     }
 
     public void setAdminLoginController(AdminLoginController controller) {
         this.adminLoginController = controller;
-        System.out.println("✓ AdminLoginController set in callback");
     }
 
     public void setModel(UnifiedAdminModel model) {
         this.model = model;
-        System.out.println("✓ Model set in callback");
     }
 
     @Override
     public void onReceiveActiveUsersList(List<String> activeUsernames) throws RemoteException {
-        System.out.println("✓ Received active users list: " + activeUsernames.size() + " online");
         Platform.runLater(() -> {
             if (model != null) {
                 model.updateActiveUsersList(activeUsernames);
             } else {
-                System.err.println("✗ Model is null in onReceiveActiveUsersList");
             }
         });
     }
 
     @Override
     public void onReceiveUsersList(List<Client> users) throws RemoteException {
-        System.out.println("✓ Received " + users.size() + " users from server");
-
         for (Client user : users) {
-            System.out.println("  User: " + user.getUsername() + " | Password: " + user.getPassword());
         }
-
         Platform.runLater(() -> {
             if (model != null) {
-                System.out.println("  → Updating model with users list");
-                model.updateUsersList(users);  // THIS TRIGGERS THE LOOP
+                model.updateUsersList(users);
             } else {
-                System.err.println("✗ Model is null in onReceiveUsersList");
             }
         });
     }
 
     @Override
     public void onReceiveGroupsList(String groupsJson) throws RemoteException {
-        System.out.println("✓ Admin Callback: Received groups data from server");
-
         Platform.runLater(() -> {
             if (model != null) {
                 try {
                     Gson gson = new Gson();
                     List<Map<String, String>> groupsList = new ArrayList<>();
-
                     JsonArray groupsArray = JsonParser.parseString(groupsJson).getAsJsonArray();
-                    System.out.println("  → Parsing " + groupsArray.size() + " groups from JSON array");
-
                     for (int i = 0; i < groupsArray.size(); i++) {
                         JsonObject group = groupsArray.get(i).getAsJsonObject();
                         Map<String, String> groupMap = new HashMap<>();
-
-                        // Group Name
                         String groupName = group.has("groupName") ? group.get("groupName").getAsString() : "Unknown";
                         groupMap.put("groupName", groupName);
-
-                        // Group ID
                         String groupID = group.has("groupID") ? group.get("groupID").getAsString() : "";
                         groupMap.put("groupID", groupID);
-
-                        // Owner - NOW COMES DIRECTLY FROM SERVER
                         String owner = group.has("owner") ? group.get("owner").getAsString() : "Unknown";
                         groupMap.put("owner", owner);
-
-                        // Members - Get all members as comma-separated list
                         StringBuilder membersBuilder = new StringBuilder();
                         int memberCount = 0;
-
                         if (group.has("receivers") && group.get("receivers").isJsonArray()) {
                             JsonArray receivers = group.get("receivers").getAsJsonArray();
                             memberCount = receivers.size();
@@ -114,42 +89,28 @@ public class AdminCallbackImplementation extends UnicastRemoteObject implements 
                                 membersBuilder.append(receivers.get(j).getAsString());
                             }
                         }
-
                         String members = membersBuilder.length() > 0 ? membersBuilder.toString() : "No members";
                         groupMap.put("members", members);
                         groupMap.put("memberCount", String.valueOf(memberCount));
-
                         groupsList.add(groupMap);
-
-                        System.out.println("    [" + (i+1) + "] Group: " + groupName +
-                                " | Owner: " + owner +
-                                " | Members: " + members);
                     }
-
-                    System.out.println("  ✓ Successfully parsed " + groupsList.size() + " groups");
-
                     model.updateGroupsList(groupsList);
 
                 } catch (Exception e) {
-                    System.err.println("✗ Error parsing groups data: " + e.getMessage());
                     e.printStackTrace();
                 }
             } else {
-                System.err.println("✗ Model is null in onReceiveGroupsList!");
             }
         });
     }
 
     @Override
     public void onReceiveCommunityMessage(String messageJson) throws RemoteException {
-        System.out.println("✓ Admin callback: Received community message");
         Platform.runLater(() -> {
             try {
                 if (model != null) {
-                    System.out.println("  → Forwarding message to model");
                     model.receiveCommunityMessage(messageJson);
                 } else {
-                    System.err.println("  ✗ Model is null in callback!");
                 }
             } catch (Exception e) {
                 System.err.println("Error handling community message: " + e.getMessage());
@@ -178,48 +139,25 @@ public class AdminCallbackImplementation extends UnicastRemoteObject implements 
 
     @Override
     public void onSuccessfulLogin() throws RemoteException {
-        System.out.println("✓ Admin callback: Login successful - ENTERED CALLBACK");
         Platform.runLater(() -> {
-            System.out.println("  → Platform.runLater executed for login success");
-
             if (model != null) {
-                System.out.println("  → Notifying model of login success");
                 model.notifyLoginSuccess();
             } else {
-                System.err.println("  ✗ Model is null in callback!");
             }
-
-            if (adminLoginController != null) {
-                System.out.println("  → Notifying login controller");
-                adminLoginController.handleSuccessfulLogin();
-            } else {
-                System.err.println("  ✗ AdminLoginController is null in callback!");
-            }
-
             if (adminController != null) {
-                System.out.println("  → Notifying admin controller");
                 adminController.handleSuccessfulLogin();
             }
-
-            System.out.println("✓ All login success notifications completed");
         });
     }
 
     @Override
     public void onFailedLogin() throws RemoteException {
-        System.out.println("✗ Admin callback: Login failed - ENTERED CALLBACK");
         Platform.runLater(() -> {
-            System.out.println("  → Platform.runLater executed for login failure");
-
             if (model != null) {
-                System.out.println("  → Notifying model of login failure");
                 model.notifyLoginFailure();
             } else {
-                System.err.println("  ✗ Model is null in callback!");
             }
-
             if (adminLoginController != null) {
-                System.out.println("  → Notifying login controller");
                 adminLoginController.handleFailedLogin();
             } else {
                 System.err.println("  ✗ AdminLoginController is null in callback!");
@@ -228,8 +166,6 @@ public class AdminCallbackImplementation extends UnicastRemoteObject implements 
             if (adminController != null) {
                 adminController.handleFailedLogin();
             }
-
-            System.out.println("✓ All login failure notifications completed");
         });
     }
 
@@ -263,9 +199,6 @@ public class AdminCallbackImplementation extends UnicastRemoteObject implements 
     @Override
     public void onSuccessfulCodeVerification() throws RemoteException {
         Platform.runLater(() -> {
-            if (adminLoginController != null) {
-                adminLoginController.handleSuccessfulCodeVerification();
-            }
             if (adminController != null) {
                 adminController.handleSuccessfulCodeVerification();
             }

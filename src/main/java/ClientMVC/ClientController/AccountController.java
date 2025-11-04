@@ -36,32 +36,19 @@ public class AccountController {
 
     private void initialize() {
         accountJFXController.updateDisplayedUsername(model.getUsername());
-
-        // --- Fetch Friends List on Tab Click (FIXED JSON) ---
         accountJFXController.setFriendsButtonListener(() -> {
-            System.out.println("Controller: Fetching friend list...");
             try {
-                // FIX: Use explicit JSON structure {"username":"..."}
                 String jsonString = String.format("{\"username\":\"%s\"}", model.getUsername());
-
-                System.out.println("DEBUG: Sending Friends JSON: " + jsonString);
-                model.getFriendsList(jsonString); // Calls the RMI server method
+                model.getFriendsList(jsonString);
             } catch (RemoteException e) {
                 System.err.println("Error requesting friends list: " + e.getMessage());
                 throw new RuntimeException(e);
             }
         });
-
-        // === Unfriend Listener Setup ===
         accountJFXController.setUnfriendListener(this::handleUnfriendAction);
-        // ===============================
-
         accountJFXController.setSentRequestButtonListener(() -> {
             try {
-                // FIX: Use explicit JSON structure {"username":"..."}
                 String jsonString = String.format("{\"username\":\"%s\"}", model.getUsername());
-
-                System.out.println("DEBUG: Sending Sent Requests JSON: " + jsonString);
                 model.getSentFriendRequests(jsonString);
             } catch (RemoteException e) {
                 throw new RuntimeException(e);
@@ -139,16 +126,12 @@ public class AccountController {
         });
 
 
-        // Setup callback handlers FIRST (Controller receives callbacks directly)
         setupCallbackHandlers();
-
-        // Setup UI event handlers
         setupUsernameChange();
         setupPasswordChange();
         setupNavigationButtons();
 
         accountJFXController.setUsernameChangeListener(this::handleUsernameChange);
-//        accountJFXController.setPasswordChangeListener(this::handlePasswordChange);
         try {
             accountJFXController.showProfile();
         } catch (Exception e) {
@@ -158,24 +141,18 @@ public class AccountController {
     }
     // ==================== CALLBACK HANDLERS (Callbacks → Controller) ====================
     private void setupCallbackHandlers() {
-        System.out.println("Controller: Setting up callback handlers");
 
-        // Username change success - Server calls this via RMI callback
         clientCallback.setOnUsernameChangeSuccess(() -> {
             Platform.runLater(() -> {
                 handleUsernameChangeSuccess();
             });
         });
-
-        // Username change failure - Server calls this via RMI callback
         clientCallback.setOnUsernameChangeFailed(() -> {
             Platform.runLater(() -> {
                 accountJFXController.showUsernameUpdateFailed();
                 accountJFXController.hideChangeUsername();
             });
         });
-
-        // Password change success - Server calls this via RMI callback
         clientCallback.setOnPasswordChangeSuccess(() -> {
             Platform.runLater(() -> {
                 accountJFXController.showPasswordChanged();
@@ -185,8 +162,6 @@ public class AccountController {
                         "Your password has been successfully changed!");
             });
         });
-
-        // Password change failure - Server calls this via RMI callback
         clientCallback.setOnPasswordChangeFailed(() -> {
             Platform.runLater(() -> {
                 accountJFXController.showInvalidOldPassword();
@@ -194,19 +169,14 @@ public class AccountController {
         });
 
         accountJFXController.setReceivedRequestsListener(aVoid -> {
-            System.out.println("Controller: Fetching received friend requests...");
             try {
-                // FIX: Use explicit JSON structure {"username":"..."}
                 String jsonString = String.format("{\"username\":\"%s\"}", model.getUsername());
-
-                System.out.println("DEBUG: Received Requests JSON: " + jsonString);
                 model.getReceivedFriendRequests(jsonString); // Calls the RMI server method
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
         });
 
-        System.out.println("✓ Callback handlers configured in Controller");
     }
 
     // ==================== USERNAME CHANGE ====================
@@ -217,11 +187,6 @@ public class AccountController {
     public void handleUsernameChange() {
         String newUsername = accountJFXController.getNewUsername();
         String currentUsername = model.getUsername();
-
-        System.out.println("Controller: Processing username change request");
-        System.out.println("Current: " + currentUsername + ", New: " + newUsername);
-
-        // Input validation
         if (newUsername == null || newUsername.trim().isEmpty()) {
             accountJFXController.showUsernameEmpty();
             return;
@@ -233,34 +198,24 @@ public class AccountController {
             accountJFXController.showUsernameSameAsCurrent();
             return;
         }
-
-        // Length validation
         if (newUsername.length() < 3) {
             accountJFXController.showUsernameValidationError(
                     "Username must be at least 3 characters long");
             return;
         }
-
         if (newUsername.length() > 20) {
             accountJFXController.showUsernameValidationError(
                     "Username must be no more than 20 characters long");
             return;
         }
-
-        // Character validation (alphanumeric and underscore only)
         if (!newUsername.matches("^[a-zA-Z0-9_]+$")) {
             accountJFXController.showUsernameValidationError(
                     "Username can only contain letters, numbers, and underscores");
             return;
         }
-
-        // Show processing state
         accountJFXController.showUsernameProcessing();
-
-        // Send request to server via model
         try {
             model.changeUsername(newUsername);
-            System.out.println("✓ Username change request sent to server");
         } catch (RemoteException e) {
             System.err.println("✗ Error sending username change request: " + e.getMessage());
             e.printStackTrace();
@@ -272,29 +227,17 @@ public class AccountController {
     private void handleUsernameChangeSuccess() {
         try {
             String newUsername = accountJFXController.getNewUsername().trim();
-            String oldUsername = model.getUsername();
-
-            System.out.println("✓ Controller: Username change successful!");
-            System.out.println("  Old: " + oldUsername + " → New: " + newUsername);
-
-            // Update model
             model.setUsername(newUsername);
-
-            // Update UI
             accountJFXController.updateDisplayedUsername(newUsername);
             accountJFXController.showUsernameUpdated();
             accountJFXController.clearUsernameField();
             accountJFXController.hideChangeUsername();
-
-            // Show success alert
             showSuccessAlert("Username Changed",
                     "Your username has been successfully changed to: " + newUsername);
 
         } catch (Exception e) {
             System.err.println("Error handling username change success: " + e.getMessage());
             e.printStackTrace();
-
-            // Still show success
             accountJFXController.showUsernameUpdated();
             accountJFXController.hideChangeUsername();
         }
@@ -309,14 +252,9 @@ public class AccountController {
         String oldPassword = accountJFXController.getOldPassword();
         String newPassword = accountJFXController.getNewPassword();
         String confirmPassword = accountJFXController.getConfirmPassword();
-
-        System.out.println("Controller: Processing password change request");
-
-        // Validation
         if (oldPassword == null || oldPassword.trim().isEmpty() ||
                 newPassword == null || newPassword.trim().isEmpty() ||
                 confirmPassword == null || confirmPassword.trim().isEmpty()) {
-
             accountJFXController.showPasswordEmptyFields();
             return;
         }
@@ -330,17 +268,12 @@ public class AccountController {
             accountJFXController.showPasswordSameAsOld();
             return;
         }
-
-        // Optional: Additional password strength validation
         if (newPassword.length() < 6) {
             accountJFXController.showPasswordUpdateFailed();
             return;
         }
-
-        // Send request to server via model
         try {
             model.changePasswordWithOldPassword(oldPassword, newPassword);
-            System.out.println("✓ Password change request sent to server");
         } catch (RemoteException e) {
             System.err.println("✗ Error sending password change request: " + e.getMessage());
             e.printStackTrace();
@@ -350,7 +283,6 @@ public class AccountController {
 
     // ==================== NAVIGATION BUTTONS ====================
     private void setupNavigationButtons() {
-        // Back button
         accountJFXController.setBackButtonListener(() -> {
             view.getStage().close();
             HomeView homeView = new HomeView();
@@ -360,7 +292,6 @@ public class AccountController {
         });
 
         accountJFXController.setDeclineRequestListener(friendName -> {
-            System.out.println("Declining friend request from: " + friendName);
             try {
                 model.rejectFriendRequest(friendName);
             } catch (RemoteException e) {
@@ -382,11 +313,7 @@ public class AccountController {
     }
 
     // ==================== FRIEND LIST & REQUESTS ====================
-
-
     public void handleUnfriendAction(String friendToRemove) {
-        System.out.println("Controller: Processing unfriend request for: " + friendToRemove);
-
         Platform.runLater(() -> {
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
             alert.setTitle("Confirm Unfriend");
@@ -401,13 +328,15 @@ public class AccountController {
                             friendToRemove
                     );
                     model.removeFromFriendsList(jsonString);
+                    showSuccessAlert("Unfriended", friendToRemove + " has been removed from your friends list.");
+                    accountJFXController.showFriends();
+
                 } catch (RemoteException e) {
                     System.err.println("Error sending unfriend request: " + e.getMessage());
                     e.printStackTrace();
                     showSuccessAlert("Error", "Failed to remove friend. Please try again.");
                 }
             } else {
-                System.out.println("Unfriend action cancelled.");
             }
         });
     }
@@ -425,7 +354,6 @@ public class AccountController {
 
     public void handleFriendsListUpdate(List<String> friends) {
         Platform.runLater(() -> {
-            System.out.println("AccountController: Received and rendering friends list.");
             accountJFXController.renderFriendsList(friends);
         });
     }
@@ -478,7 +406,6 @@ public class AccountController {
         });
     }
 
-    // Kept this for potential debugging or future use, though not used in the RMI flow above.
     public String getNewUsernameFromView() {
         return accountJFXController.getNewUsername().trim();
     }
