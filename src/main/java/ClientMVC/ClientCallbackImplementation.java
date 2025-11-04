@@ -10,6 +10,8 @@ import Common.Objects.ClientObjects.Conversation;
 import Common.Objects.ClientObjects.GroupChat;
 import Common.Objects.ClientObjects.Message;
 import com.google.gson.Gson;
+import javafx.application.Platform;
+import javafx.scene.control.Alert;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
