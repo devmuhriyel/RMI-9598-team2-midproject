@@ -11,8 +11,6 @@ import javafx.application.Platform;
 import javafx.stage.Stage;
 
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
 
 public class AdminConnectionController {
     private final ConnectionModel model;
@@ -26,6 +24,7 @@ public class AdminConnectionController {
         this.ui = ui;
 
         try {
+            // The RMI IP property has already been set by the ConnectionModel's constructor
             this.adminCallback = new AdminCallbackImplementation();
         } catch (RemoteException e) {
             throw new RuntimeException("Failed to export admin callback", e);
@@ -42,13 +41,37 @@ public class AdminConnectionController {
         String ip = ui.getIpAddress();
         String portText = ui.getPortText();
 
+        // The model now handles all RMI connection logic
         ConnectionModel.ConnectionResult result = model.connect(ip, portText);
 
         Platform.runLater(() -> {
             switch (result.getStatus()) {
                 case SUCCESS:
-                    connectToRMIServer(ip);
+                    // Connection was successful, get the stub and proceed
+                    try {
+                        AdminInterface serverStub = model.getRemoteServiceStub();
+
+                        // Close connection view
+                        view.connect(); // Assuming this closes the stage
+
+                        // Open login view
+                        LoginView loginView = new LoginView();
+                        Stage loginStage = new Stage();
+                        loginView.start(loginStage);
+
+                        // Create unified model with RMI server stub
+                        UnifiedAdminModel unifiedModel = new UnifiedAdminModel(serverStub, adminCallback);
+
+                        // Create login controller
+                        new AdminLoginController(loginView, unifiedModel, loginView.getFXController());
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        ui.showConnectionFailedLabel();
+                    }
                     break;
+
+                // --- Error Handling ---
                 case EMPTY_FIELDS:
                     ui.showEmptyFieldsLabel();
                     break;
@@ -62,43 +85,10 @@ public class AdminConnectionController {
                     ui.showInvalidIpFormatLabel();
                     break;
                 case CONNECTION_FAILED:
+                case RMI_LOOKUP_FAILED:
                     ui.showConnectionFailedLabel();
                     break;
             }
         });
-    }
-
-    private void connectToRMIServer(String ip) {
-        try {
-            // Connect to RMI registry
-            Registry registry = LocateRegistry.getRegistry(ip, 1099);
-            AdminInterface server = (AdminInterface) registry.lookup("ChatServer");
-
-            // Close connection view
-            view.connect();
-
-            // Open login view with RMI connection
-            Platform.runLater(() -> {
-                try {
-                    LoginView loginView = new LoginView();
-                    Stage loginStage = new Stage();
-                    loginView.start(loginStage);
-
-                    // Create unified model with RMI server
-                    UnifiedAdminModel unifiedModel = new UnifiedAdminModel(server, adminCallback);
-
-                    // Create login controller
-                    new AdminLoginController(loginView, unifiedModel, loginView.getFXController());
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    ui.showConnectionFailedLabel();
-                }
-            });
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            Platform.runLater(() -> ui.showConnectionFailedLabel());
-        }
     }
 }
