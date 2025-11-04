@@ -217,10 +217,6 @@ public class AdminController {
             });
         }
 
-        if (ui.getAddButton() != null) {
-            ui.getAddButton().setOnAction(event -> showCreateUserDialog());
-        }
-
         if (ui.getEditButton() != null) {
             ui.getEditButton().setOnAction(event -> editSelectedUser());
         }
@@ -389,61 +385,6 @@ public class AdminController {
         return false;
     }
 
-    private void showCreateUserDialog() {
-        TextInputDialog usernameDialog = new TextInputDialog();
-        usernameDialog.setTitle("Create Client");
-        usernameDialog.setHeaderText("Create New Client");
-        usernameDialog.setContentText("Username (letters and numbers only, min 3 characters):");
-
-        Optional<String> usernameResult = usernameDialog.showAndWait();
-        if (usernameResult.isPresent() && !usernameResult.get().trim().isEmpty()) {
-            String username = usernameResult.get().trim();
-
-            // Validate username format
-            if (!isValidUsername(username)) {
-                notifyUIOfError("Invalid username format.\n\n" +
-                        "Requirements:\n" +
-                        "- At least 3 characters\n" +
-                        "- Only letters and numbers (no symbols or spaces)");
-                return;
-            }
-
-            // Check for duplicate username
-            if (isUsernameDuplicate(username)) {
-                notifyUIOfError("Username '" + username + "' already exists.\n\n" +
-                        "Please choose a different username.");
-                return;
-            }
-
-            // Proceed to password input
-            TextInputDialog passwordDialog = new TextInputDialog();
-            passwordDialog.setTitle("Create Client");
-            passwordDialog.setHeaderText("Create New Client: " + username);
-            passwordDialog.setContentText("Password (letters and numbers only, min 4 characters):");
-
-            Optional<String> passwordResult = passwordDialog.showAndWait();
-            if (passwordResult.isPresent() && !passwordResult.get().trim().isEmpty()) {
-                String password = passwordResult.get().trim();
-
-                // Validate password format
-                if (!isValidPassword(password)) {
-                    notifyUIOfError("Invalid password format.\n\n" +
-                            "Requirements:\n" +
-                            "- At least 4 characters\n" +
-                            "- Only letters and numbers (no symbols or spaces)");
-                    return;
-                }
-
-                // Create user
-                try {
-                    model.createNewUser(username, password);
-                } catch (RemoteException e) {
-                    notifyUIOfError("Failed to create user: " + e.getMessage());
-                }
-            }
-        }
-    }
-
     private void editSelectedUser() {
         Map<String, String> selectedUser = ui.getSelectedUser();
         if (selectedUser == null) {
@@ -525,13 +466,6 @@ public class AdminController {
     }
 
     private void showCommunityMessages() {
-        try {
-            model.getCommunityMessages();
-        } catch (RemoteException e) {
-            notifyUIOfError("Failed to load community messages: " + e.getMessage());
-            return;
-        }
-
         Platform.runLater(() -> {
             Dialog<String> communityDialog = new Dialog<>();
             communityDialog.setTitle("Community Chat");
@@ -563,46 +497,82 @@ public class AdminController {
             communityDialog.getDialogPane().setContent(content);
             communityDialog.getDialogPane().getButtonTypes().addAll(ButtonType.CLOSE);
 
-            loadCommunityMessages(messagesArea);
+            // Join community chat when dialog opens
+            try {
+                String adminUsername = model.getAdminUsername();
+                System.out.println("DEBUG: Admin joining community chat: " + adminUsername);
+                model.joinCommunityChat(adminUsername);
+            } catch (RemoteException e) {
+                notifyUIOfError("Failed to join community chat: " + e.getMessage());
+            }
 
+            // Load initial messages
+            loadCommunityMessagesForAdmin(messagesArea);
+
+            // Send button handler
             sendButton.setOnAction(event -> {
                 String messageText = messageField.getText().trim();
                 if (!messageText.isEmpty()) {
                     try {
+                        System.out.println("DEBUG: Sending message from admin: " + model.getAdminUsername());
                         model.sendCommunityMessage(messageText);
+                        messageField.clear();
+
+                        // Add a small delay before refreshing
+                        Timeline refreshTimeline = new Timeline(new KeyFrame(Duration.millis(500),
+                                e -> loadCommunityMessagesForAdmin(messagesArea)));
+                        refreshTimeline.play();
                     } catch (RemoteException e) {
                         notifyUIOfError("Failed to send message: " + e.getMessage());
                     }
-                    messageField.clear();
-                    Timeline refreshTimeline = new Timeline(new KeyFrame(Duration.millis(500),
-                            e -> loadCommunityMessages(messagesArea)));
-                    refreshTimeline.play();
                 }
             });
 
+            // Enter key to send
             messageField.setOnKeyPressed(event -> {
                 if (event.getCode() == javafx.scene.input.KeyCode.ENTER) {
                     sendButton.fire();
                 }
             });
 
+            // Refresh button handler
             refreshButton.setOnAction(event -> {
-                try {
-                    model.getCommunityMessages();
-                } catch (RemoteException e) {
-                    notifyUIOfError("Failed to refresh messages: " + e.getMessage());
-                }
-                loadCommunityMessages(messagesArea);
+                loadCommunityMessagesForAdmin(messagesArea);
             });
 
+            // Auto-refresh every 3 seconds
             Timeline autoRefresh = new Timeline(new KeyFrame(Duration.seconds(3),
-                    event -> loadCommunityMessages(messagesArea)));
+                    event -> loadCommunityMessagesForAdmin(messagesArea)));
             autoRefresh.setCycleCount(Timeline.INDEFINITE);
             autoRefresh.play();
 
-            communityDialog.setOnCloseRequest(event -> autoRefresh.stop());
+            // Leave community chat when dialog closes
+            communityDialog.setOnCloseRequest(event -> {
+                autoRefresh.stop();
+                try {
+                    String adminUsername = model.getAdminUsername();
+                    System.out.println("DEBUG: Admin leaving community chat: " + adminUsername);
+                    // You'll need to add this method to the model
+                    model.leaveCommunityChat(adminUsername);
+                } catch (RemoteException e) {
+                    System.err.println("Failed to leave community chat: " + e.getMessage());
+                }
+            });
+
             communityDialog.showAndWait();
         });
+    }
+    private void loadCommunityMessagesForAdmin(TextArea messagesArea) {
+        if (model.getCommunityMessagesList() != null && !model.getCommunityMessagesList().isEmpty()) {
+            Platform.runLater(() -> {
+                StringBuilder messageText = new StringBuilder();
+                for (String message : model.getCommunityMessagesList()) {
+                    messageText.append(message).append("\n");
+                }
+                messagesArea.setText(messageText.toString());
+                messagesArea.setScrollTop(Double.MAX_VALUE);
+            });
+        }
     }
 
     private void loadCommunityMessages(TextArea messagesArea) {
@@ -628,11 +598,17 @@ public class AdminController {
 
     //CALLBACK HANDLERS
     public void handleSuccessfulSignUp() {
-        showAlert("Success", "Admin account created successfully");
+        showAlert("Success", "User created successfully!");
+        // Refresh the user list to show the new user
+        refreshData();
     }
 
     public void handleFailedSignUp() {
-        showAlert("Failed", "Failed to create admin account");
+        showAlert("Failed", "Failed to create user. Please check:\n" +
+                "- Username must be at least 3 characters\n" +
+                "- Password must be at least 4 characters\n" +
+                "- Only letters and numbers allowed\n" +
+                "- Username might already exist");
     }
 
     public void handleSuccessfulLogin() {

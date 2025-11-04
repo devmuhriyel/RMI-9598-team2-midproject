@@ -113,6 +113,24 @@ public class AdminCallbackImplementation extends UnicastRemoteObject implements 
     }
 
     @Override
+    public void onReceiveCommunityMessage(String messageJson) throws RemoteException {
+        System.out.println("✓ Admin callback: Received community message");
+        Platform.runLater(() -> {
+            try {
+                if (model != null) {
+                    System.out.println("  → Forwarding message to model");
+                    model.receiveCommunityMessage(messageJson);
+                } else {
+                    System.err.println("  ✗ Model is null in callback!");
+                }
+            } catch (Exception e) {
+                System.err.println("Error handling community message: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
+    }
+
+    @Override
     public void onSuccessfulSignUp() throws RemoteException {
         Platform.runLater(() -> {
             if (adminController != null) {

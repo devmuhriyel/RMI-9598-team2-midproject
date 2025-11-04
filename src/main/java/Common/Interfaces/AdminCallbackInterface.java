@@ -7,6 +7,7 @@ import java.util.List;
 
 public interface AdminCallbackInterface extends Remote {
     //ADMIN LOG IN, SIGN UP, AND OTHER RELATED METHODS
+    void onReceiveCommunityMessage(String messageJson) throws RemoteException;
     void onSuccessfulSignUp() throws RemoteException;
     void onFailedSignUp() throws RemoteException;
     void onSuccessfulLogin() throws RemoteException;

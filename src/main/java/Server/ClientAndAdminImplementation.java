@@ -38,6 +38,7 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
     private AdminAccountsList adminAccountsList;
     private ClientAccountsList clientAccountsList;
     private ServerJSONHandler serverJSONHandler;
+    private Set<String> communityChatActiveAdmins = ConcurrentHashMap.newKeySet();
 
     //CONSTRUCTORS
     public ClientAndAdminImplementation() throws RemoteException {
@@ -1709,7 +1710,53 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
 
     @Override
     public void joinCommunityChat(String username, AdminCallbackInterface callback) throws RemoteException {
+        try {
+            System.out.println("Admin " + username + " joining community chat");
 
+            communityChatActiveAdmins.add(username);
+
+            // Notify all clients that admin joined
+            Message systemMsg = new Message("SYSTEM", "", "Admin " + username + " joined the community chat");
+            Gson gson = new Gson();
+            String messageJson = gson.toJson(systemMsg);
+
+            // Notify all CLIENTS in community
+            for (String user : communityChatActiveUsers) {
+                ClientCallbackInterface cb = clientCallbacks.get(user);
+                if (cb != null) {
+                    try {
+                        cb.onCommunityMessageReceived(messageJson, "");
+                    } catch (RemoteException e) {
+                        System.err.println("Failed to notify client " + user + ": " + e.getMessage());
+                        communityChatActiveUsers.remove(user);
+                    }
+                }
+            }
+
+            // Notify all OTHER ADMINS
+            for (String admin : communityChatActiveAdmins) {
+                if (admin.equals(username)) continue;
+
+                AdminCallbackInterface adminCb = adminCallbacks.get(admin);
+                if (adminCb != null) {
+                    try {
+                        adminCb.onCommunityMessageReceived();
+                    } catch (RemoteException e) {
+                        System.err.println("Failed to notify admin " + admin + ": " + e.getMessage());
+                        communityChatActiveAdmins.remove(admin);
+                    }
+                }
+            }
+
+            System.out.println("✓ Admin " + username + " joined community chat");
+            System.out.println("  Active clients: " + communityChatActiveUsers.size());
+            System.out.println("  Active admins: " + communityChatActiveAdmins.size());
+
+        } catch (Exception e) {
+            System.err.println("Error joining community chat: " + e.getMessage());
+            e.printStackTrace();
+            throw new RemoteException("Failed to join community chat", e);
+        }
     }
 
     //USER/ADMIN PRIVATE CHATTING METHODS
@@ -2127,11 +2174,18 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
     public void createGroupChat(String jsonString) throws RemoteException{
         String creator;
         String groupName;
+        java.util.List<String> requestedMembers = new java.util.ArrayList<>();
 
         try {
             JsonObject json = JsonParser.parseString(jsonString).getAsJsonObject();
             creator = json.get("creator").getAsString();
             groupName = json.get("groupName").getAsString();
+            if (json.has("members") && json.get("members").isJsonArray()) {
+                for (var el : json.get("members").getAsJsonArray()) {
+                    String m = el.getAsString();
+                    if (m != null && !m.trim().isEmpty()) requestedMembers.add(m.trim());
+                }
+            }
 
         } catch (Exception e) {
             System.err.println("Server Error: Failed to parse createGroupChat JSON: " + jsonString);
@@ -2142,7 +2196,6 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
 
         fileLock.writeLock().lock();
         try {
-            // Create GroupChat ONLY for the creator; others are NOT auto-added
             Client creatorClient = findClient(creator);
             if (creatorClient == null) {
                 throw new RemoteException("Creator not found: " + creator);
@@ -2152,23 +2205,47 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
                 creatorClient.setGroupChats(new ArrayList<>());
             }
 
-            // Prevent duplicate group names for the same creator
-            for (GroupChat existing : creatorClient.getGroupChats()) {
-                if (existing.getGroupName() != null && existing.getGroupName().equalsIgnoreCase(groupName)) {
-                    ClientCallbackInterface cb = clientCallbacks.get(creator);
-                    if (cb != null) {
-                        callbackExecutor.execute(() -> {
-                            try { cb.onFailedGroupCreation(); } catch (RemoteException ignored) {}
-                        });
+            // Prevent duplicate group names GLOBALLY (case-sensitive)
+            for (Client acc : clientAccountsList.getClients()) {
+                if (acc.getGroupChats() == null) continue;
+                for (GroupChat existing : acc.getGroupChats()) {
+                    if (existing.getGroupName() != null && existing.getGroupName().equals(groupName)) {
+                        ClientCallbackInterface cb = clientCallbacks.get(creator);
+                        if (cb != null) {
+                            callbackExecutor.execute(() -> {
+                                try { cb.onFailedGroupCreation(); } catch (RemoteException ignored) {}
+                            });
+                        }
+                        return;
                     }
-                    return;
                 }
             }
 
-            java.util.List<String> receivers = new java.util.ArrayList<>();
-            receivers.add(creator);
-            GroupChat gc = new GroupChat(groupID, groupName, receivers, new ArrayList<>());
-            creatorClient.getGroupChats().add(gc);
+            // Enforce: creator can only add their friends
+            java.util.Set<String> friendSet = new java.util.HashSet<>();
+            if (creatorClient.getFriends() != null) {
+                friendSet.addAll(creatorClient.getFriends());
+            }
+
+            java.util.List<String> finalMembers = new java.util.ArrayList<>();
+            finalMembers.add(creator);
+            for (String req : requestedMembers) {
+                if (friendSet.contains(req) && !finalMembers.contains(req)) {
+                    finalMembers.add(req);
+                }
+            }
+
+            // Create group for each member (including creator)
+            for (String member : finalMembers) {
+                Client memberClient = findClient(member);
+                if (memberClient == null) continue;
+                if (memberClient.getGroupChats() == null) {
+                    memberClient.setGroupChats(new ArrayList<>());
+                }
+                java.util.List<String> receivers = new java.util.ArrayList<>(finalMembers);
+                GroupChat gc = new GroupChat(groupID, groupName, receivers, new ArrayList<>());
+                memberClient.getGroupChats().add(gc);
+            }
 
             // Persist to file
             serverJSONHandler.writeClientAccountFile("src/main/resources/JSONFiles/ClientAccounts.json", clientAccountsList);
@@ -2270,8 +2347,15 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
 
     @Override
     public void sendCommunityMessage(String sender, String message, String jsonString) throws RemoteException {
+        // Check if sender is an admin
+        if (communityChatActiveAdmins.contains(sender)) {
+            sendCommunityMessageFromAdmin(sender, message, jsonString);
+            return;
+        }
+
+        // Otherwise, handle as client message (existing code)
         try {
-            System.out.println("Community message from " + sender + ": " + message);
+            System.out.println("Community message from CLIENT " + sender + ": " + message);
 
             if (!communityChatActiveUsers.contains(sender)) {
                 System.err.println("User " + sender + " is not in community chat");
@@ -2282,20 +2366,35 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
             Gson gson = new Gson();
             String messageJson = gson.toJson(msg);
 
-            // Broadcast to ALL users in community chat (including sender)
+            // Broadcast to ALL CLIENTS
             for (String user : communityChatActiveUsers) {
                 ClientCallbackInterface cb = clientCallbacks.get(user);
                 if (cb != null) {
                     try {
                         cb.onCommunityMessageReceived(messageJson, "");
                     } catch (RemoteException e) {
-                        System.err.println("Failed to send to " + user + ": " + e.getMessage());
+                        System.err.println("Failed to send to client " + user + ": " + e.getMessage());
                         communityChatActiveUsers.remove(user);
                     }
                 }
             }
 
-            System.out.println("✓ Community message sent to " + communityChatActiveUsers.size() + " users");
+            // Broadcast to ALL ADMINS
+            for (String admin : communityChatActiveAdmins) {
+                AdminCallbackInterface adminCb = adminCallbacks.get(admin);
+                if (adminCb != null) {
+                    try {
+                        adminCb.onReceiveCommunityMessage(messageJson);
+                    } catch (RemoteException e) {
+                        System.err.println("Failed to send to admin " + admin + ": " + e.getMessage());
+                        communityChatActiveAdmins.remove(admin);
+                    }
+                }
+            }
+
+            System.out.println("✓ Client community message sent to " +
+                    communityChatActiveUsers.size() + " clients and " +
+                    communityChatActiveAdmins.size() + " admins");
 
         } catch (Exception e) {
             System.err.println("Error sending community message: " + e.getMessage());
@@ -2341,6 +2440,104 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
     }
 
     //HELPERS
+    public void sendCommunityMessageFromAdmin(String sender, String message, String jsonString) throws RemoteException {
+        try {
+            System.out.println("Community message from ADMIN " + sender + ": " + message);
+
+            if (!communityChatActiveAdmins.contains(sender)) {
+                System.err.println("Admin " + sender + " is not in community chat");
+                return;
+            }
+
+            Message msg = new Message("Admin-" + sender, "", message);
+            Gson gson = new Gson();
+            String messageJson = gson.toJson(msg);
+
+            // Broadcast to ALL CLIENTS in community chat
+            for (String user : communityChatActiveUsers) {
+                ClientCallbackInterface cb = clientCallbacks.get(user);
+                if (cb != null) {
+                    try {
+                        cb.onCommunityMessageReceived(messageJson, "");
+                    } catch (RemoteException e) {
+                        System.err.println("Failed to send to client " + user + ": " + e.getMessage());
+                        communityChatActiveUsers.remove(user);
+                    }
+                }
+            }
+
+            // Broadcast to ALL ADMINS in community chat
+            for (String admin : communityChatActiveAdmins) {
+                AdminCallbackInterface adminCb = adminCallbacks.get(admin);
+                if (adminCb != null) {
+                    try {
+                        // Send the formatted message
+                        adminCb.onReceiveCommunityMessage(messageJson);
+                    } catch (RemoteException e) {
+                        System.err.println("Failed to send to admin " + admin + ": " + e.getMessage());
+                        communityChatActiveAdmins.remove(admin);
+                    }
+                }
+            }
+
+            System.out.println("✓ Admin community message sent to " +
+                    communityChatActiveUsers.size() + " clients and " +
+                    communityChatActiveAdmins.size() + " admins");
+
+        } catch (Exception e) {
+            System.err.println("Error sending admin community message: " + e.getMessage());
+            e.printStackTrace();
+            throw new RemoteException("Failed to send admin community message", e);
+        }
+    }
+    public void leaveCommunityChat(String username, boolean isAdmin) throws RemoteException {
+        try {
+            System.out.println((isAdmin ? "Admin " : "Client ") + username + " leaving community chat");
+
+            if (isAdmin) {
+                communityChatActiveAdmins.remove(username);
+            } else {
+                communityChatActiveUsers.remove(username);
+            }
+
+            // Notify remaining users
+            Message systemMsg = new Message("SYSTEM", "",
+                    (isAdmin ? "Admin " : "") + username + " left the community chat");
+            Gson gson = new Gson();
+            String messageJson = gson.toJson(systemMsg);
+
+            // Notify clients
+            for (String user : communityChatActiveUsers) {
+                ClientCallbackInterface cb = clientCallbacks.get(user);
+                if (cb != null) {
+                    try {
+                        cb.onCommunityMessageReceived(messageJson, "");
+                    } catch (RemoteException e) {
+                        System.err.println("Failed to notify " + user + ": " + e.getMessage());
+                        communityChatActiveUsers.remove(user);
+                    }
+                }
+            }
+
+            // Notify admins
+            for (String admin : communityChatActiveAdmins) {
+                AdminCallbackInterface adminCb = adminCallbacks.get(admin);
+                if (adminCb != null) {
+                    try {
+                        adminCb.onCommunityMessageReceived();
+                    } catch (RemoteException e) {
+                        System.err.println("Failed to notify admin " + admin + ": " + e.getMessage());
+                        communityChatActiveAdmins.remove(admin);
+                    }
+                }
+            }
+
+            System.out.println("✓ " + username + " left community chat");
+        } catch (Exception e) {
+            System.err.println("Error leaving community chat: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
     public void registerAdminCallback(String username, AdminCallbackInterface callback) throws RemoteException {
         if (username == null || callback == null) {
             throw new RemoteException("Username and callback cannot be null");
@@ -2365,7 +2562,9 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
             }
         }
         return null;
-    }private boolean isValidUsername(String username) {
+    }
+
+    private boolean isValidUsername(String username) {
         if (username == null || username.trim().isEmpty()) {
             return false;
         }
@@ -2378,10 +2577,6 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
         return username.matches("^[a-zA-Z0-9]+$");
     }
 
-    /**
-     * Validates password format
-     * Rules: Min 4 characters, only letters and numbers (no symbols, no spaces)
-     */
     private boolean isValidPassword(String password) {
         if (password == null || password.trim().isEmpty()) {
             return false;

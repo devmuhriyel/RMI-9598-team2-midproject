@@ -6,11 +6,15 @@ import Common.Objects.ClientObjects.Client;
 import Common.Objects.ClientObjects.ClientAccountsList;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -158,51 +162,76 @@ public class AdminJSONHandler {
     // ========== CLIENT ACCOUNT METHODS ==========
 
     public ClientAccountsList readClientAccountFile() {
+        System.out.println(">>> AdminJSONHandler: readClientAccountFile called");
         try {
             File file = new File(CLIENT_FILE_PATH);
+            System.out.println("    Reading from: " + file.getAbsolutePath());
+
             if (!file.exists()) {
-                System.err.println("Client accounts file not found: " + CLIENT_FILE_PATH);
+                System.err.println("✗ Client accounts file not found: " + CLIENT_FILE_PATH);
                 return null;
             }
 
             try (FileReader reader = new FileReader(file)) {
-                ClientAccountsList accounts = gson.fromJson(reader, ClientAccountsList.class);
+                // Parse JSON with wrapper structure
+                JsonObject jsonObject = com.google.gson.JsonParser.parseReader(reader).getAsJsonObject();
 
-                if (accounts == null) {
-                    System.err.println("Failed to parse client accounts file");
-                    return null;
+                ClientAccountsList accounts = new ClientAccountsList();
+
+                if (jsonObject.has("clientAccounts")) {
+                    com.google.gson.JsonArray clientsArray = jsonObject.getAsJsonArray("clientAccounts");
+                    List<Client> clients = new ArrayList<>();
+
+                    for (com.google.gson.JsonElement element : clientsArray) {
+                        Client client = gson.fromJson(element, Client.class);
+                        clients.add(client);
+                    }
+
+                    accounts.setClients(clients);
+                    System.out.println("✓ Successfully read " + clients.size() + " client accounts");
+                } else {
+                    System.err.println("✗ 'clientAccounts' key not found in JSON");
                 }
-
-                System.out.println("Successfully read " +
-                        (accounts.getClients() != null ? accounts.getClients().size() : 0) +
-                        " client accounts");
 
                 return accounts;
             }
         } catch (IOException e) {
-            System.err.println("Error reading client accounts file: " + e.getMessage());
+            System.err.println("✗ Error reading client accounts file: " + e.getMessage());
             e.printStackTrace();
             return null;
         }
     }
 
     public void writeClientAccountFile(ClientAccountsList clientAccountsList) {
+        System.out.println(">>> AdminJSONHandler: writeClientAccountFile called");
+        System.out.println("    Number of clients to write: " +
+                (clientAccountsList != null && clientAccountsList.getClients() != null ?
+                        clientAccountsList.getClients().size() : 0));
+
         try {
             File file = new File(CLIENT_FILE_PATH);
+            System.out.println("    File path: " + file.getAbsolutePath());
 
             // Create parent directories if they don't exist
             File parentDir = file.getParentFile();
             if (parentDir != null && !parentDir.exists()) {
+                System.out.println("    Creating parent directories...");
                 parentDir.mkdirs();
             }
 
             try (FileWriter writer = new FileWriter(file)) {
-                gson.toJson(clientAccountsList, writer);
+                // Create wrapper object to match JSON structure
+                Map<String, Object> wrapper = new HashMap<>();
+                wrapper.put("clientAccounts", clientAccountsList.getClients());
+
+                gson.toJson(wrapper, writer);
                 writer.flush();
-                System.out.println("Successfully wrote client accounts to file");
+                System.out.println("✓ Successfully wrote client accounts to file");
+                System.out.println("    File exists: " + file.exists());
+                System.out.println("    File size: " + file.length() + " bytes");
             }
         } catch (IOException e) {
-            System.err.println("Error writing client accounts file: " + e.getMessage());
+            System.err.println("✗ Error writing client accounts file: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -275,35 +304,7 @@ public class AdminJSONHandler {
         return false;
     }
 
-    public boolean createClient(String username, String password, String verificationCode) {
-        if (!validateUsername(username) || !validatePassword(password)) {
-            return false;
-        }
 
-        ClientAccountsList clientAccountsList = readClientAccountFile();
-        if (clientAccountsList == null) {
-            clientAccountsList = new ClientAccountsList();
-        }
-        if (clientAccountsList.getClients() == null) {
-            clientAccountsList.setClients(new java.util.ArrayList<>());
-        }
-
-        // Check if user already exists
-        for (Client client : clientAccountsList.getClients()) {
-            if (client.getUsername().equals(username)) {
-                System.err.println("Client already exists: " + username);
-                return false;
-            }
-        }
-
-        // Create new client
-        Client newClient = new Client(username, password, verificationCode);
-        clientAccountsList.getClients().add(newClient);
-
-        writeClientAccountFile(clientAccountsList);
-        System.out.println("Client created: " + username);
-        return true;
-    }
 
     // ========== VALIDATION METHODS (UPDATED) ==========
 

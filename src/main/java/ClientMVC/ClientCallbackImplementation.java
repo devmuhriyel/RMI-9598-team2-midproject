@@ -403,9 +403,9 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
         Platform.runLater(() -> {
             try {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Group Creation Failed");
+                alert.setTitle("Group Name Unavailable");
                 alert.setHeaderText(null);
-                alert.setContentText("Unable to create the group. Try a different name.");
+                alert.setContentText("That group name is already taken by another user (case-sensitive). Please choose a different name.");
                 alert.showAndWait();
             } catch (Exception ignored) {}
         });
