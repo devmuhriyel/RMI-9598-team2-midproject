@@ -151,10 +151,18 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     @Override
     public void onSuccessfulUsernameChange() throws RemoteException {
         System.out.println("✓ Callback received: Username change successful");
+
+        // Update the stored client data
+        if (this.clientData != null && clientAccountController != null) {
+            String newUsername = clientAccountController.getNewUsernameFromView();
+            this.clientData.setUsername(newUsername);
+            this.username = newUsername;
+            ClientJSONHandler.setCurrentUser(newUsername);
+        }
+
+        // Run existing handler
         if (onUsernameChangeSuccess != null) {
             onUsernameChangeSuccess.run();
-        } else {
-            System.err.println("⚠ Warning: onUsernameChangeSuccess handler is null");
         }
     }
 
@@ -407,6 +415,8 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
 
     @Override
     public void onCommunityMessageReceived() throws RemoteException {}
+
+
 
     // GETTERS
     public String getUsername(){

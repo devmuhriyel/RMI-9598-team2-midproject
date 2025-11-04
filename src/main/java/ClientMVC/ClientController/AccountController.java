@@ -324,4 +324,9 @@ public class AccountController {
         alert.getDialogPane().setPrefSize(300, 120);
         alert.showAndWait();
     }
+
+    public String getNewUsernameFromView() {
+        return accountJFXController.getNewUsername().trim();
+    }
+
 }
