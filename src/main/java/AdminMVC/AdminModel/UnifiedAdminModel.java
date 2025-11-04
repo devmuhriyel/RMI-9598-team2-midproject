@@ -361,33 +361,6 @@ public class UnifiedAdminModel {
         server.verifyCode(jsonString);
     }
 
-    public void createNewUser(String username, String password) throws RemoteException {
-        if (!adminJSONHandler.validateUsername(username)) {
-            Platform.runLater(() -> {
-                if (operationResultListener != null) {
-                    operationResultListener.accept("Invalid username. Must be 3+ characters, no spaces, and cannot contain: #$%^?\"}|_/\\{}");
-                }
-            });
-            return;
-        }
-        if (!adminJSONHandler.validatePassword(password)) {
-            Platform.runLater(() -> {
-                if (operationResultListener != null) {
-                    operationResultListener.accept("Invalid password. Must be 4+ characters, no spaces, and cannot contain: #$%^?\"}|_/\\{}");
-                }
-            });
-            return;
-        }
-
-        Map<String, String> createData = new HashMap<>();
-        createData.put("username", username);
-        createData.put("password", password);
-        createData.put("admin", adminUsername);
-        String jsonString = new com.google.gson.Gson().toJson(createData);
-
-        server.signUp(username, password, "", jsonString, callback);
-    }
-
     // GROUP MANAGEMENT METHODS
     public void getAllGroupsFromServer() throws RemoteException {
         if (server == null) return;

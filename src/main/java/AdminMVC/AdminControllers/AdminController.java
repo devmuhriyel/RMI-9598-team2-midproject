@@ -217,10 +217,6 @@ public class AdminController {
             });
         }
 
-        if (ui.getAddButton() != null) {
-            ui.getAddButton().setOnAction(event -> showCreateUserDialog());
-        }
-
         if (ui.getEditButton() != null) {
             ui.getEditButton().setOnAction(event -> editSelectedUser());
         }
@@ -372,78 +368,6 @@ public class AdminController {
         // Only letters and numbers allowed (no symbols, no spaces)
         return password.matches("^[a-zA-Z0-9]+$");
     }
-
-    private boolean isUsernameDuplicate(String username) {
-        List<Map<String, String>> allUsers = ui.getOriginalUsers();
-        if (allUsers == null) {
-            return false;
-        }
-
-        for (Map<String, String> user : allUsers) {
-            if (user != null && user.get("username") != null) {
-                if (user.get("username").equalsIgnoreCase(username)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private void showCreateUserDialog() {
-        TextInputDialog usernameDialog = new TextInputDialog();
-        usernameDialog.setTitle("Create Client");
-        usernameDialog.setHeaderText("Create New Client");
-        usernameDialog.setContentText("Username (letters and numbers only, min 3 characters):");
-
-        Optional<String> usernameResult = usernameDialog.showAndWait();
-        if (usernameResult.isPresent() && !usernameResult.get().trim().isEmpty()) {
-            String username = usernameResult.get().trim();
-
-            // Validate username format
-            if (!isValidUsername(username)) {
-                notifyUIOfError("Invalid username format.\n\n" +
-                        "Requirements:\n" +
-                        "- At least 3 characters\n" +
-                        "- Only letters and numbers (no symbols or spaces)");
-                return;
-            }
-
-            // Check for duplicate username
-            if (isUsernameDuplicate(username)) {
-                notifyUIOfError("Username '" + username + "' already exists.\n\n" +
-                        "Please choose a different username.");
-                return;
-            }
-
-            // Proceed to password input
-            TextInputDialog passwordDialog = new TextInputDialog();
-            passwordDialog.setTitle("Create Client");
-            passwordDialog.setHeaderText("Create New Client: " + username);
-            passwordDialog.setContentText("Password (letters and numbers only, min 4 characters):");
-
-            Optional<String> passwordResult = passwordDialog.showAndWait();
-            if (passwordResult.isPresent() && !passwordResult.get().trim().isEmpty()) {
-                String password = passwordResult.get().trim();
-
-                // Validate password format
-                if (!isValidPassword(password)) {
-                    notifyUIOfError("Invalid password format.\n\n" +
-                            "Requirements:\n" +
-                            "- At least 4 characters\n" +
-                            "- Only letters and numbers (no symbols or spaces)");
-                    return;
-                }
-
-                // Create user
-                try {
-                    model.createNewUser(username, password);
-                } catch (RemoteException e) {
-                    notifyUIOfError("Failed to create user: " + e.getMessage());
-                }
-            }
-        }
-    }
-
     private void editSelectedUser() {
         Map<String, String> selectedUser = ui.getSelectedUser();
         if (selectedUser == null) {
@@ -628,11 +552,17 @@ public class AdminController {
 
     //CALLBACK HANDLERS
     public void handleSuccessfulSignUp() {
-        showAlert("Success", "Admin account created successfully");
+        showAlert("Success", "User created successfully!");
+        // Refresh the user list to show the new user
+        refreshData();
     }
 
     public void handleFailedSignUp() {
-        showAlert("Failed", "Failed to create admin account");
+        showAlert("Failed", "Failed to create user. Please check:\n" +
+                "- Username must be at least 3 characters\n" +
+                "- Password must be at least 4 characters\n" +
+                "- Only letters and numbers allowed\n" +
+                "- Username might already exist");
     }
 
     public void handleSuccessfulLogin() {

@@ -2365,7 +2365,9 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
             }
         }
         return null;
-    }private boolean isValidUsername(String username) {
+    }
+
+    private boolean isValidUsername(String username) {
         if (username == null || username.trim().isEmpty()) {
             return false;
         }
@@ -2378,10 +2380,6 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
         return username.matches("^[a-zA-Z0-9]+$");
     }
 
-    /**
-     * Validates password format
-     * Rules: Min 4 characters, only letters and numbers (no symbols, no spaces)
-     */
     private boolean isValidPassword(String password) {
         if (password == null || password.trim().isEmpty()) {
             return false;
