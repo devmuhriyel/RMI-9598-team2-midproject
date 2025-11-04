@@ -46,12 +46,18 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
 
     @Override
     public void onSuccessfulSignUp() throws RemoteException {
-
+        System.out.println("Server says signup success!");
+        if (clientSignupController != null) {
+            clientSignupController.onSuccessfulSignUpFromRemote();
+        }
     }
 
     @Override
     public void onFailedSignUp() throws RemoteException {
-
+        System.out.println("Server says signup failed!");
+        if (clientSignupController != null) {
+            clientSignupController.onFailedSignUpFromRemote();
+        }
     }
 
     @Override
@@ -143,10 +149,18 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     @Override
     public void onSuccessfulUsernameChange() throws RemoteException {
         System.out.println("✓ Callback received: Username change successful");
+
+        // Update the stored client data
+        if (this.clientData != null && clientAccountController != null) {
+            String newUsername = clientAccountController.getNewUsernameFromView();
+            this.clientData.setUsername(newUsername);
+            this.username = newUsername;
+            ClientJSONHandler.setCurrentUser(newUsername);
+        }
+
+        // Run existing handler
         if (onUsernameChangeSuccess != null) {
             onUsernameChangeSuccess.run();
-        } else {
-            System.err.println("⚠ Warning: onUsernameChangeSuccess handler is null");
         }
     }
 
@@ -230,17 +244,17 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     }
 
     @Override
-    public void onGetSentFriendRequests(List<String> sentRequests) throws RemoteException {
-
-    }
-
-    @Override
-    public void onGetReceivedFriendRequests(List<String> receivedRequests) throws RemoteException {
-
-    }
-
-    @Override
     public void onGetFriendsList(List<String> friends) throws RemoteException {
+
+        System.out.println("Callback: Received friends list of size: " + (friends != null ? friends.size() : 0));
+        javafx.application.Platform.runLater(() -> {
+            if (clientHomeController != null) {
+                clientHomeController.updateFriendsList(friends);
+            }
+            if (clientAccountController != null) {
+                clientAccountController.handleFriendsListUpdate(friends);
+            }
+        });
 
     }
 
@@ -261,7 +275,25 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
             clientChatController.onGetChatHistories(allChats);
         }
     }
+// In ClientCallbackImplementation.java
 
+    @Override
+    public void onGetSentFriendRequests(List<String> sentRequests) throws RemoteException {
+        if (clientAccountController != null) {
+            System.out.println("Callback: Received sent friend requests of size: " + (sentRequests != null ? sentRequests.size() : 0));
+            // Cast and call the new method in the controller
+            clientAccountController.handleSentFriendRequests(sentRequests);
+        }
+    }
+
+    @Override
+    public void onGetReceivedFriendRequests(List<String> receivedRequests) throws RemoteException {
+        if (clientAccountController != null) {
+            System.out.println("Callback: Received received friend requests of size: " + (receivedRequests != null ? receivedRequests.size() : 0));
+            // Cast and call the new method in the controller
+            clientAccountController.handleReceivedFriendRequests(receivedRequests);
+        }
+    }
     @Override
     public void onGetChatHistoryWith(Conversation chatWith) throws RemoteException {
         if (clientChatController != null) {
@@ -356,10 +388,26 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     }
 
     @Override
-    public void onSuccessfulGroupCreation() throws RemoteException {}
+    public void onSuccessfulGroupCreation() throws RemoteException {
+        System.out.println("Callback: Group created successfully. Refreshing home data.");
+        if (clientHomeController != null) {
+            clientHomeController.refreshUserData();
+        }
+    }
 
     @Override
-    public void onFailedGroupCreation() throws RemoteException {}
+    public void onFailedGroupCreation() throws RemoteException {
+        System.out.println("Callback: Group creation failed.");
+        Platform.runLater(() -> {
+            try {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setTitle("Group Creation Failed");
+                alert.setHeaderText(null);
+                alert.setContentText("Unable to create the group. Try a different name.");
+                alert.showAndWait();
+            } catch (Exception ignored) {}
+        });
+    }
 
     @Override
     public void onSuccessfulMemberAdded() throws RemoteException {}
@@ -503,4 +551,6 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
         System.out.println("  → Setting password change failed handler");
         this.onPasswordChangeFailed = handler;
     }
+
+
 }

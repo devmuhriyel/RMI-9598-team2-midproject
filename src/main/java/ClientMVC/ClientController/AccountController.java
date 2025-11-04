@@ -6,16 +6,16 @@ import ClientMVC.ClientView.Account.AccountView;
 import ClientMVC.ClientView.Account.AccountJFXController;
 import ClientMVC.ClientView.Home.HomeView;
 import ClientMVC.ClientView.Login.LoginView;
-import Common.Interfaces.ClientInterface;
 import Common.Objects.ClientObjects.FriendRequest;
 import com.google.gson.Gson;
 import javafx.application.Platform;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.stage.Stage;
 
 import java.rmi.RemoteException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class AccountController {
     private final UnifiedClientModel model;
@@ -36,14 +36,38 @@ public class AccountController {
 
     private void initialize() {
         accountJFXController.updateDisplayedUsername(model.getUsername());
+
+        // --- Fetch Friends List on Tab Click (FIXED JSON) ---
+        accountJFXController.setFriendsButtonListener(() -> {
+            System.out.println("Controller: Fetching friend list...");
+            try {
+                // FIX: Use explicit JSON structure {"username":"..."}
+                String jsonString = String.format("{\"username\":\"%s\"}", model.getUsername());
+
+                System.out.println("DEBUG: Sending Friends JSON: " + jsonString);
+                model.getFriendsList(jsonString); // Calls the RMI server method
+            } catch (RemoteException e) {
+                System.err.println("Error requesting friends list: " + e.getMessage());
+                throw new RuntimeException(e);
+            }
+        });
+
+        // === Unfriend Listener Setup ===
+        accountJFXController.setUnfriendListener(this::handleUnfriendAction);
+        // ===============================
+
         accountJFXController.setSentRequestButtonListener(() -> {
             try {
-                String jsonString = model.createJSONStringRequest("GET_SENT_REQUESTS", "", model.getUsername());
+                // FIX: Use explicit JSON structure {"username":"..."}
+                String jsonString = String.format("{\"username\":\"%s\"}", model.getUsername());
+
+                System.out.println("DEBUG: Sending Sent Requests JSON: " + jsonString);
                 model.getSentFriendRequests(jsonString);
             } catch (RemoteException e) {
                 throw new RuntimeException(e);
             }
         });
+
         accountJFXController.setCancelSentRequestListener(friendName -> {
             try {
                 String jsonString = gson.toJson(new FriendRequest(model.getUsername(), friendName, "canceled"));
@@ -76,17 +100,25 @@ public class AccountController {
         });
 
         accountJFXController.setLogoutAccountButtonListener(() -> {
-            view.getStage().close();
-            LoginView loginView = new LoginView();
-            Stage loginStage = new Stage();
             try {
-                loginView.start(loginStage);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-            //new LoginController(loginView, clientService, loginView.getFXController(), clientCallback);
+                String username = model.getUsername();
+                if (username != null && !username.isEmpty()) {
+                    String jsonString = "{\"action\":\"logout\", \"username\":\"" + username + "\"}";
+                    model.logOut(username, jsonString);
+                    clientCallback.onSuccessfulLogout();
+                }
 
+                view.getStage().hide();
+                Stage loginStage = ClientMVC.ClientView.Login.LoginView.getPrimaryStage();
+                if (loginStage != null) {
+                    loginStage.show();
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         });
+
 
         // Setup callback handlers FIRST (Controller receives callbacks directly)
         setupCallbackHandlers();
@@ -140,6 +172,19 @@ public class AccountController {
             Platform.runLater(() -> {
                 accountJFXController.showInvalidOldPassword();
             });
+        });
+
+        accountJFXController.setReceivedRequestsListener(aVoid -> {
+            System.out.println("Controller: Fetching received friend requests...");
+            try {
+                // FIX: Use explicit JSON structure {"username":"..."}
+                String jsonString = String.format("{\"username\":\"%s\"}", model.getUsername());
+
+                System.out.println("DEBUG: Received Requests JSON: " + jsonString);
+                model.getReceivedFriendRequests(jsonString); // Calls the RMI server method
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
         });
 
         System.out.println("✓ Callback handlers configured in Controller");
@@ -315,5 +360,74 @@ public class AccountController {
         alert.setContentText(message);
         alert.getDialogPane().setPrefSize(300, 120);
         alert.showAndWait();
+    }
+
+    // ==================== FRIEND LIST & REQUESTS ====================
+
+    // === Method to handle the Unfriend action ===
+    public void handleUnfriendAction(String friendToRemove) {
+        System.out.println("Controller: Processing unfriend request for: " + friendToRemove);
+
+        Platform.runLater(() -> {
+            // Prompt user for confirmation
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("Confirm Unfriend");
+            alert.setHeaderText("Are you sure you want to unfriend " + friendToRemove + "?");
+            alert.setContentText("This action cannot be undone.");
+
+            Optional<ButtonType> result = alert.showAndWait();
+
+            if (result.isPresent() && result.get() == ButtonType.OK) {
+                try {
+                    // Build JSON: requires the requester (current user) and the responder (friendToRemove)
+                    String jsonString = String.format(
+                            "{\"requester\":\"%s\",\"responder\":\"%s\"}",
+                            model.getUsername(),
+                            friendToRemove
+                    );
+
+                    model.removeFromFriendsList(jsonString);
+
+                    // Show confirmation and re-trigger list fetch
+                    showSuccessAlert("Unfriended", friendToRemove + " has been removed from your friends list.");
+
+                    // Re-trigger the button logic to refresh the view immediately
+                    accountJFXController.showFriends();
+
+                } catch (RemoteException e) {
+                    System.err.println("Error sending unfriend request: " + e.getMessage());
+                    e.printStackTrace();
+                    showSuccessAlert("Error", "Failed to remove friend. Please try again.");
+                }
+            } else {
+                System.out.println("Unfriend action cancelled.");
+            }
+        });
+    }
+    // ===================================================
+
+    // Method to handle the friends list update from callback
+    public void handleFriendsListUpdate(List<String> friends) {
+        Platform.runLater(() -> {
+            System.out.println("AccountController: Received and rendering friends list.");
+            accountJFXController.renderFriendsList(friends);
+        });
+    }
+
+    public void handleReceivedFriendRequests(List<String> receivedRequests) {
+        Platform.runLater(() -> {
+            accountJFXController.renderRequestList(receivedRequests, false); // false for received
+        });
+    }
+
+    public void handleSentFriendRequests(List<String> sentRequests) {
+        Platform.runLater(() -> {
+            accountJFXController.renderRequestList(sentRequests, true); // true for sent
+        });
+    }
+
+    // Kept this for potential debugging or future use, though not used in the RMI flow above.
+    public String getNewUsernameFromView() {
+        return accountJFXController.getNewUsername().trim();
     }
 }

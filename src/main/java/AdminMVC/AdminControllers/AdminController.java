@@ -69,8 +69,8 @@ public class AdminController {
             notifyUIOfError("Verification code cannot be empty");
             return;
         }
-        if (newPassword == null || newPassword.trim().length() < 4) {
-            notifyUIOfError("Password must be at least 4 characters long");
+        if (!isValidPassword(newPassword)) {
+            notifyUIOfError("Password must be at least 4 characters long and contain only letters and numbers");
             return;
         }
         try {
@@ -97,8 +97,8 @@ public class AdminController {
             notifyUIOfError("Username cannot be empty");
             return;
         }
-        if (newPassword == null || newPassword.trim().length() < 4) {
-            notifyUIOfError("Password must be at least 4 characters long");
+        if (!isValidPassword(newPassword)) {
+            notifyUIOfError("Password must be at least 4 characters long and contain only letters and numbers");
             return;
         }
         try {
@@ -132,14 +132,14 @@ public class AdminController {
         TextInputDialog passwordDialog = new TextInputDialog();
         passwordDialog.setTitle("Change Password");
         passwordDialog.setHeaderText("Set New Password for: " + username);
-        passwordDialog.setContentText("Enter new password:");
+        passwordDialog.setContentText("Enter new password (letters and numbers only):");
 
         Optional<String> passwordResult = passwordDialog.showAndWait();
         if (passwordResult.isPresent() && !passwordResult.get().trim().isEmpty()) {
             String newPassword = passwordResult.get().trim();
 
-            if (newPassword.length() < 4) {
-                notifyUIOfError("Password must be at least 4 characters long");
+            if (!isValidPassword(newPassword)) {
+                notifyUIOfError("Password must be at least 4 characters long and contain only letters and numbers");
                 return;
             }
 
@@ -344,21 +344,97 @@ public class AdminController {
         }
     }
 
+    // VALIDATION METHODS
+    private boolean isValidUsername(String username) {
+        if (username == null || username.trim().isEmpty()) {
+            return false;
+        }
+
+        // Must be at least 3 characters
+        if (username.length() < 3) {
+            return false;
+        }
+
+        // Only letters and numbers allowed (no symbols, no spaces)
+        return username.matches("^[a-zA-Z0-9]+$");
+    }
+
+    private boolean isValidPassword(String password) {
+        if (password == null || password.trim().isEmpty()) {
+            return false;
+        }
+
+        // Must be at least 4 characters
+        if (password.length() < 4) {
+            return false;
+        }
+
+        // Only letters and numbers allowed (no symbols, no spaces)
+        return password.matches("^[a-zA-Z0-9]+$");
+    }
+
+    private boolean isUsernameDuplicate(String username) {
+        List<Map<String, String>> allUsers = ui.getOriginalUsers();
+        if (allUsers == null) {
+            return false;
+        }
+
+        for (Map<String, String> user : allUsers) {
+            if (user != null && user.get("username") != null) {
+                if (user.get("username").equalsIgnoreCase(username)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     private void showCreateUserDialog() {
         TextInputDialog usernameDialog = new TextInputDialog();
         usernameDialog.setTitle("Create Client");
         usernameDialog.setHeaderText("Create New Client");
-        usernameDialog.setContentText("Username:");
+        usernameDialog.setContentText("Username (letters and numbers only, min 3 characters):");
+
         Optional<String> usernameResult = usernameDialog.showAndWait();
         if (usernameResult.isPresent() && !usernameResult.get().trim().isEmpty()) {
             String username = usernameResult.get().trim();
+
+            // Validate username format
+            if (!isValidUsername(username)) {
+                notifyUIOfError("Invalid username format.\n\n" +
+                        "Requirements:\n" +
+                        "- At least 3 characters\n" +
+                        "- Only letters and numbers (no symbols or spaces)");
+                return;
+            }
+
+            // Check for duplicate username
+            if (isUsernameDuplicate(username)) {
+                notifyUIOfError("Username '" + username + "' already exists.\n\n" +
+                        "Please choose a different username.");
+                return;
+            }
+
+            // Proceed to password input
             TextInputDialog passwordDialog = new TextInputDialog();
             passwordDialog.setTitle("Create Client");
-            passwordDialog.setHeaderText("Create New Client");
-            passwordDialog.setContentText("Password:");
+            passwordDialog.setHeaderText("Create New Client: " + username);
+            passwordDialog.setContentText("Password (letters and numbers only, min 4 characters):");
+
             Optional<String> passwordResult = passwordDialog.showAndWait();
             if (passwordResult.isPresent() && !passwordResult.get().trim().isEmpty()) {
                 String password = passwordResult.get().trim();
+
+                // Validate password format
+                if (!isValidPassword(password)) {
+                    notifyUIOfError("Invalid password format.\n\n" +
+                            "Requirements:\n" +
+                            "- At least 4 characters\n" +
+                            "- Only letters and numbers (no symbols or spaces)");
+                    return;
+                }
+
+                // Create user
                 try {
                     model.createNewUser(username, password);
                 } catch (RemoteException e) {
@@ -378,11 +454,22 @@ public class AdminController {
 
         TextInputDialog passwordDialog = new TextInputDialog();
         passwordDialog.setTitle("Edit Client");
-        passwordDialog.setHeaderText("Change Password for " + username);
-        passwordDialog.setContentText("New Password:");
+        passwordDialog.setHeaderText("Change Password for: " + username);
+        passwordDialog.setContentText("New Password (letters and numbers only, min 4 characters):");
+
         Optional<String> result = passwordDialog.showAndWait();
         if (result.isPresent() && !result.get().trim().isEmpty()) {
             String newPassword = result.get().trim();
+
+            // Validate password format
+            if (!isValidPassword(newPassword)) {
+                notifyUIOfError("Invalid password format.\n\n" +
+                        "Requirements:\n" +
+                        "- At least 4 characters\n" +
+                        "- Only letters and numbers (no symbols or spaces)");
+                return;
+            }
+
             try {
                 model.changeUserPassword(username, newPassword);
             } catch (RemoteException e) {

@@ -37,12 +37,13 @@ public class AdminJSONHandler {
         Map<String, String> request = new HashMap<>();
         request.put("logType", logType);
         request.put("messageType", msgType);
-        request.put("admin", admin);  // This field name must match what the server expects
+        request.put("admin", admin);
 
         String json = gson.toJson(request);
-        System.out.println("DEBUG: Created JSON request: " + json);  // Add this line
+        System.out.println("DEBUG: Created JSON request: " + json);
         return json;
     }
+
     // ========== ADMIN ACCOUNT METHODS ==========
 
     public boolean validateAdminCredentials(String username, String password) {
@@ -304,7 +305,7 @@ public class AdminJSONHandler {
         return true;
     }
 
-    // ========== VALIDATION METHODS ==========
+    // ========== VALIDATION METHODS (UPDATED) ==========
 
     public boolean validateUsername(String username) {
         if (username == null || username.trim().isEmpty()) {
@@ -316,20 +317,8 @@ public class AdminJSONHandler {
             return false;
         }
 
-        // Check for invalid characters
-        String invalidChars = "#$%^?\"}|_/\\{}";
-        for (char c : invalidChars.toCharArray()) {
-            if (username.indexOf(c) != -1) {
-                return false;
-            }
-        }
-
-        // No spaces allowed
-        if (username.contains(" ")) {
-            return false;
-        }
-
-        return true;
+        // Only letters and numbers allowed (no symbols, no spaces)
+        return username.matches("^[a-zA-Z0-9]+$");
     }
 
     public boolean validatePassword(String password) {
@@ -342,20 +331,8 @@ public class AdminJSONHandler {
             return false;
         }
 
-        // Check for invalid characters
-        String invalidChars = "#$%^?\"}|_/\\{}";
-        for (char c : invalidChars.toCharArray()) {
-            if (password.indexOf(c) != -1) {
-                return false;
-            }
-        }
-
-        // No spaces allowed
-        if (password.contains(" ")) {
-            return false;
-        }
-
-        return true;
+        // Only letters and numbers allowed (no symbols, no spaces)
+        return password.matches("^[a-zA-Z0-9]+$");
     }
 
     // SETTERS AND GETTERS
