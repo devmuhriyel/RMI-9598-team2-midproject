@@ -284,7 +284,37 @@ public class HomeController {
 
     private void openCommunityChat() throws IOException {
         System.out.println("Opening community chat");
-        // TODO: Implement community chat
+        try {
+            ChatView chatView = new ChatView();
+            Stage chatStage = new Stage();
+            chatView.start(chatStage);
+
+            ChatController chatController = new ChatController(
+                    model,
+                    chatView,
+                    chatView.getFXController(),
+                    clientCallback
+            );
+
+            clientCallback.setClientChatController(chatController);
+            chatController.setCurrentCommunityChat(); // Set as community chat and join
+
+            // Handle window closing to leave community chat
+            chatStage.setOnCloseRequest(event -> {
+                try {
+                    model.leaveCommunityChat(model.getUsername());
+                    System.out.println("✓ Left community chat on window close");
+                } catch (RemoteException e) {
+                    System.err.println("Failed to leave community chat: " + e.getMessage());
+                }
+            });
+
+            System.out.println("✓ Community chat window opened");
+
+        } catch (Exception e) {
+            System.err.println("Error opening community chat");
+            e.printStackTrace();
+        }
     }
 
     private List<String> filterList(List<String> source, String queryLower) {

@@ -436,7 +436,7 @@ public class UnifiedAdminModel {
         messageData.put("sender", adminUsername);
         messageData.put("message", message);
         String jsonString = new com.google.gson.Gson().toJson(messageData);
-        server.sendCommunityMessage(jsonString);
+        //server.sendCommunityMessage(jsonString);
     }
 
     // DATA UPDATE METHODS - FIXED TO USE AdminJSONHandler

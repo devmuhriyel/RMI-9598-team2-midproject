@@ -47,11 +47,61 @@
               "receiver": "gian",
               "content": "Hello from alice!",
               "isFile": false
+            },
+            {
+              "sender": "alice",
+              "receiver": "gian",
+              "content": "hi from alice",
+              "isFile": false
+            },
+            {
+              "sender": "alice",
+              "receiver": "gian",
+              "content": "hi gian",
+              "isFile": false
+            },
+            {
+              "sender": "gian",
+              "receiver": "alice",
+              "content": "hello alice",
+              "isFile": false
+            },
+            {
+              "sender": "alice",
+              "receiver": "gian",
+              "content": "hello uli pre",
+              "isFile": false
+            },
+            {
+              "sender": "alice",
+              "receiver": "gian",
+              "content": "hellooo?",
+              "isFile": false
+            }
+          ]
+        },
+        {
+          "recipient": "diana",
+          "messages": [
+            {
+              "sender": "alice",
+              "receiver": "diana",
+              "content": "hello diana",
+              "isFile": false
             }
           ]
         }
       ],
-      "groupChats": [],
+      "groupChats": [
+        {
+          "groupID": "grp-1762189871194",
+          "groupName": "banana",
+          "receivers": [
+            "alice"
+          ],
+          "messages": []
+        }
+      ],
       "incomingFriendRequests": [
         {
           "requester": "gian",
@@ -71,7 +121,9 @@
       "username": "gian",
       "password": "gian123",
       "verificationCode": "batman",
-      "friends": [],
+      "friends": [
+        "alice"
+      ],
       "conversations": [
         {
           "recipient": "alice",
@@ -153,8 +205,22 @@
       "username": "diana",
       "password": "diana123",
       "verificationCode": "wonderwoman",
-      "friends": [],
-      "conversations": [],
+      "friends": [
+        "alice"
+      ],
+      "conversations": [
+        {
+          "recipient": "alice",
+          "messages": [
+            {
+              "sender": "alice",
+              "receiver": "diana",
+              "content": "hello diana",
+              "isFile": false
+            }
+          ]
+        }
+      ],
       "groupChats": [],
       "incomingFriendRequests": [],
       "outgoingFriendRequests": []
@@ -195,17 +261,14 @@
       "verificationCode": "9874",
       "friends": [],
       "conversations": [],
-      "groupChats": [
+      "groupChats": [],
+      "incomingFriendRequests": [
         {
-          "groupID": "grp-1762183467863",
-          "groupName": "yesss",
-          "receivers": [
-            "Carlitoo"
-          ],
-          "messages": []
+          "requester": "alice",
+          "responder": "wally",
+          "status": "pending"
         }
       ],
-      "incomingFriendRequests": [],
       "outgoingFriendRequests": []
     }
   ]

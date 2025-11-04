@@ -71,6 +71,6 @@ public interface ClientCallbackInterface extends Remote {
     void onFailedMemberRemoved() throws RemoteException;
 
     //USER COMMUNITY CHATTING METHODS
-    void onCommunityMessageSent() throws RemoteException;
-    void onCommunityMessageReceived() throws RemoteException;
+    void onCommunityMessageSent(String message, String jsonString) throws RemoteException;
+    void onCommunityMessageReceived(String message, String jsonString) throws RemoteException;
 }

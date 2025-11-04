@@ -17,6 +17,7 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -29,6 +30,7 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
     private ConcurrentHashMap<String, Admin> allAdmins;
     private ConcurrentHashMap<String, ClientCallbackInterface> clientCallbacks;
     private ConcurrentHashMap<String, AdminCallbackInterface> adminCallbacks;
+    private Set<String> communityChatActiveUsers;
     private ConcurrentHashMap<String, ReadWriteLock> conversationLocks;
 
     private ScheduledExecutorService callbackExecutor;
@@ -42,29 +44,30 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
         super();
 
         // Initialize all data structures FIRST
-        allUsers = new ConcurrentHashMap<>();
-        allAdmins = new ConcurrentHashMap<>();
-        clientCallbacks = new ConcurrentHashMap<>();
-        adminCallbacks = new ConcurrentHashMap<>();
-        conversationLocks = new ConcurrentHashMap<>();
-        callbackExecutor = Executors.newSingleThreadScheduledExecutor();
-        fileLock = new ReentrantReadWriteLock();
+        this.allUsers = new ConcurrentHashMap<>();
+        this.allAdmins = new ConcurrentHashMap<>();
+        this.clientCallbacks = new ConcurrentHashMap<>();
+        this.adminCallbacks = new ConcurrentHashMap<>();
+        this.conversationLocks = new ConcurrentHashMap<>();
+        this.communityChatActiveUsers = ConcurrentHashMap.newKeySet();
+        this.callbackExecutor = Executors.newSingleThreadScheduledExecutor();
+        this.fileLock = new ReentrantReadWriteLock();
 
         // Initialize JSON handler
-        serverJSONHandler = new ServerJSONHandler();
+        this.serverJSONHandler = new ServerJSONHandler();
 
         // Read account files
-        adminAccountsList = serverJSONHandler.readAdminAccountFile("src/main/resources/JSONFiles/AdminAccounts.json");
-        clientAccountsList = serverJSONHandler.readClientAccountFile("src/main/resources/JSONFiles/ClientAccounts.json");
+        this.adminAccountsList = serverJSONHandler.readAdminAccountFile("src/main/resources/JSONFiles/AdminAccounts.json");
+        this.clientAccountsList = serverJSONHandler.readClientAccountFile("src/main/resources/JSONFiles/ClientAccounts.json");
 
         // Check if lists were loaded successfully
         if (adminAccountsList == null) {
             System.err.println("Warning: adminAccountsList is null, creating new one");
-            adminAccountsList = new AdminAccountsList();
+            this.adminAccountsList = new AdminAccountsList();
         }
         if (clientAccountsList == null) {
             System.err.println("Warning: clientAccountsList is null, creating new one");
-            clientAccountsList = new ClientAccountsList();
+            this.clientAccountsList = new ClientAccountsList();
         }
 
         // Populate maps
@@ -1617,6 +1620,11 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
         }
     }
 
+    @Override
+    public void joinCommunityChat(String username, AdminCallbackInterface callback) throws RemoteException {
+
+    }
+
     //USER/ADMIN PRIVATE CHATTING METHODS
     @Override
     public void sendPrivateMessage(String sender, String receiver, String message, String jsonString) throws RemoteException {
@@ -2107,43 +2115,141 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
 
     //USER/ADMIN COMMUNITY CHATTING METHODS
     @Override
-    public void sendCommunityMessage(String jsonString) throws RemoteException {
-        System.out.println(">>> Admin sendCommunityMessage called");
-
+    public void joinCommunityChat(String username, ClientCallbackInterface callback) throws RemoteException {
         try {
-            JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
-            String sender = jsonObject.get("sender").getAsString();
-            String message = jsonObject.get("message").getAsString();
+            System.out.println(username + " joining community chat");
 
-            // Notify admin callback
-            AdminCallbackInterface adminCallback = adminCallbacks.get(sender);
-            if (adminCallback != null) {
-                callbackExecutor.execute(() -> {
+            communityChatActiveUsers.add(username);
+
+            // Notify all OTHER users that someone joined
+            Message systemMsg = new Message("SYSTEM", "", username + " joined the community chat");
+            Gson gson = new Gson();
+            String messageJson = gson.toJson(systemMsg);
+
+            for (String user : communityChatActiveUsers) {
+                if (user.equals(username)) continue; // Skip the person who just joined
+
+                ClientCallbackInterface cb = clientCallbacks.get(user);
+                if (cb != null) {
                     try {
-                        adminCallback.onCommunityMessageSent();
+                        cb.onCommunityMessageReceived(messageJson, "");
                     } catch (RemoteException e) {
-                        System.err.println("Failed to notify admin: " + e.getMessage());
+                        System.err.println("Failed to notify " + user + ": " + e.getMessage());
+                        communityChatActiveUsers.remove(user);
                     }
-                });
+                }
             }
 
-            // Notify all connected clients (optional)
-            for (Map.Entry<String, ClientCallbackInterface> entry : clientCallbacks.entrySet()) {
-                callbackExecutor.execute(() -> {
-                    try {
-                        // If you have a community message callback for clients
-                        // entry.getValue().onCommunityMessageReceived(message);
-                    } catch (Exception e) {
-                        System.err.println("Failed to notify client: " + e.getMessage());
-                    }
-                });
-            }
-
-            System.out.println("✓ Community message sent from " + sender + ": " + message);
+            System.out.println("✓ " + username + " joined community chat (" + communityChatActiveUsers.size() + " active users)");
 
         } catch (Exception e) {
-            System.err.println("Error in sendCommunityMessage: " + e.getMessage());
+            System.err.println("Error joining community chat: " + e.getMessage());
             e.printStackTrace();
+            throw new RemoteException("Failed to join community chat", e);
+        }
+    }
+
+    @Override
+    public void leaveCommunityChat(String username) throws RemoteException {
+        try {
+            System.out.println(username + " leaving community chat");
+
+            communityChatActiveUsers.remove(username);
+
+            // Notify remaining users
+            Message systemMsg = new Message("SYSTEM", "", username + " left the community chat");
+            Gson gson = new Gson();
+            String messageJson = gson.toJson(systemMsg);
+
+            for (String user : communityChatActiveUsers) {
+                ClientCallbackInterface cb = clientCallbacks.get(user);
+                if (cb != null) {
+                    try {
+                        cb.onCommunityMessageReceived(messageJson, "");
+                    } catch (RemoteException e) {
+                        System.err.println("Failed to notify " + user + ": " + e.getMessage());
+                        communityChatActiveUsers.remove(user);
+                    }
+                }
+            }
+
+            System.out.println("✓ " + username + " left community chat (" + communityChatActiveUsers.size() + " active users)");
+
+        } catch (Exception e) {
+            System.err.println("Error leaving community chat: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void sendCommunityMessage(String sender, String message, String jsonString) throws RemoteException {
+        try {
+            System.out.println("Community message from " + sender + ": " + message);
+
+            if (!communityChatActiveUsers.contains(sender)) {
+                System.err.println("User " + sender + " is not in community chat");
+                return;
+            }
+
+            Message msg = new Message(sender, "", message);
+            Gson gson = new Gson();
+            String messageJson = gson.toJson(msg);
+
+            // Broadcast to ALL users in community chat (including sender)
+            for (String user : communityChatActiveUsers) {
+                ClientCallbackInterface cb = clientCallbacks.get(user);
+                if (cb != null) {
+                    try {
+                        cb.onCommunityMessageReceived(messageJson, "");
+                    } catch (RemoteException e) {
+                        System.err.println("Failed to send to " + user + ": " + e.getMessage());
+                        communityChatActiveUsers.remove(user);
+                    }
+                }
+            }
+
+            System.out.println("✓ Community message sent to " + communityChatActiveUsers.size() + " users");
+
+        } catch (Exception e) {
+            System.err.println("Error sending community message: " + e.getMessage());
+            e.printStackTrace();
+            throw new RemoteException("Failed to send community message", e);
+        }
+    }
+
+    @Override
+    public void sendCommunityFile(String sender, String fileName, String fileData, String jsonString) throws RemoteException {
+        try {
+            System.out.println("Community file from " + sender + ": " + fileName);
+
+            if (!communityChatActiveUsers.contains(sender)) {
+                System.err.println("User " + sender + " is not in community chat");
+                return;
+            }
+
+            Message msg = new Message(sender, "", fileName, fileData, true);
+            Gson gson = new Gson();
+            String messageJson = gson.toJson(msg);
+
+            // Broadcast to ALL users in community chat
+            for (String user : communityChatActiveUsers) {
+                ClientCallbackInterface cb = clientCallbacks.get(user);
+                if (cb != null) {
+                    try {
+                        cb.onCommunityMessageReceived(messageJson, "");
+                    } catch (RemoteException e) {
+                        System.err.println("Failed to send to " + user + ": " + e.getMessage());
+                        communityChatActiveUsers.remove(user);
+                    }
+                }
+            }
+
+            System.out.println("✓ Community file sent to " + communityChatActiveUsers.size() + " users");
+
+        } catch (Exception e) {
+            System.err.println("Error sending community file: " + e.getMessage());
+            e.printStackTrace();
+            throw new RemoteException("Failed to send community file", e);
         }
     }
 

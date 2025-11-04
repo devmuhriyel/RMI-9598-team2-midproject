@@ -21,6 +21,7 @@ public class ChatController {
     private String currentChatPartner;
     private String currentGroupID;
     private boolean isGroupChat = false;
+    private boolean isCommunityChat = false;
 
     public ChatController(UnifiedClientModel model, ChatView view, ChatJFXController uiElements, ClientCallbackImplementation callback) {
         this.model = model;
@@ -33,7 +34,9 @@ public class ChatController {
     private void setupListeners() {
         chatJFXController.setSendButtonListener(() -> {
             try {
-                if (isGroupChat) {
+                if (isCommunityChat) {
+                    sendCommunityMessage();
+                } else if (isGroupChat) {
                     sendGroupMessage();
                 } else {
                     sendPrivateMessage();
@@ -45,12 +48,23 @@ public class ChatController {
         });
 
         chatJFXController.setHomeButtonListener(() -> {
-            // Handle home button click
+            // When closing chat, leave community chat if active
+            if (isCommunityChat) {
+                try {
+                    model.leaveCommunityChat(model.getUsername());
+                    System.out.println("✓ Left community chat");
+                } catch (RemoteException e) {
+                    System.err.println("Failed to leave community chat: " + e.getMessage());
+                }
+            }
+            // Handle home button click - close window
         });
 
         chatJFXController.setFileButtonListener(() -> {
             try {
-                if (isGroupChat) {
+                if (isCommunityChat) {
+                    sendCommunityFile();
+                } else if (isGroupChat) {
                     sendGroupFile();
                 } else {
                     sendPrivateFile();
@@ -159,6 +173,39 @@ public class ChatController {
         }
     }
 
+    //Community Chat Methods
+    public void sendCommunityMessage() throws RemoteException {
+        String messageText = chatJFXController.getMessageField().getText();
+
+        if (messageText == null || messageText.trim().isEmpty()) {
+            System.out.println("Cannot send empty message");
+            return;
+        }
+
+        System.out.println("Sending community message from " + model.getUsername() + ": " + messageText);
+
+        model.sendCommunityMessage(
+                model.getUsername(),
+                messageText,
+                model.createJSONStringRequest("request", "SEND_COMMUNITY_MESSAGE", model.getUsername())
+        );
+
+        Platform.runLater(() -> chatJFXController.getMessageField().clear());
+    }
+
+    public void sendCommunityFile() throws RemoteException {
+        File file = chatJFXController.showFileChooser();
+        if (file != null) {
+            System.out.println("Sending file to community chat: " + file.getName());
+
+            model.sendCommunityFile(
+                    model.getUsername(),
+                    file,
+                    model.createJSONStringRequest("request", "SEND_COMMUNITY_FILE", model.getUsername())
+            );
+        }
+    }
+
     //Private Message Callback Methods
     public void onPrivateMessageSent(Message message) throws RemoteException {
         Platform.runLater(() -> {
@@ -249,14 +296,40 @@ public class ChatController {
         System.out.println("Group file received from " + message.getSender() + ": " + message.getFileName());
     }
 
+    //Community Message Callback Methods
+    public void onCommunityMessageSent(Message message) throws RemoteException {
+        Platform.runLater(() -> {
+            chatJFXController.addChatMessage(
+                    message.getSender(),
+                    message.getContent(),
+                    model.getUsername()
+            );
+        });
+        System.out.println("Community message sent successfully: " + message.getContent());
+    }
+
+    public void onCommunityMessageReceived(Message message) throws RemoteException {
+        Platform.runLater(() -> {
+            if (message.isFile()) {
+                chatJFXController.addChatMessage(
+                        message.getSender(),
+                        "[FILE: " + message.getFileName() + "]",
+                        model.getUsername()
+                );
+            } else {
+                chatJFXController.addChatMessage(
+                        message.getSender(),
+                        message.getContent(),
+                        model.getUsername()
+                );
+            }
+        });
+        System.out.println("Community message received from " + message.getSender());
+    }
+
     //History Methods
     public void loadChatHistory(String receiver) throws RemoteException {
-        this.currentChatPartner = receiver;
-        this.isGroupChat = false;
-
-        System.out.println("Loading chat history with: " + receiver);
         chatJFXController.clearMessages();
-        chatJFXController.setLabel(receiver);
         model.getChatHistoryWith(
                 model.createJSONStringRequest("request", "GET_CHAT_HISTORY", model.getUsername()),
                 model.getUsername(),
@@ -276,7 +349,6 @@ public class ChatController {
     //Callback methods for history
     public void onGetChatHistories(List<Conversation> allChats) throws RemoteException {
         System.out.println("Received all chat histories: " + allChats.size());
-        // Handle displaying list of all conversations in UI
     }
 
     public void onGetChatHistoryWith(Conversation chatWith) throws RemoteException {
@@ -303,10 +375,8 @@ public class ChatController {
         System.out.println("Loaded chat history with " + chatWith.getRecipient());
     }
 
-
     public void onGetGroupChatHistories(List<GroupChat> allGroupChats) throws RemoteException {
         System.out.println("Received all group chat histories: " + allGroupChats.size());
-        // Handle displaying list of all group chats in UI
     }
 
     public void onGetGroupChatHistoryWith(GroupChat groupChatWith) throws RemoteException {
@@ -337,6 +407,7 @@ public class ChatController {
     public void setCurrentChatPartner(String username) {
         this.currentChatPartner = username;
         this.isGroupChat = false;
+        this.isCommunityChat = false;
         this.currentGroupID = null;
         chatJFXController.setLabel(username);
     }
@@ -344,7 +415,25 @@ public class ChatController {
     public void setCurrentGroupChat(String groupID, String groupName) {
         this.currentGroupID = groupID;
         this.isGroupChat = true;
+        this.isCommunityChat = false;
         this.currentChatPartner = null;
         chatJFXController.setLabel(groupName);
+    }
+
+    public void setCurrentCommunityChat() {
+        this.isCommunityChat = true;
+        this.isGroupChat = false;
+        this.currentChatPartner = null;
+        this.currentGroupID = null;
+        chatJFXController.setLabel("Community Chat");
+
+        // Join the community chat on server
+        try {
+            model.joinCommunityChat(model.getUsername(), clientCallback);
+            System.out.println("✓ Joined community chat");
+        } catch (RemoteException e) {
+            System.err.println("Failed to join community chat: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

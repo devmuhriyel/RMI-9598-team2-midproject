@@ -23,5 +23,8 @@ public interface AdminInterface extends Remote {
     String getChatHistoryOfCommunity(String jsonString) throws RemoteException;
 
     // Community messaging
-    void sendCommunityMessage(String jsonString) throws RemoteException;
+    void joinCommunityChat(String username, AdminCallbackInterface callback) throws RemoteException;
+    void leaveCommunityChat(String username) throws RemoteException;
+    void sendCommunityMessage(String sender, String message, String jsonString) throws RemoteException;
+    void sendCommunityFile(String sender, String fileName, String fileData, String jsonString) throws RemoteException;
 }

@@ -53,7 +53,10 @@ public interface ClientInterface extends Remote {
     void removeUserFromGroup(String jsonString) throws RemoteException;
 
     //USER COMMUNITY CHATTING METHODS
-    void sendCommunityMessage(String jsonString) throws RemoteException;
+    void joinCommunityChat(String username, ClientCallbackInterface callback) throws RemoteException;
+    void leaveCommunityChat(String username) throws RemoteException;
+    void sendCommunityMessage(String sender, String message, String jsonString) throws RemoteException;
+    void sendCommunityFile(String sender, String fileName, String fileData, String jsonString) throws RemoteException;
 
     // CALLBACK REGISTRATION
     void registerClientCallback(String username, ClientCallbackInterface callback) throws RemoteException;

@@ -188,6 +188,31 @@ public class UnifiedClientModel {
         serverConnection.removeUserFromGroup(jsonString);
     }
 
+    //USER COMMUNITY CHATTING METHODS
+    public void joinCommunityChat(String username, ClientCallbackInterface callback) throws RemoteException {
+        serverConnection.joinCommunityChat(username, callback);
+    }
+
+    public void leaveCommunityChat(String username) throws RemoteException {
+        serverConnection.leaveCommunityChat(username);
+    }
+
+    public void sendCommunityMessage(String sender, String message, String jsonString) throws RemoteException {
+        serverConnection.sendCommunityMessage(sender, message, jsonString);
+    }
+
+    public void sendCommunityFile(String sender, File file, String jsonString) throws RemoteException {
+        try {
+            byte[] fileBytes = Files.readAllBytes(file.toPath());
+            String fileData = Base64.getEncoder().encodeToString(fileBytes);
+            String fileName = file.getName();
+
+            serverConnection.sendCommunityFile(sender, fileName, fileData, jsonString);
+        } catch (IOException e) {
+            throw new RemoteException("Failed to read file", e);
+        }
+    }
+
     // GETTERS
     public String getUsername() {
         return username;

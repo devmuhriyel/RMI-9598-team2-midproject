@@ -10,8 +10,6 @@ import Common.Objects.ClientObjects.Conversation;
 import Common.Objects.ClientObjects.GroupChat;
 import Common.Objects.ClientObjects.Message;
 import com.google.gson.Gson;
-import javafx.application.Platform;
-import javafx.scene.control.Alert;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -48,18 +46,12 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
 
     @Override
     public void onSuccessfulSignUp() throws RemoteException {
-        System.out.println("Server says signup success!");
-        if (clientSignupController != null) {
-            clientSignupController.onSuccessfulSignUpFromRemote();
-        }
+
     }
 
     @Override
     public void onFailedSignUp() throws RemoteException {
-        System.out.println("Server says signup failed!");
-        if (clientSignupController != null) {
-            clientSignupController.onFailedSignUpFromRemote();
-        }
+
     }
 
     @Override
@@ -249,12 +241,7 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
 
     @Override
     public void onGetFriendsList(List<String> friends) throws RemoteException {
-        System.out.println("Callback: Received friends list of size: " + (friends != null ? friends.size() : 0));
-        javafx.application.Platform.runLater(() -> {
-            if (clientHomeController != null) {
-                clientHomeController.updateFriendsList(friends);
-            }
-        });
+
     }
 
     @Override
@@ -369,26 +356,10 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     }
 
     @Override
-    public void onSuccessfulGroupCreation() throws RemoteException {
-        System.out.println("Callback: Group created successfully. Refreshing home data.");
-        if (clientHomeController != null) {
-            clientHomeController.refreshUserData();
-        }
-    }
+    public void onSuccessfulGroupCreation() throws RemoteException {}
 
     @Override
-    public void onFailedGroupCreation() throws RemoteException {
-        System.out.println("Callback: Group creation failed.");
-        Platform.runLater(() -> {
-            try {
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Group Creation Failed");
-                alert.setHeaderText(null);
-                alert.setContentText("Unable to create the group. Try a different name.");
-                alert.showAndWait();
-            } catch (Exception ignored) {}
-        });
-    }
+    public void onFailedGroupCreation() throws RemoteException {}
 
     @Override
     public void onSuccessfulMemberAdded() throws RemoteException {}
@@ -403,10 +374,34 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     public void onFailedMemberRemoved() throws RemoteException {}
 
     @Override
-    public void onCommunityMessageSent() throws RemoteException {}
+    public void onCommunityMessageSent(String message, String jsonString) throws RemoteException {
+        System.out.println("Callback: Community message sent");
+        if (clientChatController != null) {
+            Message msg = messageStringToObject(message);
+            javafx.application.Platform.runLater(() -> {
+                try {
+                    clientChatController.onCommunityMessageSent(msg);
+                } catch (RemoteException e) {
+                    System.err.println("Error handling community message sent: " + e.getMessage());
+                }
+            });
+        }
+    }
 
     @Override
-    public void onCommunityMessageReceived() throws RemoteException {}
+    public void onCommunityMessageReceived(String message, String jsonString) throws RemoteException {
+        System.out.println("Callback: Community message received");
+        if (clientChatController != null) {
+            Message msg = messageStringToObject(message);
+            javafx.application.Platform.runLater(() -> {
+                try {
+                    clientChatController.onCommunityMessageReceived(msg);
+                } catch (RemoteException e) {
+                    System.err.println("Error handling community message received: " + e.getMessage());
+                }
+            });
+        }
+    }
 
     // GETTERS
     public String getUsername(){

@@ -20,7 +20,7 @@ public class AdminConnectionView extends Application {
             fxController = loader.getController();
 
             Scene scene = new Scene(root);
-            stage.initStyle(StageStyle.UNDECORATED); // Removes title bar
+            stage.initStyle(StageStyle.UNDECORATED);
             stage.initStyle(StageStyle.TRANSPARENT);
             scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
             stage.setResizable(false);
