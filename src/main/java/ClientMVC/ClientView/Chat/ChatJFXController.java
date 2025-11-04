@@ -1,15 +1,17 @@
 package ClientMVC.ClientView.Chat;
 
+import ClientMVC.ClientModel.UnifiedClientModel;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
+import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.layout.AnchorPane;
 import javafx.geometry.Pos;
@@ -17,6 +19,9 @@ import javafx.scene.layout.Region;
 import javafx.geometry.Insets;
 import javafx.scene.layout.Priority;
 import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+
+import java.awt.*;
 import java.io.File;
 import java.util.function.Consumer;
 
@@ -44,11 +49,11 @@ public class ChatJFXController {
     private Consumer<String> fileOpenListener;
     private Runnable sendButtonListener;
     private Runnable homeButtonListener;
+
     @FXML
     public void initialize() {
         System.out.println("ChatJFXController initialize() called");
         System.out.println("File button is: " + (fileButton != null ? "NOT NULL" : "NULL"));
-
 
         if (sendButton != null) {
             sendButton.setOnAction(event -> {
@@ -69,15 +74,16 @@ public class ChatJFXController {
         if (fileButton != null) {
             System.out.println("Setting up file button listener");
             fileButton.setOnAction(event -> {
-                System.out.println("File button clicked!"); // Add this debug line
+                System.out.println("File button clicked!");
                 if (fileButtonListener != null) {
                     System.out.println("File button listener is not null, calling it");
                     fileButtonListener.run();
                 } else {
-                    System.out.println("File button listener is NULL!"); // This will help identify the issue
+                    System.out.println("File button listener is NULL!");
                 }
             });
         }
+
         if (messagesArea != null && scrollPane != null) {
             messagesArea.heightProperty().addListener((observable, oldValue, newValue) -> {
                 Platform.runLater(() -> {
@@ -97,7 +103,85 @@ public class ChatJFXController {
                 }
             });
         }
-    }    public void addMessageWithSender(String senderName, String message, boolean isSender) {
+    }
+
+    public void handleFileSave(String fileName, String fileData, UnifiedClientModel model) {
+        Platform.runLater(() -> {
+            try {
+                // Create a file chooser for save location
+                FileChooser fileChooser = new FileChooser();
+                fileChooser.setTitle("Save File");
+                fileChooser.setInitialFileName(fileName);
+
+                // Set extension filter based on file name
+                String extension = getFileExtension(fileName);
+                if (!extension.isEmpty()) {
+                    FileChooser.ExtensionFilter filter = new FileChooser.ExtensionFilter(
+                            extension.toUpperCase() + " Files", "*." + extension
+                    );
+                    fileChooser.getExtensionFilters().add(filter);
+                }
+                fileChooser.getExtensionFilters().add(
+                        new FileChooser.ExtensionFilter("All Files", "*.*")
+                );
+
+                File saveLocation = fileChooser.showSaveDialog(messageField.getScene().getWindow());
+
+                if (saveLocation == null) {
+                    System.out.println("File save cancelled by user");
+                    return;
+                }
+
+                // Decode and save the file
+                model.saveReceivedFile(
+                        fileName,
+                        fileData,
+                        saveLocation.getParent()
+                );
+
+                // Rename the saved file to match user's choice
+                File tempFile = new File(saveLocation.getParent(), fileName);
+                if (!saveLocation.getName().equals(fileName)) {
+                    tempFile.renameTo(saveLocation);
+                }
+
+                System.out.println("✓ File saved: " + saveLocation.getAbsolutePath());
+                showSuccess("File saved successfully!");
+
+                // Ask if user wants to open the file
+                askToOpenFile(saveLocation);
+
+            } catch (Exception e) {
+                System.err.println("Error saving file: " + e.getMessage());
+                e.printStackTrace();
+                showError("Failed to save file: " + e.getMessage());
+            }
+        });
+    }
+
+    private void askToOpenFile(File file) {
+        if (!Desktop.isDesktopSupported()) {
+            return;
+        }
+
+        Alert confirmOpen = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmOpen.setTitle("Open File");
+        confirmOpen.setHeaderText(null);
+        confirmOpen.setContentText("Would you like to open the file?");
+
+        confirmOpen.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                try {
+                    Desktop.getDesktop().open(file);
+                } catch (Exception e) {
+                    System.err.println("Failed to open file: " + e.getMessage());
+                    showError("Could not open file: " + e.getMessage());
+                }
+            }
+        });
+    }
+
+    public void addMessageWithSender(String senderName, String message, boolean isSender) {
         Platform.runLater(() -> {
             double maxBubbleWidth = 580.0 / 3.0;
             Label senderLabel = new Label(senderName);
@@ -162,6 +246,34 @@ public class ChatJFXController {
         });
     }
 
+    private String getFileExtension(String fileName) {
+        int lastDot = fileName.lastIndexOf('.');
+        if (lastDot > 0 && lastDot < fileName.length() - 1) {
+            return fileName.substring(lastDot + 1).toLowerCase();
+        }
+        return "";
+    }
+
+    public void showError(String message) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText(null);
+            alert.setContentText(message);
+            alert.showAndWait();
+        });
+    }
+
+    public void showSuccess(String message) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Success");
+            alert.setHeaderText(null);
+            alert.setContentText(message);
+            alert.showAndWait();
+        });
+    }
+
     public File showFileChooser() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Select File to Send");
@@ -196,6 +308,13 @@ public class ChatJFXController {
             if (messagesArea != null) {
                 messagesArea.getChildren().clear();
             }
+        });
+    }
+
+    public void closeWindow() {
+        Platform.runLater(() -> {
+            Stage stage = (Stage) home.getScene().getWindow();
+            stage.close();
         });
     }
 

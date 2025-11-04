@@ -4,10 +4,12 @@ import ClientMVC.ClientCallbackImplementation;
 import ClientMVC.ClientModel.UnifiedClientModel;
 import ClientMVC.ClientView.Chat.ChatView;
 import ClientMVC.ClientView.Chat.ChatJFXController;
+import Common.Objects.ClientObjects.Client;
 import Common.Objects.ClientObjects.Conversation;
 import Common.Objects.ClientObjects.GroupChat;
 import Common.Objects.ClientObjects.Message;
 import javafx.application.Platform;
+import javafx.stage.Stage;
 
 import java.io.File;
 import java.rmi.RemoteException;
@@ -48,7 +50,6 @@ public class ChatController {
         });
 
         chatJFXController.setHomeButtonListener(() -> {
-            // When closing chat, leave community chat if active
             if (isCommunityChat) {
                 try {
                     model.leaveCommunityChat(model.getUsername());
@@ -57,7 +58,10 @@ public class ChatController {
                     System.err.println("Failed to leave community chat: " + e.getMessage());
                 }
             }
-            // Handle home button click - close window
+        });
+
+        chatJFXController.setHomeButtonListener(() -> {
+            handleHomeButton();
         });
 
         chatJFXController.setFileButtonListener(() -> {
@@ -75,9 +79,82 @@ public class ChatController {
             }
         });
 
+        // Set file open listener - delegates to controller for data retrieval
         chatJFXController.setFileOpenListener(fileName -> {
-            // Handle file open - implement file download/open logic
+            handleFileOpen(fileName);
         });
+    }
+
+    private void handleHomeButton() {
+        // Leave community chat if active
+        if (isCommunityChat) {
+            try {
+                model.leaveCommunityChat(model.getUsername());
+                System.out.println("✓ Left community chat");
+            } catch (RemoteException e) {
+                System.err.println("Failed to leave community chat: " + e.getMessage());
+            }
+        }
+
+        chatJFXController.closeWindow();
+    }
+
+    private void handleFileOpen(String fileName) {
+        try {
+            Message fileMessage = findFileMessage(fileName);
+
+            if (fileMessage == null) {
+                chatJFXController.showError("File data not found. The file may have been deleted.");
+                return;
+            }
+            chatJFXController.handleFileSave(fileName, fileMessage.getFileData(), model);
+
+        } catch (Exception e) {
+            System.err.println("Error retrieving file: " + e.getMessage());
+            e.printStackTrace();
+            chatJFXController.showError("Failed to retrieve file: " + e.getMessage());
+        }
+    }
+
+    private Message findFileMessage(String fileName) throws RemoteException {
+        if (isCommunityChat) {
+            System.err.println("⚠ Warning: Community chat files cannot be retrieved from history");
+            return null;
+        } else if (isGroupChat) {
+            // Search in group chat history
+            GroupChat groupChat = model.getGroupChatHistoryWith(
+                    model.createJSONStringRequest("request", "GET_GROUP_CHAT_HISTORY", model.getUsername()),
+                    model.getUsername(),
+                    currentGroupID
+            );
+
+            if (groupChat != null && groupChat.getMessages() != null) {
+                for (Message msg : groupChat.getMessages()) {
+                    if (msg.isFile() && msg.getFileName().equals(fileName)) {
+                        return msg;
+                    }
+                }
+            }
+        } else {
+            // Search in private chat history
+            Client clientData = clientCallback.getClientData();
+            if (clientData != null && clientData.getConversations() != null) {
+                for (Conversation conv : clientData.getConversations()) {
+                    if (conv.getRecipient().equals(currentChatPartner)) {
+                        if (conv.getMessages() != null) {
+                            for (Message msg : conv.getMessages()) {
+                                if (msg.isFile() && msg.getFileName().equals(fileName)) {
+                                    return msg;
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     //Private Messaging Methods
