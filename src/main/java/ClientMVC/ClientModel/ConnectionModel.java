@@ -1,12 +1,15 @@
 package ClientMVC.ClientModel;
 
+import Common.Interfaces.ClientInterface;
+
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.rmi.RemoteException;
+import java.util.Collections;
 import java.util.concurrent.locks.ReentrantLock;
-
-// 💡 Import your server's remote service interface
-import Common.Interfaces.ClientInterface;
 
 public class ConnectionModel {
 
@@ -17,8 +20,23 @@ public class ConnectionModel {
     private volatile boolean connected;
     private final ReentrantLock connectionLock = new ReentrantLock();
 
-    // 💡 The binding name must be exactly what the server uses to bind its service
-    private static final String RMI_BINDING_NAME = "ChatServer"; // Adjust if your server uses a different name
+    // The binding name must be exactly what the server uses to bind its service
+    private static final String RMI_BINDING_NAME = "ChatServer";
+
+    public ConnectionModel() {
+        // --- NEW: Auto-Configure RMI Hostname ---
+        // We only run this if the user hasn't already set the property manually
+        if (System.getProperty("java.rmi.server.hostname") == null) {
+            if (!configureRmiHostname()) {
+                System.err.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                System.err.println("FATAL: Could not automatically find a suitable IP for RMI.");
+                System.err.println("The application will likely fail to receive callbacks.");
+                System.err.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                // You could show an error Alert here
+            }
+        }
+        // --- End New Logic ---
+    }
 
     public enum ConnectionStatus {
         SUCCESS,
@@ -117,5 +135,78 @@ public class ConnectionModel {
         } finally {
             connectionLock.unlock();
         }
+    }
+
+    // --- NEW: IP Auto-Finder Logic ---
+
+    /**
+     * Tries to find the correct IP and set the RMI hostname property.
+     * @return true if a valid IP was found and set, false otherwise.
+     */
+    private boolean configureRmiHostname() {
+        // Priority 1: Find Radmin VPN IP (which starts with 26.)
+        String radminIp = findIpByPrefix("26.");
+        if (radminIp != null) {
+            System.setProperty("java.rmi.server.hostname", radminIp);
+            System.out.println("✓ RMI Hostname auto-set to Radmin IP: " + radminIp);
+            return true;
+        }
+
+        // Priority 2: If no Radmin, find a standard LAN IP (192.168.x.x, 10.x.x.x, etc.)
+        String lanIp = findSiteLocalIp();
+        if (lanIp != null) {
+            System.setProperty("java.rmi.server.hostname", lanIp);
+            System.out.println("✓ RMI Hostname auto-set to LAN IP: " + lanIp);
+            return true;
+        }
+
+        System.err.println("Warning: No Radmin or LAN IP found.");
+        return false;
+    }
+
+    /**
+     * Scans all network interfaces for an IPv4 address starting with the given prefix.
+     */
+    private String findIpByPrefix(String prefix) {
+        try {
+            for (NetworkInterface ni : Collections.list(NetworkInterface.getNetworkInterfaces())) {
+                // We only want interfaces that are "up" and not loopback
+                if (!ni.isUp() || ni.isLoopback()) continue;
+
+                for (InetAddress addr : Collections.list(ni.getInetAddresses())) {
+                    if (addr instanceof Inet4Address) {
+                        String ip = addr.getHostAddress();
+                        if (ip.startsWith(prefix)) {
+                            return ip; // Found it
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error while scanning network interfaces: " + e.getMessage());
+        }
+        return null; // Not found
+    }
+
+    /**
+     * Scans all network interfaces for a private "site-local" (LAN) IPv4 address.
+     */
+    private String findSiteLocalIp() {
+        try {
+            for (NetworkInterface ni : Collections.list(NetworkInterface.getNetworkInterfaces())) {
+                // Ignore down, loopback, and virtual adapters
+                if (!ni.isUp() || ni.isLoopback() || ni.isVirtual()) continue;
+
+                for (InetAddress addr : Collections.list(ni.getInetAddresses())) {
+                    // We only want IPv4 addresses that are "site-local" (e.g., 192.168.x.x)
+                    if (addr instanceof Inet4Address && addr.isSiteLocalAddress()) {
+                        return addr.getHostAddress(); // Found it
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error while scanning network interfaces: " + e.getMessage());
+        }
+        return null; // Not found
     }
 }

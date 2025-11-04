@@ -25,6 +25,7 @@ public class ConnectionController {
         this.connectionJFXController = jfxController;
 
         try {
+            // This callback creation will now use the IP set by the ConnectionModel
             this.clientCallback = new ClientCallbackImplementation();
         } catch (RemoteException e) {
             throw new RuntimeException("Failed to export client callback", e);
