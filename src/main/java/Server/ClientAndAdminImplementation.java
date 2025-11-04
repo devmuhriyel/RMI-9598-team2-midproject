@@ -139,7 +139,21 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
     @Override
     public void signUp(String username, String password, String verificationCode, String jsonString, ClientCallbackInterface clientCallback) throws RemoteException {
         System.out.println("Client signup attempt for: " + username);
-        
+
+        // Validate username
+        if (!isValidUsername(username)) {
+            System.out.println("Client signup failed: Invalid username format - " + username);
+            clientCallback.onFailedSignUp();
+            return;
+        }
+
+        // Validate password
+        if (!isValidPassword(password)) {
+            System.out.println("Client signup failed: Invalid password format");
+            clientCallback.onFailedSignUp();
+            return;
+        }
+
         fileLock.writeLock().lock();
         try {
             // Check if client already exists
@@ -148,30 +162,28 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
                 clientCallback.onFailedSignUp();
                 return;
             }
-            
+
             // Create new client
             Client newClient = new Client(username, password, verificationCode);
             allUsers.put(username, newClient);
-            
+
             // Add to client accounts list
             if (clientAccountsList.getClients() == null) {
                 clientAccountsList.setClients(new ArrayList<>());
             }
             clientAccountsList.getClients().add(newClient);
-            
+
             // Save to file
             serverJSONHandler.writeClientAccountFile("src/main/resources/JSONFiles/ClientAccounts.json", clientAccountsList);
-            
+
             // Register the client's callback on the server
             clientCallbacks.put(username, clientCallback);
             System.out.println("✓ Callback registered for new user: " + username);
-            
+
             System.out.println("Client signup successful: " + username);
-            
-            // Send the client's data via callback (notify client of successful signup)
-            // The callback is now registered, so server can send data back to client
+
             clientCallback.onSuccessfulSignUp();
-            
+
         } catch (Exception e) {
             System.err.println("Error during client signup: " + e.getMessage());
             e.printStackTrace();
@@ -282,8 +294,76 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
         }
     }
     @Override
-    public void changePassword(String jsonString) throws RemoteException{
+    public void changePassword(String jsonString) throws RemoteException {
+        try {
+            JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
+            String username = jsonObject.get("username").getAsString();
+            String newPassword = jsonObject.get("newPassword").getAsString();
+            String admin = jsonObject.has("admin") ? jsonObject.get("admin").getAsString() : "";
 
+            System.out.println(">>> Admin password change request for user: " + username);
+
+            // Validate new password format
+            if (!isValidPassword(newPassword)) {
+                System.out.println("✗ Password change failed: Invalid password format");
+                AdminCallbackInterface adminCallback = adminCallbacks.get(admin);
+                if (adminCallback != null) {
+                    callbackExecutor.execute(() -> {
+                        try {
+                            adminCallback.onFailedPasswordChange();
+                        } catch (RemoteException e) {
+                            System.err.println("Failed to notify admin: " + e.getMessage());
+                        }
+                    });
+                }
+                return;
+            }
+
+            fileLock.writeLock().lock();
+            try {
+                Client targetClient = allUsers.get(username);
+                if (targetClient == null) {
+                    System.out.println("✗ Password change failed: User not found - " + username);
+                    AdminCallbackInterface adminCallback = adminCallbacks.get(admin);
+                    if (adminCallback != null) {
+                        callbackExecutor.execute(() -> {
+                            try {
+                                adminCallback.onFailedPasswordChange();
+                            } catch (RemoteException e) {
+                                System.err.println("Failed to notify admin: " + e.getMessage());
+                            }
+                        });
+                    }
+                    return;
+                }
+
+                // Update password
+                targetClient.setPassword(newPassword);
+
+                // Save to file
+                serverJSONHandler.writeClientAccountFile("src/main/resources/JSONFiles/ClientAccounts.json", clientAccountsList);
+
+                System.out.println("✓ Admin password change successful for user: " + username);
+
+                AdminCallbackInterface adminCallback = adminCallbacks.get(admin);
+                if (adminCallback != null) {
+                    callbackExecutor.execute(() -> {
+                        try {
+                            adminCallback.onSuccessfulPasswordChange();
+                        } catch (RemoteException e) {
+                            System.err.println("Failed to notify admin: " + e.getMessage());
+                        }
+                    });
+                }
+
+            } finally {
+                fileLock.writeLock().unlock();
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error in admin changePassword: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -824,6 +904,13 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
         } catch (Exception e) {
             System.err.println("Server Error: Failed to parse password change JSON: " + jsonString);
             throw new RemoteException("Invalid password change format.", e);
+        }
+
+        // Validate new password format
+        if (!isValidPassword(newPassword)) {
+            System.out.println("✗ Password change failed: Invalid password format for - " + username);
+            notifyPasswordChangeFailed(username);
+            return;
         }
 
         // Find client
@@ -2172,6 +2259,34 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
             }
         }
         return null;
+    }private boolean isValidUsername(String username) {
+        if (username == null || username.trim().isEmpty()) {
+            return false;
+        }
+
+        if (username.length() < 3) {
+            return false;
+        }
+
+        // Only letters and numbers allowed
+        return username.matches("^[a-zA-Z0-9]+$");
+    }
+
+    /**
+     * Validates password format
+     * Rules: Min 4 characters, only letters and numbers (no symbols, no spaces)
+     */
+    private boolean isValidPassword(String password) {
+        if (password == null || password.trim().isEmpty()) {
+            return false;
+        }
+
+        if (password.length() < 4) {
+            return false;
+        }
+
+        // Only letters and numbers allowed
+        return password.matches("^[a-zA-Z0-9]+$");
     }
 
     //FILE UPDATER
