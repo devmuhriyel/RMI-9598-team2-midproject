@@ -50,7 +50,6 @@
 
         <AnchorPane fx:id="rightMainFrame" layoutX="210.0" prefHeight="400.0" prefWidth="390.0" style="-fx-background-color: #202020;">
             <children>
-                <!-- PROFILE VIEW - Initially Visible -->
                 <AnchorPane fx:id="profileView" layoutY="36.0" prefHeight="367.0" prefWidth="390.0" style="-fx-background-color: #202020;" visible="true">
                     <children>
                         <Label fx:id="profileLabel" alignment="CENTER" contentDisplay="TOP" prefHeight="38.0" prefWidth="390.0" text="PROFILE" textFill="WHITE">
@@ -62,10 +61,8 @@
                             </effect>
                         </Label>
 
-                        <!-- USERNAME SECTION -->
                         <AnchorPane fx:id="usernameSection" layoutY="50.0" prefHeight="130.0" prefWidth="390.0" style="-fx-background-color: #202020;">
                             <children>
-                                <!-- Normal Username Display -->
                                 <VBox fx:id="usernameDisplay" alignment="TOP_CENTER" prefHeight="127.0" prefWidth="390.0" spacing="10.0">
                                     <children>
                                         <HBox fx:id="currentUsername" alignment="CENTER" fillHeight="false" prefHeight="25.0" prefWidth="200.0" spacing="20.0">
@@ -82,7 +79,6 @@
                                 </VBox>
                                 <Button fx:id="editUsernameButton" layoutX="290.0" layoutY="34.0" mnemonicParsing="false" onAction="#showChangeUsername" prefHeight="25.0" prefWidth="45.0" text="Edit" />
 
-                                <!-- Change Username Form (Initially Hidden) -->
                                 <AnchorPane fx:id="changeUsernameFrame" prefHeight="130.0" prefWidth="390.0" style="-fx-background-color: #202020;" visible="false">
                                     <children>
                                         <VBox fx:id="changeUsernameContainer" alignment="TOP_CENTER" prefHeight="100.0" prefWidth="390.0" spacing="10.0">
@@ -118,7 +114,6 @@
                                     </children>
                                 </AnchorPane>
 
-                                <!-- Username Status - Outside the form, always visible -->
                                 <Label fx:id="usernameStatusLabel" alignment="CENTER" layoutX="95.0" layoutY="34.0" prefHeight="20.0" prefWidth="200.0" text="" textAlignment="CENTER" textFill="WHITE">
                                     <font>
                                         <Font name="HP Simplified Jpan Regular" size="12.0" />
@@ -127,10 +122,8 @@
                             </children>
                         </AnchorPane>
 
-                        <!-- PASSWORD SECTION -->
                         <AnchorPane fx:id="passwordSection" layoutY="192.0" prefHeight="189.0" prefWidth="390.0" style="-fx-background-color: #202020;">
                             <children>
-                                <!-- Normal Password Display -->
                                 <VBox fx:id="passwordDisplay" alignment="TOP_CENTER" prefHeight="155.0" prefWidth="390.0" spacing="10.0">
                                     <children>
                                         <HBox fx:id="currentPassword" alignment="CENTER" fillHeight="false" prefHeight="20.0" prefWidth="200.0" spacing="20.0">
@@ -147,7 +140,6 @@
                                 </VBox>
                                 <Button fx:id="editPasswordButton" layoutX="290.0" layoutY="30.0" mnemonicParsing="false" onAction="#showChangePassword" prefHeight="25.0" prefWidth="45.0" text="Edit" />
 
-                                <!-- Change Password Form (Initially Hidden) -->
                                 <AnchorPane fx:id="changePasswordFrame" prefHeight="189.0" prefWidth="390.0" style="-fx-background-color: #202020;" visible="false">
                                     <children>
                                         <VBox fx:id="changePasswordContainer" alignment="TOP_CENTER" prefHeight="155.0" prefWidth="390.0" spacing="10.0">
@@ -202,7 +194,6 @@
                     </children>
                 </AnchorPane>
 
-                <!-- REQUESTS VIEW - Initially Hidden -->
                 <AnchorPane fx:id="requestsView" layoutY="36.0" prefHeight="367.0" prefWidth="390.0" style="-fx-background-color: #202020;" visible="false">
                     <children>
                         <Label fx:id="requestsLabel" alignment="CENTER" contentDisplay="TOP" prefHeight="38.0" prefWidth="390.0" text="REQUEST" textFill="WHITE">
@@ -221,7 +212,6 @@
                                         </VBox>
                                     </content>
                                 </ScrollPane>
-                                <!-- FIXED: Added fx:id to Friend Requests button -->
                                 <Button fx:id="receivedRequestsButton" layoutX="20.0" layoutY="27.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="150.0" style="-fx-background-color: #8700b1;" text="Friend Requests" textFill="WHITE" />
                                 <Button fx:id="sentRequestButton" layoutX="196.0" layoutY="27.0" mnemonicParsing="false" prefHeight="26.0" prefWidth="150.0" style="-fx-background-color: #525252;" text="Sent Requests" textFill="WHITE" />
                             </children>
@@ -229,7 +219,6 @@
                     </children>
                 </AnchorPane>
 
-                <!-- SETTINGS VIEW - Initially Hidden -->
                 <AnchorPane fx:id="friendsView" layoutY="36.0" prefHeight="367.0" prefWidth="390.0" style="-fx-background-color: #202020;" visible="false">
                     <children>
                         <Label fx:id="friendsLabel" alignment="CENTER" contentDisplay="TOP" prefHeight="38.0" prefWidth="390.0" text="FRIENDS" textFill="WHITE">
@@ -240,10 +229,15 @@
                                 <Glow />
                             </effect>
                         </Label>
+                        <ScrollPane fx:id="friendsScrollPane" fitToWidth="true" layoutY="62.0" prefHeight="300.0" prefWidth="382.0" style="-fx-background: transparent; -fx-background-color: transparent;" vbarPolicy="ALWAYS">
+                            <content>
+                                <VBox fx:id="friendsListVBox" alignment="TOP_CENTER" prefHeight="284.0" prefWidth="367.0" spacing="15.0" style="-fx-padding: 15;">
+                                </VBox>
+                            </content>
+                        </ScrollPane>
                     </children>
                 </AnchorPane>
 
-                <!-- Window Controls -->
                 <Button fx:id="closeButton" cacheShape="false" focusTraversable="false" layoutX="358.0" layoutY="6.0" minWidth="25.0" prefHeight="30.0" prefWidth="25.0" styleClass="window-control" stylesheets="@../style.css" text="x">
                     <font>
                         <Font size="9.0" />
@@ -257,7 +251,6 @@
             </children>
         </AnchorPane>
 
-        <!-- Back Navigation -->
         <AnchorPane fx:id="backNavigation" layoutY="36.0" prefHeight="79.0" prefWidth="210.0">
             <children>
                 <Button fx:id="backButton" alignment="CENTER" layoutX="14.0" layoutY="11.0" mnemonicParsing="false" prefHeight="35.0" prefWidth="42.0" style="-fx-background-radius: 100; -fx-background-color: dedcff;" stylesheets="@../style.css" text="🔙">
@@ -268,7 +261,6 @@
             </children>
         </AnchorPane>
 
-        <!-- Title Bar -->
         <AnchorPane fx:id="titleBar" prefHeight="17.0" prefWidth="600.0" />
     </children>
 </AnchorPane>

@@ -1,9 +1,10 @@
 package ClientMVC.ClientView.Account;
 
-import ClientMVC.UserXMLHandler;
 import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.geometry.Pos;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
@@ -28,6 +29,11 @@ public class AccountJFXController {
     // Main view containers
     @FXML
     private AnchorPane profileView, requestsView, friendsView;
+
+    // === FIX: Correctly declared FXML VBox for Friends List ===
+    @FXML
+    private VBox friendsListVBox;
+    // ==========================================================
 
     // Profile frame switching components
     @FXML
@@ -64,7 +70,7 @@ public class AccountJFXController {
     @FXML
     private Button receivedRequestsButton, sentRequestButton;
 
-    // Runnables
+    // Runnables/Consumers
     private Runnable backButtonListener;
     private Runnable LogoutAccountButtonListener;
     private Runnable usernameChangeListener;
@@ -75,6 +81,12 @@ public class AccountJFXController {
     private Consumer<Void> receivedRequestsListener;
     private Runnable sentRequestButtonListener;
     private Consumer<String> cancelSentRequestListener;
+    private Consumer<String> friendClickListener;
+    private Consumer<String> unfriendListener;
+
+    // === NEW RUNNABLE for Friends Button ===
+    private Runnable friendsButtonListener;
+    // =======================================
 
     // Top Section for Draggable
     private double xOffset = 0;
@@ -169,6 +181,17 @@ public class AccountJFXController {
         return friendRequestFrame;
     }
 
+    //open friends interface
+    public void setFriendClickListener(Consumer<String> friendClickListener) {
+        this.friendClickListener = friendClickListener;
+    }
+
+    // === NEW: Setter for Friends Button Listener ===
+    public void setFriendsButtonListener(Runnable listener) {
+        this.friendsButtonListener = listener;
+    }
+    // ===============================================
+
     // Handle accept request
     private void handleAcceptRequest(String friendName, AnchorPane requestFrame) {
         System.out.println("Accepting friend request from: " + friendName);
@@ -233,6 +256,17 @@ public class AccountJFXController {
                 }
             });
         }
+
+        // === Friends Navigation Button Listener ===
+        if (friendsAccountButton != null) {
+            friendsAccountButton.setOnAction(event -> {
+                showFriends(); // Navigates to the view
+                if (friendsButtonListener != null) {
+                    friendsButtonListener.run(); // Calls controller to fetch data
+                }
+            });
+        }
+        // ==========================================
 
         // Only set up backButton if it exists (main view only)
         if (backButton != null) {
@@ -623,6 +657,65 @@ public class AccountJFXController {
         }
     }
 
+    public void renderFriendsList(List<String> friends) {
+        Platform.runLater(() -> {
+            if (friendsListVBox == null) {
+                System.err.println("FATAL ERROR: friendsListVBox is null! Check FXML fx:id and controller initialization.");
+                return;
+            }
+
+            friendsListVBox.getChildren().clear();
+
+            if (friends == null || friends.isEmpty()) {
+                javafx.scene.control.Label emptyLabel = new javafx.scene.control.Label("You have no friends yet.");
+                emptyLabel.setTextFill(javafx.scene.paint.Color.WHITE);
+                emptyLabel.setStyle("-fx-font-size: 14px; -fx-padding: 20px;");
+                friendsListVBox.getChildren().add(emptyLabel);
+                return;
+            }
+
+            for (String friend : friends) {
+                // 1. Create Friend Name Label
+                javafx.scene.layout.HBox nameContainer = new javafx.scene.layout.HBox();
+                javafx.scene.control.Label friendLabel = new javafx.scene.control.Label("👤 " + friend);
+                friendLabel.setPrefHeight(30.0);
+                friendLabel.setPrefWidth(200.0); // Allocate width for the name
+                friendLabel.setTextFill(javafx.scene.paint.Color.WHITE);
+                friendLabel.setStyle("-fx-padding: 0 10 0 0;");
+                nameContainer.getChildren().add(friendLabel);
+                nameContainer.setAlignment(Pos.CENTER_LEFT);
+
+                // 2. Create Unfriend Button
+                javafx.scene.control.Button unfriendBtn = new javafx.scene.control.Button("Unfriend");
+                unfriendBtn.setStyle("-fx-background-color: #b32626; -fx-text-fill: white; -fx-background-radius: 5;");
+
+                // 3. Attach Unfriend Action
+                final String friendName = friend;
+                unfriendBtn.setOnAction(e -> {
+                    if (unfriendListener != null) {
+                        unfriendListener.accept(friendName);
+                    }
+                });
+
+                // 4. Create Horizontal Container (HBox)
+                javafx.scene.layout.HBox hbox = new javafx.scene.layout.HBox(15); // 15px spacing
+                hbox.setMaxWidth(Double.MAX_VALUE);
+                hbox.setPrefHeight(40.0);
+                hbox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+                hbox.setStyle("-fx-background-color: #3e3e3e; -fx-background-radius: 5; -fx-padding: 5 15 5 15;");
+
+                // Add Label and Button to HBox
+                hbox.getChildren().addAll(nameContainer, unfriendBtn);
+
+                friendsListVBox.getChildren().add(hbox);
+            }
+        });
+    }
+
+    public void setUnfriendListener(Consumer<String> listener) {
+        this.unfriendListener = listener;
+    }
+
     public void renderRequestList(List<String> requests, boolean showingSentRequests) {
         Platform.runLater(() -> {
             requestList.getChildren().clear();
@@ -799,7 +892,7 @@ public class AccountJFXController {
     }
 
     private void showSuccessAlert(String title, String message) {
-        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);

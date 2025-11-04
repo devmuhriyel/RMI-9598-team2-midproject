@@ -246,23 +246,17 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     }
 
     @Override
-    public void onGetSentFriendRequests(List<String> sentRequests) throws RemoteException {
-
-    }
-
-    @Override
-    public void onGetReceivedFriendRequests(List<String> receivedRequests) throws RemoteException {
-
-    }
-
-    @Override
     public void onGetFriendsList(List<String> friends) throws RemoteException {
         System.out.println("Callback: Received friends list of size: " + (friends != null ? friends.size() : 0));
         javafx.application.Platform.runLater(() -> {
             if (clientHomeController != null) {
                 clientHomeController.updateFriendsList(friends);
             }
+            if (clientAccountController != null) {
+                clientAccountController.handleFriendsListUpdate(friends);
+            }
         });
+
     }
 
     @Override
@@ -282,7 +276,25 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
             clientChatController.onGetChatHistories(allChats);
         }
     }
+// In ClientCallbackImplementation.java
 
+    @Override
+    public void onGetSentFriendRequests(List<String> sentRequests) throws RemoteException {
+        if (clientAccountController != null) {
+            System.out.println("Callback: Received sent friend requests of size: " + (sentRequests != null ? sentRequests.size() : 0));
+            // Cast and call the new method in the controller
+            clientAccountController.handleSentFriendRequests(sentRequests);
+        }
+    }
+
+    @Override
+    public void onGetReceivedFriendRequests(List<String> receivedRequests) throws RemoteException {
+        if (clientAccountController != null) {
+            System.out.println("Callback: Received received friend requests of size: " + (receivedRequests != null ? receivedRequests.size() : 0));
+            // Cast and call the new method in the controller
+            clientAccountController.handleReceivedFriendRequests(receivedRequests);
+        }
+    }
     @Override
     public void onGetChatHistoryWith(Conversation chatWith) throws RemoteException {
         if (clientChatController != null) {
@@ -518,4 +530,6 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
         System.out.println("  → Setting password change failed handler");
         this.onPasswordChangeFailed = handler;
     }
+
+
 }
