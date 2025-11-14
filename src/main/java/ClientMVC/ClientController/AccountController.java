@@ -22,6 +22,7 @@ public class AccountController {
     private final AccountView view;
     private final AccountJFXController accountJFXController;
     private final ClientCallbackImplementation clientCallback;
+    public HomeController homeController;
 
     public AccountController(UnifiedClientModel model, AccountView view, AccountJFXController accountJFXController, ClientCallbackImplementation callback) {
         this.view = view;
@@ -40,6 +41,7 @@ public class AccountController {
             try {
                 String jsonString = String.format("{\"username\":\"%s\"}", model.getUsername());
                 model.getFriendsList(jsonString);
+                homeController.refreshUserData();
             } catch (RemoteException e) {
                 System.err.println("Error requesting friends list: " + e.getMessage());
                 throw new RuntimeException(e);
@@ -50,6 +52,7 @@ public class AccountController {
             try {
                 String jsonString = String.format("{\"username\":\"%s\"}", model.getUsername());
                 model.getSentFriendRequests(jsonString);
+                homeController.refreshUserData();
             } catch (RemoteException e) {
                 throw new RuntimeException(e);
             }
@@ -284,6 +287,7 @@ public class AccountController {
     // ==================== NAVIGATION BUTTONS ====================
     private void setupNavigationButtons() {
         accountJFXController.setBackButtonListener(() -> {
+
             view.getStage().close();
             HomeView homeView = new HomeView();
             Stage homeStage = new Stage();
@@ -330,7 +334,6 @@ public class AccountController {
                     model.removeFromFriendsList(jsonString);
                     showSuccessAlert("Unfriended", friendToRemove + " has been removed from your friends list.");
                     accountJFXController.showFriends();
-
                 } catch (RemoteException e) {
                     System.err.println("Error sending unfriend request: " + e.getMessage());
                     e.printStackTrace();
@@ -355,6 +358,7 @@ public class AccountController {
     public void handleFriendsListUpdate(List<String> friends) {
         Platform.runLater(() -> {
             accountJFXController.renderFriendsList(friends);
+            homeController.refreshUserData();
         });
     }
 
@@ -363,6 +367,7 @@ public class AccountController {
         if (accountJFXController.getReceivedRequestsListener() != null) {
             System.out.println("Controller: Re-fetching received requests list after acceptance.");
             accountJFXController.getReceivedRequestsListener().accept(null);
+            homeController.refreshUserData();
         }
         try {
             String jsonString = String.format("{\"username\":\"%s\"}", model.getUsername());

@@ -152,11 +152,6 @@
           "requester": "gian",
           "responder": "alice",
           "status": "pending"
-        },
-        {
-          "requester": "diana",
-          "responder": "alice",
-          "status": "pending"
         }
       ],
       "outgoingFriendRequests": []
@@ -268,7 +263,8 @@
       "password": "diana123",
       "verificationCode": "wonderwoman",
       "friends": [
-        "Clark"
+        "Clark",
+        "marielle"
       ],
       "conversations": [
         {
@@ -299,17 +295,39 @@
               "isFile": false
             }
           ]
+        },
+        {
+          "recipient": "marielle",
+          "messages": [
+            {
+              "sender": "marielle",
+              "receiver": "diana",
+              "content": "wazzup",
+              "isFile": false
+            },
+            {
+              "sender": "diana",
+              "receiver": "marielle",
+              "content": "hell naw",
+              "isFile": false
+            }
+          ]
         }
       ],
-      "groupChats": [],
-      "incomingFriendRequests": [],
-      "outgoingFriendRequests": [
+      "groupChats": [
         {
-          "requester": "diana",
-          "responder": "alice",
-          "status": "pending"
+          "groupID": "grp-1763092017735",
+          "groupName": "Balorant",
+          "receivers": [
+            "diana",
+            "Clark",
+            "marielle"
+          ],
+          "messages": []
         }
-      ]
+      ],
+      "incomingFriendRequests": [],
+      "outgoingFriendRequests": []
     },
     {
       "username": "hal",
@@ -341,7 +359,18 @@
           ]
         }
       ],
-      "groupChats": [],
+      "groupChats": [
+        {
+          "groupID": "grp-1763092017735",
+          "groupName": "Balorant",
+          "receivers": [
+            "diana",
+            "Clark",
+            "marielle"
+          ],
+          "messages": []
+        }
+      ],
       "incomingFriendRequests": [],
       "outgoingFriendRequests": []
     },
@@ -386,6 +415,47 @@
           "status": "pending"
         }
       ],
+      "outgoingFriendRequests": []
+    },
+    {
+      "username": "marielle",
+      "password": "qqqqqq",
+      "verificationCode": "123",
+      "friends": [
+        "diana"
+      ],
+      "conversations": [
+        {
+          "recipient": "diana",
+          "messages": [
+            {
+              "sender": "marielle",
+              "receiver": "diana",
+              "content": "wazzup",
+              "isFile": false
+            },
+            {
+              "sender": "diana",
+              "receiver": "marielle",
+              "content": "hell naw",
+              "isFile": false
+            }
+          ]
+        }
+      ],
+      "groupChats": [
+        {
+          "groupID": "grp-1763092017735",
+          "groupName": "Balorant",
+          "receivers": [
+            "diana",
+            "Clark",
+            "marielle"
+          ],
+          "messages": []
+        }
+      ],
+      "incomingFriendRequests": [],
       "outgoingFriendRequests": []
     }
   ]

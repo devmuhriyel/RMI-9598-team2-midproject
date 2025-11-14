@@ -571,7 +571,6 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
 
         if (requesterUsername.equalsIgnoreCase(targetUsername)) {
             System.err.println("Friend request failed: Self-request is not allowed.");
-            // TODO: Add callback to client for failed request
             return;
         }
 
