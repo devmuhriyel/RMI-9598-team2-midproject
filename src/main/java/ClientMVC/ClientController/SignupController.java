@@ -15,8 +15,6 @@ public class SignupController {
         this.model = model;
         this.view = view;
         this.fxController = fxController;
-        // Set up the signup controller reference in callback
-        model.getCallback().setClientSignupController(this);
         initialize();
     }
 
