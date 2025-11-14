@@ -85,6 +85,12 @@ public class UnifiedAdminModel {
     }
 
     public void updateGroupsList(List<Map<String, String>> groups) {
+
+        if (!isLoadingGroups) {
+            System.out.println();
+            return;
+        }
+
         Platform.runLater(() -> {
             allGroups.clear();
             if (groups != null) {
@@ -94,6 +100,8 @@ public class UnifiedAdminModel {
             if (dataUpdateListener != null) {
                 dataUpdateListener.accept("GROUPS_UPDATED");
             }
+
+            isLoadingGroups = false;
         });
     }
 
@@ -227,14 +235,18 @@ public class UnifiedAdminModel {
     // USER MANAGEMENT METHODS
     public void getAllClientsFromServer() throws RemoteException {
         if (server == null) return;
+
+        if (isLoadingUsers) {
+            return;
+        }
+
         isLoadingUsers = true;
         String jsonString = adminJSONHandler.createJSONStringRequest("request", "GET_ALL_USERS", adminUsername);
         server.searchUsers(jsonString);
 
-        // Reset flag after delay
         new Thread(() -> {
             try {
-                Thread.sleep(1000);
+                Thread.sleep(2000);
                 isLoadingUsers = false;
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -284,7 +296,6 @@ public class UnifiedAdminModel {
     public void deleteGroup(String groupName, String owner) throws RemoteException {
         if (server == null) return;
 
-        // STEP 1: Delete from JSON file FIRST using AdminJSONHandler
         System.out.println(">>> Model: Deleting group from JSON file: " + groupName);
         boolean deletedFromJSON = adminJSONHandler.deleteGroup(groupName);
 
@@ -294,7 +305,6 @@ public class UnifiedAdminModel {
             System.err.println("✗ Failed to delete group from JSON file");
         }
 
-        // STEP 2: Delete from server memory and notify other admins
         Map<String, String> deleteData = new HashMap<>();
         deleteData.put("groupName", groupName);
         deleteData.put("owner", owner);
@@ -410,13 +420,19 @@ public class UnifiedAdminModel {
     // GROUP MANAGEMENT METHODS
     public void getAllGroupsFromServer() throws RemoteException {
         if (server == null) return;
-        isLoadingGroups = true;  // SET GROUPS FLAG
+
+        if (isLoadingGroups) {
+            System.out.println();
+            return;
+        }
+
+        isLoadingGroups = true;
         String jsonString = adminJSONHandler.createJSONStringRequest("request", "GET_ALL_GROUPS", adminUsername);
         server.searchGroups(jsonString);
 
         new Thread(() -> {
             try {
-                Thread.sleep(1000);
+                Thread.sleep(2000);
                 isLoadingGroups = false;
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -425,38 +441,12 @@ public class UnifiedAdminModel {
     }
 
     // CHAT HISTORY METHODS
-    public void getUserChatHistory(String username) throws RemoteException {
-        if (server == null) return;
-
-        Map<String, String> requestData = new HashMap<>();
-        requestData.put("username", username);
-        requestData.put("admin", adminUsername);
-        String jsonString = new com.google.gson.Gson().toJson(requestData);
-        server.getChatHistoryOfUser(jsonString);
-    }
-
-    public void getGroupChatHistory(String groupName) throws RemoteException {
-        if (server == null) return;
-
-        Map<String, String> requestData = new HashMap<>();
-        requestData.put("groupName", groupName);
-        requestData.put("admin", adminUsername);
-        String jsonString = new com.google.gson.Gson().toJson(requestData);
-        server.getChatHistoryOfGroup(jsonString);
-    }
-
-    public void getCommunityMessages() throws RemoteException {
-        if (server == null) return;
-
-        String jsonString = adminJSONHandler.createJSONStringRequest("request", "GET_COMMUNITY_MESSAGES", adminUsername);
-        server.getChatHistoryOfCommunity(jsonString);
-    }
 
     public void sendCommunityMessage(String message) throws RemoteException {
         if (server == null || message == null || message.trim().isEmpty()) return;
 
         Map<String, String> messageData = new HashMap<>();
-        messageData.put("sender", adminUsername);  // Use stored admin username
+        messageData.put("sender", adminUsername);
         messageData.put("message", message);
         String jsonString = new com.google.gson.Gson().toJson(messageData);
         server.sendCommunityMessage(adminUsername, message, jsonString);
@@ -487,8 +477,13 @@ public class UnifiedAdminModel {
         });
     }
 
-    // DATA UPDATE METHODS - FIXED TO USE AdminJSONHandler
+    // DATA UPDATE METHODS
     public void updateUsersList(List<Client> clients) {
+        if (!isLoadingUsers) {
+            System.out.println();
+            return;
+        }
+
         Platform.runLater(() -> {
             allUsers.clear();
             if (clients != null) {
@@ -507,8 +502,10 @@ public class UnifiedAdminModel {
             }
 
             if (dataUpdateListener != null) {
-                dataUpdateListener.accept("USERS_UPDATED");  // THIS TRIGGERS REFRESH
+                dataUpdateListener.accept("USERS_UPDATED");
             }
+
+            isLoadingUsers = false;
         });
     }
 
