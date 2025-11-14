@@ -140,6 +140,7 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
             }
             clientAccountsList.getClients().add(newClient);
             serverJSONHandler.writeClientAccountFile("src/main/resources/JSONFiles/ClientAccounts.json", clientAccountsList);
+            // Store callback during signup to establish connection
             clientCallbacks.put(username, clientCallback);
             clientCallback.onSuccessfulSignUp();
 
