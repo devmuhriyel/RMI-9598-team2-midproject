@@ -47,7 +47,9 @@ public class LoginController {
             Platform.runLater(() -> {
                 try {
                     LoginView.getPrimaryStage().close();
-                    new SignupView().getStage().show();
+                    SignupView signupView = new SignupView();
+                    new SignupController(model, signupView, signupView.getFxController(), clientCallback);
+                    signupView.getStage().show();
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }

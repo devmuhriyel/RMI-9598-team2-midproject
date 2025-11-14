@@ -28,37 +28,6 @@ public class SignupView {
         stage.setTitle("Sign Up");
         stage.setScene(new Scene(root, 400, 450));
         stage.setResizable(false);
-        
-        // Connect to RMI server and setup controller
-        connectToRMIServer();
-    }
-    
-    private void connectToRMIServer() {
-        try {
-            // Connect to RMI registry
-            Registry registry = LocateRegistry.getRegistry(serverHost, serverPort);
-            ClientInterface serverStub = (ClientInterface) registry.lookup("ChatServer");
-            
-            // Create callback implementation
-            ClientCallbackImplementation callback = new ClientCallbackImplementation();
-            
-            // Create client model
-            UnifiedClientModel model = new UnifiedClientModel(serverStub, callback);
-            
-            // Create signup controller with RMI connection
-            new SignupController(model, this, fxController);
-            
-            System.out.println("Connected to RMI server at " + serverHost + ":" + serverPort);
-            
-        } catch (Exception e) {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Connection Error");
-            alert.setHeaderText("Failed to connect to server");
-            alert.setContentText("Could not connect to RMI server at " + serverHost + ":" + serverPort + "\n" + e.getMessage());
-            alert.showAndWait();
-            stage.close();
-            e.printStackTrace();
-        }
     }
 
     public Stage getStage() {

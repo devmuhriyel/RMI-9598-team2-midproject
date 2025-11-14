@@ -457,6 +457,16 @@
       ],
       "incomingFriendRequests": [],
       "outgoingFriendRequests": []
+    },
+    {
+      "username": "chester",
+      "password": "carl123",
+      "verificationCode": "9632",
+      "friends": [],
+      "conversations": [],
+      "groupChats": [],
+      "incomingFriendRequests": [],
+      "outgoingFriendRequests": []
     }
   ]
 }

@@ -1,5 +1,6 @@
 package ClientMVC.ClientController;
 
+import ClientMVC.ClientCallbackImplementation;
 import ClientMVC.ClientModel.UnifiedClientModel;
 import ClientMVC.ClientView.Signup.SignupJFXController;
 import ClientMVC.ClientView.Signup.SignupView;
@@ -11,10 +12,11 @@ public class SignupController {
     private final SignupView view;
     private final SignupJFXController fxController;
 
-    public SignupController(UnifiedClientModel model, SignupView view, SignupJFXController fxController) {
+    public SignupController(UnifiedClientModel model, SignupView view, SignupJFXController fxController, ClientCallbackImplementation callback) {
         this.model = model;
         this.view = view;
         this.fxController = fxController;
+        callback.setClientSignupController(this);
         initialize();
     }
 
