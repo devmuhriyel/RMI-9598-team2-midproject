@@ -11,6 +11,10 @@
         <HBox layoutX="20" layoutY="20" spacing="10" />
         <Button fx:id="ActiveButton" layoutX="19.0" layoutY="30.0" prefHeight="31.0" prefWidth="119.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Active Users" />
         <Button fx:id="CommunityButton" layoutX="169.0" layoutY="30.0" prefHeight="31.0" prefWidth="170.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Community Messages" />
+
+        <!-- FIXED: Changed fx:id from CommunityButton1 to AddButton -->
+        <Button fx:id="AddButton" layoutX="371.0" layoutY="30.0" prefHeight="31.0" prefWidth="170.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Create New User" />
+
         <Button fx:id="refreshButton" layoutX="577.0" layoutY="30.0" prefHeight="31.0" prefWidth="80" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Refresh" />
 
         <!-- Search Components -->
@@ -42,7 +46,6 @@
             </columns>
         </TableView>
         <Button fx:id="deleteGroupButton" layoutX="20.0" layoutY="573.0" prefHeight="31.0" prefWidth="119.0" style="-fx-background-color: #b10000; -fx-text-fill: white;" text="Delete Group" />
-      <Button fx:id="CommunityButton1" layoutX="371.0" layoutY="30.0" prefHeight="31.0" prefWidth="170.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Create New User" />
 
     </children>
 </AnchorPane>

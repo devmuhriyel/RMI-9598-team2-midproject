@@ -216,6 +216,10 @@ public class AdminController {
             });
         }
 
+        if (ui.getAddButton() != null) {
+            ui.getAddButton().setOnAction(event -> showAddUserDialog());
+        }
+
         if (ui.getEditButton() != null) {
             ui.getEditButton().setOnAction(event -> editSelectedUser());
         }
@@ -246,7 +250,148 @@ public class AdminController {
             ui.getCommunityButton().setOnAction(event -> showCommunityMessages());
         }
     }
+    private void showAddUserDialog() {
+        Dialog<ButtonType> addUserDialog = new Dialog<>();
+        addUserDialog.setTitle("Add New User");
+        addUserDialog.setHeaderText("Create a New User Account");
 
+        // Create input fields
+        TextField usernameField = new TextField();
+        usernameField.setPromptText("Username (letters and numbers only, min 3 characters)");
+
+        PasswordField passwordField = new PasswordField();
+        passwordField.setPromptText("Password (letters and numbers only, min 4 characters)");
+
+        PasswordField confirmPasswordField = new PasswordField();
+        confirmPasswordField.setPromptText("Confirm Password");
+
+        // Create labels for validation feedback
+        Label usernameValidationLabel = new Label();
+        usernameValidationLabel.setStyle("-fx-text-fill: red; -fx-font-size: 10px;");
+
+        Label passwordValidationLabel = new Label();
+        passwordValidationLabel.setStyle("-fx-text-fill: red; -fx-font-size: 10px;");
+
+        Label confirmPasswordValidationLabel = new Label();
+        confirmPasswordValidationLabel.setStyle("-fx-text-fill: red; -fx-font-size: 10px;");
+
+        // Create layout
+        VBox content = new VBox(10);
+        content.getChildren().addAll(
+                new Label("Username:"),
+                usernameField,
+                usernameValidationLabel,
+                new Label("Password:"),
+                passwordField,
+                passwordValidationLabel,
+                new Label("Confirm Password:"),
+                confirmPasswordField,
+                confirmPasswordValidationLabel
+        );
+
+        addUserDialog.getDialogPane().setContent(content);
+        addUserDialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        // Real-time validation for username
+        usernameField.textProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue.isEmpty()) {
+                usernameValidationLabel.setText("");
+            } else if (newValue.length() < 3) {
+                usernameValidationLabel.setText("Username must be at least 3 characters");
+            } else if (!newValue.matches("^[a-zA-Z0-9]+$")) {
+                usernameValidationLabel.setText("Only letters and numbers allowed (no symbols or spaces)");
+            } else if (isUsernameDuplicate(newValue)) {
+                usernameValidationLabel.setText("Username already exists");
+            } else {
+                usernameValidationLabel.setText("");
+                usernameValidationLabel.setStyle("-fx-text-fill: green; -fx-font-size: 10px;");
+                usernameValidationLabel.setText("✓ Valid username");
+            }
+        });
+
+        // Real-time validation for password
+        passwordField.textProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue.isEmpty()) {
+                passwordValidationLabel.setText("");
+            } else if (newValue.length() < 4) {
+                passwordValidationLabel.setText("Password must be at least 4 characters");
+            } else if (!newValue.matches("^[a-zA-Z0-9]+$")) {
+                passwordValidationLabel.setText("Only letters and numbers allowed (no symbols or spaces)");
+            } else {
+                passwordValidationLabel.setText("");
+                passwordValidationLabel.setStyle("-fx-text-fill: green; -fx-font-size: 10px;");
+                passwordValidationLabel.setText("✓ Valid password");
+            }
+
+            // Also check confirm password match
+            if (!confirmPasswordField.getText().isEmpty()) {
+                if (!newValue.equals(confirmPasswordField.getText())) {
+                    confirmPasswordValidationLabel.setText("Passwords do not match");
+                } else {
+                    confirmPasswordValidationLabel.setText("");
+                    confirmPasswordValidationLabel.setStyle("-fx-text-fill: green; -fx-font-size: 10px;");
+                    confirmPasswordValidationLabel.setText("✓ Passwords match");
+                }
+            }
+        });
+
+        // Real-time validation for confirm password
+        confirmPasswordField.textProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue.isEmpty()) {
+                confirmPasswordValidationLabel.setText("");
+            } else if (!newValue.equals(passwordField.getText())) {
+                confirmPasswordValidationLabel.setText("Passwords do not match");
+            } else {
+                confirmPasswordValidationLabel.setText("");
+                confirmPasswordValidationLabel.setStyle("-fx-text-fill: green; -fx-font-size: 10px;");
+                confirmPasswordValidationLabel.setText("✓ Passwords match");
+            }
+        });
+
+        // Handle dialog result
+        Optional<ButtonType> result = addUserDialog.showAndWait();
+
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            String username = usernameField.getText().trim();
+            String password = passwordField.getText().trim();
+            String confirmPassword = confirmPasswordField.getText().trim();
+
+            // Final validation before submission
+            if (!isValidUsername(username)) {
+                notifyUIOfError("Invalid username format.\n\n" +
+                        "Requirements:\n" +
+                        "- At least 3 characters\n" +
+                        "- Only letters and numbers (no symbols or spaces)");
+                return;
+            }
+
+            if (isUsernameDuplicate(username)) {
+                notifyUIOfError("Username '" + username + "' already exists.\n\nPlease choose a different username.");
+                return;
+            }
+
+            if (!isValidPassword(password)) {
+                notifyUIOfError("Invalid password format.\n\n" +
+                        "Requirements:\n" +
+                        "- At least 4 characters\n" +
+                        "- Only letters and numbers (no symbols or spaces)");
+                return;
+            }
+
+            if (!password.equals(confirmPassword)) {
+                notifyUIOfError("Passwords do not match.\n\nPlease make sure both passwords are identical.");
+                return;
+            }
+
+            // All validations passed - create the user
+            try {
+                model.createNewUser(username, password);
+                // Success notification will be handled by the callback
+            } catch (RemoteException e) {
+                notifyUIOfError("Failed to create user: " + e.getMessage());
+            }
+        }
+    }
     private void setupModelListeners() {
         model.setDataUpdateListener(updateType -> {
             Platform.runLater(() -> {

@@ -351,6 +351,9 @@ public class UnifiedAdminModel {
     }
 
     public void createNewUser(String username, String password) throws RemoteException {
+        System.out.println(">>> UnifiedAdminModel: createNewUser called");
+        System.out.println("    Username: " + username);
+        System.out.println("    Password length: " + (password != null ? password.length() : "null"));
 
         // Validate username format (only letters and numbers)
         if (username == null || username.trim().isEmpty() || username.length() < 3) {
@@ -371,6 +374,22 @@ public class UnifiedAdminModel {
             return;
         }
 
+        // Check for duplicate username (case-insensitive)
+        if (allUsers != null) {
+            for (Map<String, String> user : allUsers) {
+                if (user != null && user.get("username") != null) {
+                    if (user.get("username").equalsIgnoreCase(username)) {
+                        Platform.runLater(() -> {
+                            if (operationResultListener != null) {
+                                operationResultListener.accept("Username '" + username + "' already exists. Please choose a different username.");
+                            }
+                        });
+                        return;
+                    }
+                }
+            }
+        }
+
         // Validate password format (only letters and numbers)
         if (password == null || password.trim().isEmpty() || password.length() < 4) {
             Platform.runLater(() -> {
@@ -389,11 +408,18 @@ public class UnifiedAdminModel {
             });
             return;
         }
+
+        // Generate verification code
+        String verificationCode = String.valueOf((int)(Math.random() * 9000) + 1000);
+
+        // Create user data for server
         Map<String, String> createData = new HashMap<>();
         createData.put("username", username);
         createData.put("password", password);
+        createData.put("verificationCode", verificationCode);
         createData.put("admin", adminUsername);
         String jsonString = new com.google.gson.Gson().toJson(createData);
+
         if (server == null) {
             System.err.println("✗ Server is null!");
             Platform.runLater(() -> {
@@ -405,7 +431,8 @@ public class UnifiedAdminModel {
         }
 
         try {
-            server.signUp(username, password, "", jsonString, callback);
+            System.out.println("✓ Calling server.signUp()...");
+            server.signUp(username, password, verificationCode, jsonString, callback);
         } catch (Exception e) {
             System.err.println("✗ Exception during server call: " + e.getMessage());
             e.printStackTrace();

@@ -83,7 +83,86 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
     //USER LOG IN, SIGN UP, AND OTHER RELATED METHODS
     @Override
     public void signUp(String username, String password, String verificationCode, String jsonString, AdminCallbackInterface adminCallback) throws RemoteException {
-        adminCallback.onFailedSignUp();
+        System.out.println(">>> Server: Admin-initiated signUp called");
+        System.out.println("    Username: " + username);
+        System.out.println("    Password length: " + (password != null ? password.length() : "null"));
+        System.out.println("    VerificationCode: " + verificationCode);
+
+        // Validate username format
+        if (!isValidUsername(username)) {
+            System.err.println("✗ Invalid username format");
+            adminCallback.onFailedSignUp();
+            return;
+        }
+
+        // Validate password format
+        if (!isValidPassword(password)) {
+            System.err.println("✗ Invalid password format");
+            adminCallback.onFailedSignUp();
+            return;
+        }
+
+        fileLock.writeLock().lock();
+        try {
+            // Check for duplicate username (case-insensitive)
+            for (Client existingClient : allUsers.values()) {
+                if (existingClient.getUsername().equalsIgnoreCase(username)) {
+                    System.err.println("✗ Username already exists: " + username);
+                    adminCallback.onFailedSignUp();
+                    return;
+                }
+            }
+
+            // Generate verification code if not provided
+            if (verificationCode == null || verificationCode.trim().isEmpty()) {
+                verificationCode = String.valueOf((int)(Math.random() * 9000) + 1000);
+                System.out.println("Generated verification code: " + verificationCode);
+            }
+
+            // Create new client with proper initialization
+            Client newClient = new Client(username, password, verificationCode);
+
+            // Initialize all collections to prevent null issues
+            if (newClient.getFriends() == null) {
+                newClient.setFriends(new ArrayList<>());
+            }
+            if (newClient.getConversations() == null) {
+                newClient.setConversations(new ArrayList<>());
+            }
+            if (newClient.getGroupChats() == null) {
+                newClient.setGroupChats(new ArrayList<>());
+            }
+            if (newClient.getIncomingFriendRequests() == null) {
+                newClient.setIncomingFriendRequests(new ArrayList<>());
+            }
+            if (newClient.getOutgoingFriendRequests() == null) {
+                newClient.setOutgoingFriendRequests(new ArrayList<>());
+            }
+
+            // Add to in-memory storage
+            allUsers.put(username, newClient);
+
+            // Add to clientAccountsList
+            if (clientAccountsList.getClients() == null) {
+                clientAccountsList.setClients(new ArrayList<>());
+            }
+            clientAccountsList.getClients().add(newClient);
+
+            // Save to JSON file
+            serverJSONHandler.writeClientAccountFile("src/main/resources/JSONFiles/ClientAccounts.json", clientAccountsList);
+
+            System.out.println("✓ User created successfully: " + username);
+
+            // Notify admin of success
+            adminCallback.onSuccessfulSignUp();
+
+        } catch (Exception e) {
+            System.err.println("✗ Error during admin-initiated signup: " + e.getMessage());
+            e.printStackTrace();
+            adminCallback.onFailedSignUp();
+        } finally {
+            fileLock.writeLock().unlock();
+        }
     }
 
     @Override
