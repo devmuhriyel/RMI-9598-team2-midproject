@@ -15,6 +15,7 @@ import javafx.scene.control.Alert;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ClientCallbackImplementation extends UnicastRemoteObject implements ClientCallbackInterface {
@@ -286,8 +287,19 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
 
     @Override
     public void onGetGroupChatHistories(List<GroupChat> allGroupChats) throws RemoteException {
+        // Update client data with the latest group chat information
+        if (clientData != null) {
+            clientData.setGroupChats(allGroupChats);
+        }
+        
+        // Notify chat controller if needed
         if (clientChatController != null) {
             clientChatController.onGetGroupChatHistories(allGroupChats);
+        }
+        
+        // Refresh home UI to show updated group members
+        if (clientHomeController != null) {
+            clientHomeController.updateGroupsUI(allGroupChats);
         }
     }
 
@@ -391,6 +403,8 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
         if (clientHomeController != null) {
             javafx.application.Platform.runLater(() -> {
                 try {
+                    // Refresh will be triggered by onGetGroupChatHistories callback from server
+                    // But also trigger immediate refresh to ensure UI updates
                     clientHomeController.refreshUserData();
                 } catch (Exception ignored) {}
             });
@@ -417,6 +431,8 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
         if (clientHomeController != null) {
             javafx.application.Platform.runLater(() -> {
                 try {
+                    // Refresh will be triggered by onGetGroupChatHistories callback from server
+                    // But also trigger immediate refresh to ensure UI updates
                     clientHomeController.refreshUserData();
                 } catch (Exception ignored) {}
             });

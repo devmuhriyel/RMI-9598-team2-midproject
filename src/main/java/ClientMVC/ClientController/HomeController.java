@@ -212,16 +212,26 @@ public class HomeController {
     public void refreshUserData() {
         ui.setUserLabel(model.getUsername());
         try {
-            List<GroupChat> updatedGroups = model.getGroupChatHistories("{}", model.getUsername());
-            List<String> groupNames = new ArrayList<>();
-            if (updatedGroups != null) {
-                for (GroupChat gc : updatedGroups) {
-                    groupNames.add(gc.getGroupName());
-                }
+            // Request updated group chat data from server and update local data immediately
+            String jsonString = String.format("{\"username\":\"%s\"}", model.getUsername());
+            List<GroupChat> updatedGroups = model.getGroupChatHistories(jsonString, model.getUsername());
+            if (updatedGroups != null && clientCallback.getClientData() != null) {
+                // Update local client data immediately for real-time visibility
+                clientCallback.getClientData().setGroupChats(updatedGroups);
+                // Re-render groups UI with updated member lists
+                Platform.runLater(() -> {
+                    List<String> groupNames = new ArrayList<>();
+                    for (GroupChat gc : updatedGroups) {
+                        if (gc != null && gc.getGroupName() != null) {
+                            groupNames.add(gc.getGroupName());
+                        }
+                    }
+                    ui.setGroups(groupNames);
+                });
             }
-            ui.setGroups(groupNames);
+            System.out.println("✓ Updated group chat data from server.");
         } catch (Exception e) {
-            System.err.println("Failed to refresh group data: " + e.getMessage());
+            System.err.println("Failed to request updated group chat data: " + e.getMessage());
         }
         try {
             String jsonString = String.format("{\"username\":\"%s\"}", model.getUsername());
@@ -232,22 +242,47 @@ public class HomeController {
         }
     }
 
+    public void updateGroupsUI(List<GroupChat> groupChats) {
+        Platform.runLater(() -> {
+            try {
+                if (groupChats != null) {
+                    List<String> groupNames = new ArrayList<>();
+                    for (GroupChat gc : groupChats) {
+                        if (gc != null && gc.getGroupName() != null) {
+                            groupNames.add(gc.getGroupName());
+                        }
+                    }
+                    ui.setGroups(groupNames);
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to update groups UI: " + e.getMessage());
+            }
+        });
+    }
+
     private List<String> getMembersOfGroupByName(String groupName) {
         try {
-            Client data = clientCallback.getClientData();
-            if (data != null && data.getGroupChats() != null) {
-                for (GroupChat gc : data.getGroupChats()) {
+            // Always try fresh fetch first to get latest member list
+            List<GroupChat> updated = model.getGroupChatHistories("{}", model.getUsername());
+            if (updated != null) {
+                for (GroupChat gc : updated) {
                     if (gc != null && groupName.equals(gc.getGroupName())) {
+                        // Update local cache with fresh data
+                        if (clientCallback.getClientData() != null) {
+                            clientCallback.getClientData().setGroupChats(updated);
+                        }
                         return new ArrayList<>(gc.getReceivers());
                     }
                 }
             }
-        } catch (Exception ignored) {}
-        // Fallback: try fresh fetch
+        } catch (Exception e) {
+            System.err.println("Failed to fetch fresh group data: " + e.getMessage());
+        }
+        // Fallback: use cached data
         try {
-            List<GroupChat> updated = model.getGroupChatHistories("{}", model.getUsername());
-            if (updated != null) {
-                for (GroupChat gc : updated) {
+            Client data = clientCallback.getClientData();
+            if (data != null && data.getGroupChats() != null) {
+                for (GroupChat gc : data.getGroupChats()) {
                     if (gc != null && groupName.equals(gc.getGroupName())) {
                         return new ArrayList<>(gc.getReceivers());
                     }
