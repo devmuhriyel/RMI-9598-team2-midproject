@@ -175,24 +175,38 @@ public class AdminLoginController {
 
     public void handleLoginResponse(String response) {
         Platform.runLater(() -> {
+            System.out.println(">>> AdminLoginController: Received login response: " + response);
+
             if ("LOGIN_SUCCESS".equals(response)) {
                 try {
+                    System.out.println("✓ Login successful, proceeding to admin view...");
+
                     Stage loginStage = (Stage) loginJFXController.getLoginButton().getScene().getWindow();
                     String loggedInUsername = loginJFXController.getUsername();
 
+                    System.out.println("  Setting admin username: " + loggedInUsername);
                     model.setAdminUsername(loggedInUsername);
 
+                    System.out.println("  Creating admin view...");
                     AdminView adminView = new AdminView();
                     Stage adminStage = new Stage();
                     adminView.start(adminStage);
 
+                    System.out.println("  Creating admin controller...");
                     AdminController adminController = new AdminController(adminView.getFXController(), model);
 
                     if (model.getCallback() instanceof AdminCallbackImplementation) {
                         ((AdminCallbackImplementation) model.getCallback()).setAdminController(adminController);
                     }
+
+                    System.out.println("  Loading admin data...");
                     model.loadData();
+
+                    System.out.println("  Closing login stage...");
                     loginStage.close();
+
+                    System.out.println("✓ Admin view opened successfully");
+
                 } catch (Exception e) {
                     System.err.println("✗ Error showing admin view: " + e.getMessage());
                     e.printStackTrace();
@@ -201,6 +215,9 @@ public class AdminLoginController {
                             "Failed to open admin panel: " + e.getMessage());
                     loginJFXController.getLoginButton().setDisable(false);
                 }
+            } else {
+                System.out.println("✗ Login failed with response: " + response);
+                handleFailedLogin();
             }
         });
     }
