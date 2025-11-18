@@ -116,25 +116,30 @@ public class ChatController {
 
     private Message findFileMessage(String fileName) throws RemoteException {
         if (isCommunityChat) {
-            System.err.println("⚠ Warning: Community chat files cannot be retrieved from history");
+            // Community files can't be retrieved (not persisted)
+            chatJFXController.showError("Community chat files are not stored and cannot be reopened.");
             return null;
-        } else if (isGroupChat) {
-            // Search in group chat history
-            GroupChat groupChat = model.getGroupChatHistoryWith(
-                    model.createJSONStringRequest("request", "GET_GROUP_CHAT_HISTORY", model.getUsername()),
-                    model.getUsername(),
-                    currentGroupID
-            );
 
-            if (groupChat != null && groupChat.getMessages() != null) {
-                for (Message msg : groupChat.getMessages()) {
-                    if (msg.isFile() && msg.getFileName().equals(fileName)) {
-                        return msg;
+        } else if (isGroupChat) {
+            // Get fresh data from client callback
+            Client clientData = clientCallback.getClientData();
+            if (clientData != null && clientData.getGroupChats() != null) {
+                for (GroupChat group : clientData.getGroupChats()) {
+                    if (group.getGroupID().equals(currentGroupID)) {
+                        if (group.getMessages() != null) {
+                            for (Message msg : group.getMessages()) {
+                                if (msg.isFile() && msg.getFileName().equals(fileName)) {
+                                    return msg;
+                                }
+                            }
+                        }
+                        break;
                     }
                 }
             }
+
         } else {
-            // Search in private chat history
+            // Get fresh data from client callback
             Client clientData = clientCallback.getClientData();
             if (clientData != null && clientData.getConversations() != null) {
                 for (Conversation conv : clientData.getConversations()) {

@@ -1272,6 +1272,7 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
     @Override
     public List<GroupChat> getGroupChatHistories(String jsonString, String username) throws RemoteException {
         // Validation
+        System.out.println(username);
         if (username == null || username.trim().isEmpty()) {
             throw new RemoteException("Username cannot be null or empty");
         }
