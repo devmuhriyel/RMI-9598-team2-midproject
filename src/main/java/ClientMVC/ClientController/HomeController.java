@@ -454,8 +454,11 @@ public class HomeController {
 
             // 3. Open login screen again
             try {
-                LoginView loginView = new LoginView();
-                loginView.start(new Stage());
+                view.getStage().hide();
+                Stage loginStage = ClientMVC.ClientView.Login.LoginView.getPrimaryStage();
+                if (loginStage != null) {
+                    loginStage.show();
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }

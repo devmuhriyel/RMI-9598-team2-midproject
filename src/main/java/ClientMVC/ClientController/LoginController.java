@@ -111,7 +111,6 @@ public class LoginController {
                     reason
             );
 
-            // Ensure login screen is visible
             try {
                 LoginView loginView = new LoginView();
                 loginView.start(new Stage());
