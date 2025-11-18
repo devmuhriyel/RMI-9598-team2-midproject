@@ -436,14 +436,24 @@ public class HomeController {
 
     public void onForceLogout(String reason) {
         Platform.runLater(() -> {
-            // Show message
+
+            // 1. Show the forced logout message
             ui.showAlert(
                     Alert.AlertType.WARNING,
                     "Logged Out",
                     reason
             );
 
-            // Ensure login screen is visible
+            // 2. CLOSE the Home GUI
+            try {
+                if (view.getStage() != null) {
+                    view.getStage().close();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            // 3. Open login screen again
             try {
                 LoginView loginView = new LoginView();
                 loginView.start(new Stage());
@@ -452,4 +462,5 @@ public class HomeController {
             }
         });
     }
+
 }
