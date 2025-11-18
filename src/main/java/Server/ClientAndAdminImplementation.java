@@ -2262,6 +2262,9 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
             // Notify ALL remaining group members to refresh their group data
             notifyAllGroupMembersToRefresh(updatedMembers);
 
+            // Also notify the removed member so the group disappears immediately
+            notifyUserToRefreshGroups(memberToRemove);
+
             // Callback
             notifyMemberRemoveResult(requester, true);
 
@@ -2309,23 +2312,28 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
     // Notify all group members to refresh their group data
     private void notifyAllGroupMembersToRefresh(java.util.List<String> memberUsernames) {
         for (String memberUsername : memberUsernames) {
-            Client memberClient = allUsers.get(memberUsername);
-            if (memberClient == null) continue;
+            notifyUserToRefreshGroups(memberUsername);
+        }
+    }
 
-            ClientCallbackInterface memberCallback = clientCallbacks.get(memberUsername);
-            if (memberCallback != null) {
-                callbackExecutor.execute(() -> {
-                    try {
-                        // Send updated group chat list to this member
-                        List<GroupChat> memberGroups = memberClient.getGroupChats();
-                        if (memberGroups != null) {
-                            memberCallback.onGetGroupChatHistories(new ArrayList<>(memberGroups));
-                        }
-                    } catch (RemoteException e) {
-                        System.out.println("Failed to notify " + memberUsername + " to refresh groups: " + e.getMessage());
+    private void notifyUserToRefreshGroups(String username) {
+        Client memberClient = allUsers.get(username);
+        if (memberClient == null) return;
+
+        ClientCallbackInterface memberCallback = clientCallbacks.get(username);
+        if (memberCallback != null) {
+            callbackExecutor.execute(() -> {
+                try {
+                    List<GroupChat> memberGroups = memberClient.getGroupChats();
+                    if (memberGroups == null) {
+                        memberCallback.onGetGroupChatHistories(new ArrayList<>());
+                    } else {
+                        memberCallback.onGetGroupChatHistories(new ArrayList<>(memberGroups));
                     }
-                });
-            }
+                } catch (RemoteException e) {
+                    System.out.println("Failed to notify " + username + " to refresh groups: " + e.getMessage());
+                }
+            });
         }
     }
 
