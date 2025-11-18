@@ -101,4 +101,24 @@ public class LoginController {
                         "Login Failed", "Invalid username or password")
         );
     }
+
+    public void onForceLogout(String reason) {
+        Platform.runLater(() -> {
+            // Show message
+            loginJFXController.showAlert(
+                    Alert.AlertType.WARNING,
+                    "Logged Out",
+                    reason
+            );
+
+            // Ensure login screen is visible
+            try {
+                LoginView loginView = new LoginView();
+                loginView.start(new Stage());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
 }

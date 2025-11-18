@@ -20,6 +20,8 @@ public interface ClientCallbackInterface extends Remote {
     void onFailedPasswordChange() throws RemoteException;
     void onSuccessfulCodeVerification() throws RemoteException;
     void onFailedCodeVerification() throws RemoteException;
+    void forceLogout(String reason) throws RemoteException;
+
 
     //USER HOME UI METHODS
     void onSearchUserResults() throws RemoteException;

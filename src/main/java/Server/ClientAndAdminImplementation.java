@@ -37,6 +37,9 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
     private ServerJSONHandler serverJSONHandler;
     private Set<String> communityChatActiveAdmins = ConcurrentHashMap.newKeySet();
 
+    private final Map<String, ClientCallbackInterface> loggedClients = new HashMap<>();
+
+
     //CONSTRUCTORS
     public ClientAndAdminImplementation() throws RemoteException {
         super();
@@ -241,9 +244,8 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
         } finally {
             fileLock.writeLock().unlock();
         }
-    }
 
-    @Override
+    }@Override
     public void logIn(String username, String jsonString, ClientCallbackInterface clientCallback) throws RemoteException {
         try {
             JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
@@ -266,22 +268,35 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
                 return;
             }
 
+            if (clientCallbacks.containsKey(username)) {
+                try {
+                    System.out.println("Duplicate login detected for user: " + username);
+                    clientCallbacks.get(username).forceLogout("Your account was logged in from another device.");
+                } catch (Exception ex) {
+                    System.out.println("Old session unreachable. Replacing...");
+                }
+            }
+
+            // Register NEW session
             clientCallbacks.put(username, clientCallback);
+
+            // Send user data JSON to the client
             Gson gson = new Gson();
             String clientDataJson = gson.toJson(client);
             clientCallback.onSuccessfulLogin(clientDataJson);
+
             notifyAdminsOfOnlineUsers();
 
         } catch (JsonSyntaxException e) {
             System.err.println("Error parsing login JSON: " + e.getMessage());
-            e.printStackTrace();
             clientCallback.onFailedLogin();
+
         } catch (Exception e) {
             System.err.println("Error during client login: " + e.getMessage());
-            e.printStackTrace();
             clientCallback.onFailedLogin();
         }
     }
+
 
     @Override
     public void logOut(String username, String jsonString) throws RemoteException {
@@ -648,7 +663,7 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
     @Override
     public void sendFriendRequest(String jsonString) throws RemoteException {
         String requesterUsername;
-        String targetUsername;
+        String targetUsername;  
 
         try {
             JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();

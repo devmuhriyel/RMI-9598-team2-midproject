@@ -6,11 +6,13 @@ import ClientMVC.ClientView.Account.AccountView;
 import ClientMVC.ClientView.Chat.ChatView;
 import ClientMVC.ClientView.Home.HomeJFXController;
 import ClientMVC.ClientView.Home.HomeView;
+import ClientMVC.ClientView.Login.LoginView;
 import Common.Objects.ClientObjects.Client;
 import Common.Objects.ClientObjects.FriendRequest;
 import Common.Objects.ClientObjects.GroupChat;
 import com.google.gson.Gson;
 import javafx.application.Platform;
+import javafx.scene.control.Alert;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -430,5 +432,24 @@ public class HomeController {
             }
         }
         return result;
+    }
+
+    public void onForceLogout(String reason) {
+        Platform.runLater(() -> {
+            // Show message
+            ui.showAlert(
+                    Alert.AlertType.WARNING,
+                    "Logged Out",
+                    reason
+            );
+
+            // Ensure login screen is visible
+            try {
+                LoginView loginView = new LoginView();
+                loginView.start(new Stage());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
     }
 }

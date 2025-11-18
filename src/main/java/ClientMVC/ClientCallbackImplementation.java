@@ -62,6 +62,23 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     }
 
     @Override
+    public void forceLogout(String reason) throws RemoteException {
+        Platform.runLater(() -> {
+
+            if (clientHomeController != null) {
+                clientHomeController.onForceLogout(reason);
+                return;
+            }
+
+            if (clientLoginController != null) {
+                clientLoginController.onForceLogout(reason);
+                return;
+            }
+
+        });
+    }
+
+    @Override
     public void onSuccessfulLogin(String clientDataJson) throws RemoteException {
         try {
             this.clientData = gson.fromJson(clientDataJson, Client.class);
