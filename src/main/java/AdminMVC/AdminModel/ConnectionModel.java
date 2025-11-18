@@ -23,17 +23,23 @@ public class ConnectionModel {
     private static final String RMI_BINDING_NAME = "ChatServer";
 
     public ConnectionModel() {
-        // --- Auto-Configure RMI Hostname ---
-        // We only run this if the user hasn't already set the property manually
-        if (System.getProperty("java.rmi.server.hostname") == null) {
+        // Check if user manually set the hostname
+        String manualHostname = System.getProperty("java.rmi.server.hostname");
+
+        if (manualHostname == null || manualHostname.trim().isEmpty()) {
+            System.out.println("⚠ No manual RMI hostname set, attempting auto-configuration...");
             if (!configureRmiHostname()) {
                 System.err.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
                 System.err.println("FATAL: Could not automatically find a suitable IP for RMI.");
-                System.err.println("The application will likely fail to receive callbacks.");
+                System.err.println("Please set -Djava.rmi.server.hostname=YOUR_IP manually");
                 System.err.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            } else {
+                System.out.println("✓ Auto-configured RMI hostname: " +
+                        System.getProperty("java.rmi.server.hostname"));
             }
+        } else {
+            System.out.println("✓ Using manual RMI hostname: " + manualHostname);
         }
-        // --- End Auto-Configure Logic ---
     }
 
     public enum ConnectionStatus {
@@ -136,20 +142,45 @@ public class ConnectionModel {
 
 
     private boolean configureRmiHostname() {
-        //TESTER FOR VPN
-        String radminIp = findIpByPrefix("26.");
-        if (radminIp != null) {
-            System.setProperty("java.rmi.server.hostname", radminIp);
+        // Try to get the actual IP that can reach the server
+        String detectedIp = null;
+
+        // First try: Get IP from network interfaces
+        try {
+            for (NetworkInterface ni : Collections.list(NetworkInterface.getNetworkInterfaces())) {
+                if (!ni.isUp() || ni.isLoopback() || ni.isVirtual()) continue;
+
+                for (InetAddress addr : Collections.list(ni.getInetAddresses())) {
+                    if (addr instanceof Inet4Address && !addr.isLoopbackAddress()) {
+                        String ip = addr.getHostAddress();
+                        System.out.println("  Found network interface IP: " + ip + " on " + ni.getName());
+
+                        // Prefer 192.168.x.x or 10.x.x.x ranges
+                        if (ip.startsWith("192.168.") || ip.startsWith("10.")) {
+                            detectedIp = ip;
+                            break;
+                        }
+
+                        // Fallback to any non-loopback
+                        if (detectedIp == null) {
+                            detectedIp = ip;
+                        }
+                    }
+                }
+                if (detectedIp != null && (detectedIp.startsWith("192.168.") || detectedIp.startsWith("10."))) {
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error scanning network interfaces: " + e.getMessage());
+        }
+
+        if (detectedIp != null) {
+            System.setProperty("java.rmi.server.hostname", detectedIp);
+            System.out.println("✓ Set RMI hostname to: " + detectedIp);
             return true;
         }
 
-        //ACTUAL FOR SAME NETWORK
-        String lanIp = findSiteLocalIp();
-        if (lanIp != null) {
-            System.setProperty("java.rmi.server.hostname", lanIp);
-            return true;
-        }
-        System.err.println("Warning: No Radmin or LAN IP found.");
         return false;
     }
 

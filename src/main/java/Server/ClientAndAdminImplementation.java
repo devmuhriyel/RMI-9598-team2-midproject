@@ -167,23 +167,34 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
 
     @Override
     public synchronized void logIn(String username, String jsonString, AdminCallbackInterface adminCallback) throws RemoteException {
+        System.out.println(">>> Server: Admin login attempt for: " + username);
+
         try {
             JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
             String password = jsonObject.get("password").getAsString();
+
+            System.out.println("  Checking admin credentials...");
             Admin admin = allAdmins.get(username);
 
             if (admin == null) {
+                System.out.println("  ✗ Admin not found: " + username);
                 adminCallback.onFailedLogin();
                 return;
             }
 
             if (!admin.getPassword().equals(password)) {
+                System.out.println("  ✗ Invalid password for admin: " + username);
                 adminCallback.onFailedLogin();
                 return;
             }
 
+            System.out.println("  ✓ Credentials valid, storing callback...");
             adminCallbacks.put(username, adminCallback);
+
+            System.out.println("  ✓ Calling onSuccessfulLogin callback...");
             adminCallback.onSuccessfulLogin();
+
+            System.out.println("✓ Admin login successful: " + username);
 
         } catch (Exception e) {
             System.err.println("✗ Error during admin login: " + e.getMessage());
