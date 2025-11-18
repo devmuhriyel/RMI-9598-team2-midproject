@@ -565,17 +565,95 @@
               "receiver": "marielle",
               "content": "hell naw",
               "isFile": false
+            },
+            {
+              "sender": "diana",
+              "receiver": "marielle",
+              "content": "helllloooo",
+              "isFile": false
             }
           ]
         }
       ],
       "groupChats": [
         {
-          "groupID": "grp-1763092017735",
-          "groupName": "Balorant",
+          "groupID": "grp-1763107986785",
+          "groupName": "test",
           "receivers": [
             "diana",
-            "Clark",
+            "Clark"
+          ],
+          "messages": []
+        },
+        {
+          "groupID": "grp-1763112089758",
+          "groupName": "new",
+          "receivers": [
+            "diana",
+            "marielle"
+          ],
+          "messages": [
+            {
+              "sender": "diana",
+              "receivers": [
+                "diana",
+                "marielle"
+              ],
+              "content": "hii",
+              "isFile": false
+            },
+            {
+              "sender": "diana",
+              "receivers": [
+                "diana",
+                "marielle"
+              ],
+              "content": "",
+              "isFile": false
+            },
+            {
+              "sender": "diana",
+              "receivers": [
+                "diana",
+                "marielle"
+              ],
+              "content": "",
+              "isFile": false
+            },
+            {
+              "sender": "diana",
+              "receivers": [
+                "diana",
+                "marielle"
+              ],
+              "content": "",
+              "isFile": false
+            },
+            {
+              "sender": "diana",
+              "receivers": [
+                "diana",
+                "marielle"
+              ],
+              "content": "",
+              "isFile": false
+            }
+          ]
+        },
+        {
+          "groupID": "grp-1763112164879",
+          "groupName": "HelloWorld",
+          "receivers": [
+            "diana",
+            "Clark"
+          ],
+          "messages": []
+        },
+        {
+          "groupID": "grp-1763452298106",
+          "groupName": "yoyoyo",
+          "receivers": [
+            "diana",
             "marielle"
           ],
           "messages": []
@@ -616,12 +694,20 @@
       ],
       "groupChats": [
         {
-          "groupID": "grp-1763092017735",
-          "groupName": "Balorant",
+          "groupID": "grp-1763112164879",
+          "groupName": "HelloWorld",
           "receivers": [
             "diana",
-            "Clark",
-            "marielle"
+            "Clark"
+          ],
+          "messages": []
+        },
+        {
+          "groupID": "grp-1763107986785",
+          "groupName": "test",
+          "receivers": [
+            "diana",
+            "Clark"
           ],
           "messages": []
         }
@@ -880,6 +966,12 @@
               "receiver": "marielle",
               "content": "hell naw",
               "isFile": false
+            },
+            {
+              "sender": "diana",
+              "receiver": "marielle",
+              "content": "helllloooo",
+              "isFile": false
             }
           ]
         }
@@ -889,8 +981,86 @@
           "groupID": "grp-1763092017735",
           "groupName": "Balorant",
           "receivers": [
+            "marielle"
+          ],
+          "messages": []
+        },
+        {
+          "groupID": "grp-1763105586071",
+          "groupName": "LeagueOfLegends",
+          "receivers": [
+            "marielle"
+          ],
+          "messages": []
+        },
+        {
+          "groupID": "grp-1763112089758",
+          "groupName": "new",
+          "receivers": [
             "diana",
-            "Clark",
+            "marielle"
+          ],
+          "messages": [
+            {
+              "sender": "diana",
+              "receivers": [
+                "diana",
+                "marielle"
+              ],
+              "content": "hii",
+              "isFile": false
+            },
+            {
+              "sender": "diana",
+              "receivers": [
+                "diana",
+                "marielle"
+              ],
+              "content": "",
+              "isFile": false
+            },
+            {
+              "sender": "diana",
+              "receivers": [
+                "diana",
+                "marielle"
+              ],
+              "content": "",
+              "isFile": false
+            },
+            {
+              "sender": "diana",
+              "receivers": [
+                "diana",
+                "marielle"
+              ],
+              "content": "",
+              "isFile": false
+            },
+            {
+              "sender": "diana",
+              "receivers": [
+                "diana",
+                "marielle"
+              ],
+              "content": "",
+              "isFile": false
+            }
+          ]
+        },
+        {
+          "groupID": "grp-1763452234289",
+          "groupName": "wowowow",
+          "receivers": [
+            "marielle"
+          ],
+          "messages": []
+        },
+        {
+          "groupID": "grp-1763452298106",
+          "groupName": "yoyoyo",
+          "receivers": [
+            "diana",
             "marielle"
           ],
           "messages": []
