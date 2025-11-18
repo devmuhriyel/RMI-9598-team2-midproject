@@ -383,4 +383,7 @@ public class HomeJFXController {
     public void setGroupMembersProvider(java.util.function.Function<String, List<String>> provider) {
         this.groupMembersProvider = provider;
     }
+
+    public void showAlert(Alert.AlertType alertType, String loggedOut, String reason) {
+    }
 }

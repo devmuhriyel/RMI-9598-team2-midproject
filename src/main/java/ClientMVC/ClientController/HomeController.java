@@ -6,11 +6,13 @@ import ClientMVC.ClientView.Account.AccountView;
 import ClientMVC.ClientView.Chat.ChatView;
 import ClientMVC.ClientView.Home.HomeJFXController;
 import ClientMVC.ClientView.Home.HomeView;
+import ClientMVC.ClientView.Login.LoginView;
 import Common.Objects.ClientObjects.Client;
 import Common.Objects.ClientObjects.FriendRequest;
 import Common.Objects.ClientObjects.GroupChat;
 import com.google.gson.Gson;
 import javafx.application.Platform;
+import javafx.scene.control.Alert;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -30,7 +32,6 @@ public class HomeController {
         this.ui = ui;
         this.clientCallback = callback;
         callback.setClientHomeController(this);
-        refreshUserData();
         initialize();
         loadClientData();
     }
@@ -431,4 +432,37 @@ public class HomeController {
         }
         return result;
     }
+
+    public void onForceLogout(String reason) {
+        Platform.runLater(() -> {
+
+            // 1. Show the forced logout message
+            ui.showAlert(
+                    Alert.AlertType.WARNING,
+                    "Logged Out",
+                    reason
+            );
+
+            // 2. CLOSE the Home GUI
+            try {
+                if (view.getStage() != null) {
+                    view.getStage().close();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            // 3. Open login screen again
+            try {
+                view.getStage().hide();
+                Stage loginStage = ClientMVC.ClientView.Login.LoginView.getPrimaryStage();
+                if (loginStage != null) {
+                    loginStage.show();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
 }

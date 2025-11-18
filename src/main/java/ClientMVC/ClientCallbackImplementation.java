@@ -62,6 +62,23 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     }
 
     @Override
+    public void forceLogout(String reason) throws RemoteException {
+        Platform.runLater(() -> {
+
+            if (clientHomeController != null) {
+                clientHomeController.onForceLogout(reason);
+                return;
+            }
+
+            if (clientLoginController != null) {
+                clientLoginController.onForceLogout(reason);
+                return;
+            }
+
+        });
+    }
+
+    @Override
     public void onSuccessfulLogin(String clientDataJson) throws RemoteException {
         try {
             this.clientData = gson.fromJson(clientDataJson, Client.class);
@@ -331,17 +348,21 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
 
     @Override
     public void onPrivateFileSent(String message, String jsonString) throws RemoteException {
+        Message msg = gson.fromJson(message, Message.class);
+        updateClientConversation(msg.getReceiver(), msg);
         if (clientChatController != null) {
-            Message msg = messageStringToObject(message);
-            clientChatController.onPrivateFileSent(msg);
+            Message msgs = messageStringToObject(message);
+            clientChatController.onPrivateFileSent(msgs);
         }
     }
 
     @Override
     public void onPrivateFileReceived(String message, String jsonString) throws RemoteException {
+        Message msg = gson.fromJson(message, Message.class);
+        updateClientConversation(msg.getReceiver(), msg);
         if (clientChatController != null) {
-            Message msg = messageStringToObject(message);
-            clientChatController.onPrivateFileReceived(msg);
+            Message msgs = messageStringToObject(message);
+            clientChatController.onPrivateFileReceived(msgs);
         }
     }
 
@@ -363,17 +384,21 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
 
     @Override
     public void onGroupFileSent(String message, String jsonString) throws RemoteException {
+        Message msg = gson.fromJson(message, Message.class);
+        updateClientGroupChat(msg);
         if (clientChatController != null) {
-            Message msg = messageStringToObject(message);
-            clientChatController.onGroupFileSent(msg);
+            Message msgs = messageStringToObject(message);
+            clientChatController.onGroupFileSent(msgs);
         }
     }
 
     @Override
     public void onGroupFileReceived(String message, String jsonString) throws RemoteException {
+        Message msg = gson.fromJson(message, Message.class);
+        updateClientGroupChat(msg);
         if (clientChatController != null) {
-            Message msg = messageStringToObject(message);
-            clientChatController.onGroupFileReceived(msg);
+            Message msgs = messageStringToObject(message);
+            clientChatController.onGroupFileReceived(msgs);
         }
     }
 
@@ -559,6 +584,51 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
         } catch (Exception e) {
             System.err.println("Error parsing message: " + e.getMessage());
             throw new RemoteException("Failed to parse message", e);
+        }
+    }
+
+    private void updateClientConversation(String otherUser, Message message) {
+        if (clientData == null || clientData.getConversations() == null) {
+            return;
+        }
+
+        // Find the conversation
+        for (Conversation conv : clientData.getConversations()) {
+            if (conv.getRecipient() != null && conv.getRecipient().equals(otherUser)) {
+                if (conv.getMessages() == null) {
+                    conv.setMessages(new java.util.ArrayList<>());
+                }
+                // Add message to local data
+                conv.getMessages().add(message);
+                return;
+            }
+        }
+
+        // If conversation doesn't exist, create it
+        Conversation newConv = new Conversation(otherUser, new java.util.ArrayList<>());
+        newConv.getMessages().add(message);
+        clientData.getConversations().add(newConv);
+    }
+
+    private void updateClientGroupChat(Message message) {
+        if (clientData == null || clientData.getGroupChats() == null ||
+                message.getReceivers() == null || message.getReceivers().isEmpty()) {
+            return;
+        }
+
+        // Find the group by matching receivers
+        for (GroupChat group : clientData.getGroupChats()) {
+            if (group.getReceivers() != null &&
+                    group.getReceivers().containsAll(message.getReceivers()) &&
+                    message.getReceivers().containsAll(group.getReceivers())) {
+
+                if (group.getMessages() == null) {
+                    group.setMessages(new java.util.ArrayList<>());
+                }
+                // Add message to local data
+                group.getMessages().add(message);
+                return;
+            }
         }
     }
 
