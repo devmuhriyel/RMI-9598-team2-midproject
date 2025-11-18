@@ -3,13 +3,12 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane fx:id="adminRoot" prefHeight="618.0" prefWidth="864.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="AdminMVC.AdminView.Admin.AdminPageJFXController">
+<AnchorPane fx:id="adminRoot" prefHeight="618.0" prefWidth="864.0" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1" fx:controller="AdminMVC.AdminView.Admin.AdminPageJFXController">
 
     <children>
 
         <!-- Top controls -->
         <HBox layoutX="20" layoutY="20" spacing="10" />
-        <Button fx:id="ActiveButton" layoutX="19.0" layoutY="30.0" prefHeight="31.0" prefWidth="119.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Active Users" />
         <Button fx:id="CommunityButton" layoutX="169.0" layoutY="30.0" prefHeight="31.0" prefWidth="170.0" style="-fx-background-color: #8700b1; -fx-text-fill: white;" text="Community Messages" />
 
         <!-- FIXED: Changed fx:id from CommunityButton1 to AddButton -->

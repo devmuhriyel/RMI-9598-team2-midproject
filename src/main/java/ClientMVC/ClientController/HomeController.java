@@ -32,6 +32,7 @@ public class HomeController {
         this.ui = ui;
         this.clientCallback = callback;
         callback.setClientHomeController(this);
+        refreshUserData();
         initialize();
         loadClientData();
     }

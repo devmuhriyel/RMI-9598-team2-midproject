@@ -12,33 +12,21 @@ import java.util.Collections;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class ConnectionModel {
-    // Stores the remote service stub
     private volatile AdminInterface remoteServiceStub;
     private volatile String ip;
     private volatile int port;
     private volatile boolean connected;
     private final ReentrantLock connectionLock = new ReentrantLock();
-
-    // The binding name must be exactly what the server uses
     private static final String RMI_BINDING_NAME = "ChatServer";
 
     public ConnectionModel() {
-        // Check if user manually set the hostname
-        String manualHostname = System.getProperty("java.rmi.server.hostname");
-
-        if (manualHostname == null || manualHostname.trim().isEmpty()) {
-            System.out.println("⚠ No manual RMI hostname set, attempting auto-configuration...");
+        if (System.getProperty("java.rmi.server.hostname") == null) {
             if (!configureRmiHostname()) {
                 System.err.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
                 System.err.println("FATAL: Could not automatically find a suitable IP for RMI.");
-                System.err.println("Please set -Djava.rmi.server.hostname=YOUR_IP manually");
+                System.err.println("The application will likely fail to receive callbacks.");
                 System.err.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-            } else {
-                System.out.println("✓ Auto-configured RMI hostname: " +
-                        System.getProperty("java.rmi.server.hostname"));
             }
-        } else {
-            System.out.println("✓ Using manual RMI hostname: " + manualHostname);
         }
     }
 
@@ -48,8 +36,8 @@ public class ConnectionModel {
         INVALID_PORT_FORMAT,
         INVALID_IP_FORMAT,
         INVALID_PORT_RANGE,
-        CONNECTION_FAILED,      // For Registry connection or general RMI network errors
-        RMI_LOOKUP_FAILED       // For when the service name isn't found in the Registry
+        CONNECTION_FAILED,
+        RMI_LOOKUP_FAILED
     }
 
     public static class ConnectionResult {
@@ -71,40 +59,32 @@ public class ConnectionModel {
             this.connected = false;
             this.remoteServiceStub = null; // Reset stub
 
-            // --- Input Validation ---
-            if (ip == null || ip.trim().isEmpty()) {
-                return new ConnectionResult(ConnectionStatus.EMPTY_FIELDS, "IP address cannot be empty");
-            }
-            if (portText == null || portText.trim().isEmpty()) {
-                return new ConnectionResult(ConnectionStatus.EMPTY_FIELDS, "Port cannot be empty");
+            if (ip == null || ip.trim().isEmpty() || portText == null || portText.trim().isEmpty()) {
+                return new ConnectionResult(ConnectionStatus.EMPTY_FIELDS, "IP address and Port cannot be empty.");
             }
 
             ip = ip.trim();
             portText = portText.trim();
             int port;
+
             try {
                 port = Integer.parseInt(portText);
             } catch (NumberFormatException e) {
-                return new ConnectionResult(ConnectionStatus.INVALID_PORT_FORMAT, "Port must be a valid number");
+                return new ConnectionResult(ConnectionStatus.INVALID_PORT_FORMAT, "Port must be a valid number.");
             }
+
             if (port < 1 || port > 65535) {
-                return new ConnectionResult(ConnectionStatus.INVALID_PORT_RANGE, "Port must be between 1 and 65535");
+                return new ConnectionResult(ConnectionStatus.INVALID_PORT_RANGE, "Port must be between 1 and 65535.");
             }
-            String ipv4Pattern = "^(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)" +
-                    "(\\.(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)){3}$";
 
+            String ipv4Pattern = "^(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)(\\.(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)){3}$";
             if (!ip.matches(ipv4Pattern) && !ip.equalsIgnoreCase("localhost")) {
-                return new ConnectionResult(ConnectionStatus.INVALID_IP_FORMAT, "Invalid IP address format");
+                return new ConnectionResult(ConnectionStatus.INVALID_IP_FORMAT, "Invalid IP address format.");
             }
 
-            // --- RMI Connection Logic ---
             try {
-                // 1. Get the reference to the RMI Registry
                 Registry registry = LocateRegistry.getRegistry(ip, port);
-
-                // 2. Look up the remote object and cast it
                 remoteServiceStub = (AdminInterface) registry.lookup(RMI_BINDING_NAME);
-
                 this.connected = true;
                 this.ip = ip;
                 this.port = port;
@@ -123,12 +103,12 @@ public class ConnectionModel {
                 return new ConnectionResult(ConnectionStatus.RMI_LOOKUP_FAILED,
                         "RMI Service found but has wrong type (check stub versions).");
             }
+
         } finally {
             connectionLock.unlock();
         }
     }
 
-    /** Returns the remote service stub. */
     public AdminInterface getRemoteServiceStub() {
         connectionLock.lock();
         try {
@@ -138,49 +118,24 @@ public class ConnectionModel {
         }
     }
 
-    public int getPort() { return port; }
-
+    public int getPort() {
+        return port;
+    }
 
     private boolean configureRmiHostname() {
-        // Try to get the actual IP that can reach the server
-        String detectedIp = null;
-
-        // First try: Get IP from network interfaces
-        try {
-            for (NetworkInterface ni : Collections.list(NetworkInterface.getNetworkInterfaces())) {
-                if (!ni.isUp() || ni.isLoopback() || ni.isVirtual()) continue;
-
-                for (InetAddress addr : Collections.list(ni.getInetAddresses())) {
-                    if (addr instanceof Inet4Address && !addr.isLoopbackAddress()) {
-                        String ip = addr.getHostAddress();
-                        System.out.println("  Found network interface IP: " + ip + " on " + ni.getName());
-
-                        // Prefer 192.168.x.x or 10.x.x.x ranges
-                        if (ip.startsWith("192.168.") || ip.startsWith("10.")) {
-                            detectedIp = ip;
-                            break;
-                        }
-
-                        // Fallback to any non-loopback
-                        if (detectedIp == null) {
-                            detectedIp = ip;
-                        }
-                    }
-                }
-                if (detectedIp != null && (detectedIp.startsWith("192.168.") || detectedIp.startsWith("10."))) {
-                    break;
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Error scanning network interfaces: " + e.getMessage());
-        }
-
-        if (detectedIp != null) {
-            System.setProperty("java.rmi.server.hostname", detectedIp);
-            System.out.println("✓ Set RMI hostname to: " + detectedIp);
+        String radminIp = findIpByPrefix("26.");
+        if (radminIp != null) {
+            System.setProperty("java.rmi.server.hostname", radminIp);
             return true;
         }
 
+        String lanIp = findSiteLocalIp();
+        if (lanIp != null) {
+            System.setProperty("java.rmi.server.hostname", lanIp);
+            return true;
+        }
+
+        System.err.println("Warning: No Radmin or LAN IP found.");
         return false;
     }
 
@@ -188,6 +143,7 @@ public class ConnectionModel {
         try {
             for (NetworkInterface ni : Collections.list(NetworkInterface.getNetworkInterfaces())) {
                 if (!ni.isUp() || ni.isLoopback()) continue;
+
                 for (InetAddress addr : Collections.list(ni.getInetAddresses())) {
                     if (addr instanceof Inet4Address) {
                         String ip = addr.getHostAddress();
@@ -203,18 +159,45 @@ public class ConnectionModel {
         return null;
     }
 
-    private String findSiteLocalIp() {
+    private static String findSiteLocalIp() {
         try {
             for (NetworkInterface ni : Collections.list(NetworkInterface.getNetworkInterfaces())) {
                 if (!ni.isUp() || ni.isLoopback() || ni.isVirtual()) continue;
+
+                String niName = ni.getName().toLowerCase();
+                String displayName = ni.getDisplayName() != null ? ni.getDisplayName().toLowerCase() : "";
+
+                // ⚠️ EXPLICITLY FILTER Hyper-V adapters
+                if (niName.contains("vethernet") ||
+                        displayName.contains("vethernet") ||
+                        displayName.contains("hyper-v") ||
+                        displayName.contains("default switch")) {
+                    System.out.println("⊗ Skipping virtual adapter: " + ni.getName());
+                    continue;
+                }
+
+                // Also filter other virtual adapters
+                if (niName.contains("vbox") || niName.contains("vmware") ||
+                        niName.contains("docker") || niName.contains("wsl") ||
+                        displayName.contains("virtual")) {
+                    System.out.println("⊗ Skipping virtual adapter: " + ni.getName());
+                    continue;
+                }
+
                 for (InetAddress addr : Collections.list(ni.getInetAddresses())) {
                     if (addr instanceof Inet4Address && addr.isSiteLocalAddress()) {
-                        return addr.getHostAddress();
+                        String ip = addr.getHostAddress();
+
+                        // Prioritize 10.x.x.x and 192.168.x.x
+                        if (ip.startsWith("10.") || ip.startsWith("192.168.")) {
+                            System.out.println("✓ Selected physical adapter: " + ni.getName() + " → " + ip);
+                            return ip;
+                        }
                     }
                 }
             }
         } catch (Exception e) {
-            System.err.println("Error while scanning network interfaces: " + e.getMessage());
+            System.err.println("Error finding LAN IP: " + e.getMessage());
         }
         return null;
     }

@@ -157,19 +157,45 @@ public class ConnectionModel {
         }
         return null;
     }
-    private String findSiteLocalIp() {
+    private static String findSiteLocalIp() {
         try {
             for (NetworkInterface ni : Collections.list(NetworkInterface.getNetworkInterfaces())) {
                 if (!ni.isUp() || ni.isLoopback() || ni.isVirtual()) continue;
 
+                String niName = ni.getName().toLowerCase();
+                String displayName = ni.getDisplayName() != null ? ni.getDisplayName().toLowerCase() : "";
+
+                // ⚠️ EXPLICITLY FILTER Hyper-V adapters
+                if (niName.contains("vethernet") ||      // Hyper-V vEthernet
+                        displayName.contains("vethernet") ||
+                        displayName.contains("hyper-v") ||
+                        displayName.contains("default switch")) {
+                    System.out.println("⊗ Skipping virtual adapter: " + ni.getName());
+                    continue; // Skip this interface
+                }
+
+                // Also filter other virtual adapters
+                if (niName.contains("vbox") || niName.contains("vmware") ||
+                        niName.contains("docker") || niName.contains("wsl") ||
+                        displayName.contains("virtual")) {
+                    System.out.println("⊗ Skipping virtual adapter: " + ni.getName());
+                    continue;
+                }
+
                 for (InetAddress addr : Collections.list(ni.getInetAddresses())) {
                     if (addr instanceof Inet4Address && addr.isSiteLocalAddress()) {
-                        return addr.getHostAddress(); // Found it
+                        String ip = addr.getHostAddress();
+
+                        // Prioritize 10.x.x.x and 192.168.x.x
+                        if (ip.startsWith("10.") || ip.startsWith("192.168.")) {
+                            System.out.println("✓ Selected physical adapter: " + ni.getName() + " → " + ip);
+                            return ip;
+                        }
                     }
                 }
             }
         } catch (Exception e) {
-            System.err.println("Error while scanning network interfaces: " + e.getMessage());
+            System.err.println("Error finding LAN IP: " + e.getMessage());
         }
         return null;
     }

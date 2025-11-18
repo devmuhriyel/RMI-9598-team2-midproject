@@ -171,20 +171,29 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
     @Override
     public synchronized void logIn(String username, String jsonString, AdminCallbackInterface adminCallback) throws RemoteException {
         System.out.println(">>> Server: Admin login attempt for: " + username);
+        System.out.println(">>> Total admins loaded: " + allAdmins.size());
+        System.out.println(">>> Available admin usernames: " + allAdmins.keySet());
 
         try {
             JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
             String password = jsonObject.get("password").getAsString();
 
+            System.out.println("  Received password length: " + password.length());
             System.out.println("  Checking admin credentials...");
+
+            // Get admin from the map (just like client login does)
             Admin admin = allAdmins.get(username);
 
             if (admin == null) {
-                System.out.println("  ✗ Admin not found: " + username);
+                System.out.println("  ✗ Admin not found in allAdmins map: " + username);
                 adminCallback.onFailedLogin();
                 return;
             }
 
+            System.out.println("  Stored password for " + username + ": " + admin.getPassword());
+            System.out.println("  Received password: " + password);
+
+            // Simple password check (just like client login)
             if (!admin.getPassword().equals(password)) {
                 System.out.println("  ✗ Invalid password for admin: " + username);
                 adminCallback.onFailedLogin();
@@ -198,6 +207,10 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
             adminCallback.onSuccessfulLogin();
 
             System.out.println("✓ Admin login successful: " + username);
+
+        } catch (JsonSyntaxException e) {
+            System.err.println("Error parsing admin login JSON: " + e.getMessage());
+            adminCallback.onFailedLogin();
 
         } catch (Exception e) {
             System.err.println("✗ Error during admin login: " + e.getMessage());
@@ -245,7 +258,8 @@ public class ClientAndAdminImplementation extends UnicastRemoteObject implements
             fileLock.writeLock().unlock();
         }
 
-    }@Override
+    }
+    @Override
     public void logIn(String username, String jsonString, ClientCallbackInterface clientCallback) throws RemoteException {
         try {
             JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
