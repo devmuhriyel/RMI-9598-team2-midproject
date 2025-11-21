@@ -272,7 +272,19 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
 
     @Override
     public void onFriendDeletedByOther() throws RemoteException {
-
+        System.out.println("Callback: Friend removed from list!");
+        if (clientAccountController != null) {
+            Platform.runLater(() -> {
+                clientAccountController.handleFriendDeletionSuccess();
+            });
+        }
+        if (clientHomeController != null) {
+            try {
+                clientHomeController.refreshUserData();
+            } catch (Exception e) {
+                System.err.println("Failed to refresh home after unfriend: " + e.getMessage());
+            }
+        }
     }
 
     @Override

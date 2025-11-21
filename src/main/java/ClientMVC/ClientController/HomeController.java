@@ -32,9 +32,9 @@ public class HomeController {
         this.ui = ui;
         this.clientCallback = callback;
         callback.setClientHomeController(this);
-        refreshUserData();
         initialize();
         loadClientData();
+        refreshUserData();
     }
 
     private void initialize() {
@@ -315,8 +315,14 @@ public class HomeController {
 
     public void updateFriendsList(List<String> friends) {
         Platform.runLater(() -> {
+            // Update local client data immediately for real-time visibility
+            if (clientCallback.getClientData() != null) {
+                clientCallback.getClientData().setFriends(friends);
+            }
+            // Update UI
             ui.setFriends(friends);
             ui.renderFriends(friends);
+            System.out.println("✓ Updated friends list UI with " + friends.size() + " friends");
         });
     }
 
