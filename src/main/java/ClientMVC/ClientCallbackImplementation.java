@@ -257,17 +257,12 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
         javafx.application.Platform.runLater(() -> {
             if (clientHomeController != null) {
                 clientHomeController.updateFriendsList(friends);
-            } else {
-                System.out.println("⚠ HomeController not available for friends list update");
             }
-
-            // Update AccountController if it exists
             if (clientAccountController != null) {
                 clientAccountController.handleFriendsListUpdate(friends);
-            } else {
-                System.out.println("⚠ AccountController not available for friends list update");
             }
         });
+
     }
 
     @Override
