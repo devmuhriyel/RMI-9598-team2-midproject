@@ -115,38 +115,61 @@ public class ChatController {
     }
 
     private Message findFileMessage(String fileName) throws RemoteException {
+        System.out.println("=== Searching for file: " + fileName + " ===");
+
         if (isCommunityChat) {
-            // Community files can't be retrieved (not persisted)
-            chatJFXController.showError("Community chat files are not stored and cannot be reopened.");
+            System.err.println("⚠ Warning: Community chat files cannot be retrieved from history");
             return null;
 
         } else if (isGroupChat) {
-            // Get fresh data from client callback
+            // Search in group chat history
+            System.out.println("Searching in group chat: " + currentGroupID);
+
+            Common.Objects.ClientObjects.GroupChat groupChat = model.getGroupChatHistoryWith(
+                    model.createJSONStringRequest("request", "GET_GROUP_CHAT_HISTORY", model.getUsername()),
+                    model.getUsername(),
+                    currentGroupID
+            );
+
+            if (groupChat != null && groupChat.getMessages() != null) {
+                System.out.println("Found " + groupChat.getMessages().size() + " messages in group");
+                for (Message msg : groupChat.getMessages()) {
+                    if (msg.isFile() && msg.getFileName().equals(fileName)) {
+                        System.out.println("✓ Found file in group chat!");
+                        return msg;
+                    }
+                }
+            }
+
+            // ✓ ALSO CHECK LOCAL CLIENT DATA
             Client clientData = clientCallback.getClientData();
             if (clientData != null && clientData.getGroupChats() != null) {
-                for (GroupChat group : clientData.getGroupChats()) {
-                    if (group.getGroupID().equals(currentGroupID)) {
-                        if (group.getMessages() != null) {
-                            for (Message msg : group.getMessages()) {
-                                if (msg.isFile() && msg.getFileName().equals(fileName)) {
-                                    return msg;
-                                }
+                for (Common.Objects.ClientObjects.GroupChat gc : clientData.getGroupChats()) {
+                    if (gc.getGroupID().equals(currentGroupID) && gc.getMessages() != null) {
+                        System.out.println("Checking local group data: " + gc.getMessages().size() + " messages");
+                        for (Message msg : gc.getMessages()) {
+                            if (msg.isFile() && msg.getFileName().equals(fileName)) {
+                                System.out.println("✓ Found file in LOCAL group data!");
+                                return msg;
                             }
                         }
-                        break;
                     }
                 }
             }
 
         } else {
-            // Get fresh data from client callback
+            // Search in private chat history
+            System.out.println("Searching in private chat with: " + currentChatPartner);
+
             Client clientData = clientCallback.getClientData();
             if (clientData != null && clientData.getConversations() != null) {
                 for (Conversation conv : clientData.getConversations()) {
                     if (conv.getRecipient().equals(currentChatPartner)) {
                         if (conv.getMessages() != null) {
+                            System.out.println("Found " + conv.getMessages().size() + " messages in conversation");
                             for (Message msg : conv.getMessages()) {
                                 if (msg.isFile() && msg.getFileName().equals(fileName)) {
+                                    System.out.println("✓ Found file in conversation!");
                                     return msg;
                                 }
                             }
@@ -157,6 +180,7 @@ public class ChatController {
             }
         }
 
+        System.err.println("✗ File not found: " + fileName);
         return null;
     }
 

@@ -334,6 +334,7 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     public void onPrivateMessageSent(String message, String jsonString) throws RemoteException {
         if (clientChatController != null) {
             Message msg = messageStringToObject(message);
+            updateLocalConversation(msg);
             clientChatController.onPrivateMessageSent(msg);
         }
     }
@@ -342,27 +343,26 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     public void onPrivateMessageReceived(String message, String jsonString) throws RemoteException {
         if (clientChatController != null) {
             Message msg = messageStringToObject(message);
+            updateLocalConversation(msg);
             clientChatController.onPrivateMessageReceived(msg);
         }
     }
 
     @Override
     public void onPrivateFileSent(String message, String jsonString) throws RemoteException {
-        Message msg = gson.fromJson(message, Message.class);
-        updateClientConversation(msg.getReceiver(), msg);
         if (clientChatController != null) {
-            Message msgs = messageStringToObject(message);
-            clientChatController.onPrivateFileSent(msgs);
+            Message msg = messageStringToObject(message);
+            updateLocalConversation(msg);
+            clientChatController.onPrivateFileSent(msg);
         }
     }
 
     @Override
     public void onPrivateFileReceived(String message, String jsonString) throws RemoteException {
-        Message msg = gson.fromJson(message, Message.class);
-        updateClientConversation(msg.getReceiver(), msg);
         if (clientChatController != null) {
-            Message msgs = messageStringToObject(message);
-            clientChatController.onPrivateFileReceived(msgs);
+            Message msg = messageStringToObject(message);
+            updateLocalConversation(msg);
+            clientChatController.onPrivateFileReceived(msg);
         }
     }
 
@@ -370,7 +370,17 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     public void onGroupMessageSent(String message, String jsonString) throws RemoteException {
         if (clientChatController != null) {
             Message msg = messageStringToObject(message);
+            updateLocalGroupChat(msg);
             clientChatController.onGroupMessageSent(msg);
+        }
+    }
+
+    @Override
+    public void onGroupFileSent(String message, String jsonString) throws RemoteException {
+        if (clientChatController != null) {
+            Message msg = messageStringToObject(message);
+            updateLocalGroupChat(msg);
+            clientChatController.onGroupFileSent(msg);
         }
     }
 
@@ -378,29 +388,20 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     public void onGroupMessageReceived(String message, String jsonString) throws RemoteException {
         if (clientChatController != null) {
             Message msg = messageStringToObject(message);
+            updateLocalGroupChat(msg);
             clientChatController.onGroupMessageReceived(msg);
         }
     }
 
     @Override
-    public void onGroupFileSent(String message, String jsonString) throws RemoteException {
-        Message msg = gson.fromJson(message, Message.class);
-        updateClientGroupChat(msg);
+    public void onGroupFileReceived(String message, String jsonString) throws RemoteException {
         if (clientChatController != null) {
-            Message msgs = messageStringToObject(message);
-            clientChatController.onGroupFileSent(msgs);
+            Message msg = messageStringToObject(message);
+            updateLocalGroupChat(msg);
+            clientChatController.onGroupFileReceived(msg);
         }
     }
 
-    @Override
-    public void onGroupFileReceived(String message, String jsonString) throws RemoteException {
-        Message msg = gson.fromJson(message, Message.class);
-        updateClientGroupChat(msg);
-        if (clientChatController != null) {
-            Message msgs = messageStringToObject(message);
-            clientChatController.onGroupFileReceived(msgs);
-        }
-    }
 
     @Override
     public void onSuccessfulGroupCreation() throws RemoteException {
@@ -496,13 +497,7 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
     public void onCommunityMessageReceived(String message, String jsonString) throws RemoteException {
         if (clientChatController != null) {
             Message msg = messageStringToObject(message);
-            javafx.application.Platform.runLater(() -> {
-                try {
-                    clientChatController.onCommunityMessageReceived(msg);
-                } catch (RemoteException e) {
-                    System.err.println("Error handling community message received: " + e.getMessage());
-                }
-            });
+            clientChatController.onCommunityMessageReceived(msg);
         }
     }
 
@@ -631,6 +626,117 @@ public class ClientCallbackImplementation extends UnicastRemoteObject implements
             }
         }
     }
+
+    private void updateLocalConversation(Message msg) {
+        if (clientData == null || msg == null) {
+            return;
+        }
+
+        try {
+            // Determine the conversation partner
+            String partner = msg.getSender().equals(username) ? msg.getReceiver() : msg.getSender();
+
+            if (partner == null || partner.isEmpty()) {
+                System.err.println("⚠ Warning: Cannot determine conversation partner");
+                return;
+            }
+
+            // Initialize conversations list if needed
+            if (clientData.getConversations() == null) {
+                clientData.setConversations(new java.util.ArrayList<>());
+            }
+
+            // Find or create conversation
+            Conversation targetConversation = null;
+            for (Conversation conv : clientData.getConversations()) {
+                if (conv.getRecipient() != null && conv.getRecipient().equals(partner)) {
+                    targetConversation = conv;
+                    break;
+                }
+            }
+
+            // Create new conversation if not found
+            if (targetConversation == null) {
+                targetConversation = new Conversation(partner, new java.util.ArrayList<>());
+                clientData.getConversations().add(targetConversation);
+                System.out.println("✓ Created new conversation with: " + partner);
+            }
+
+            // Initialize messages list if needed
+            if (targetConversation.getMessages() == null) {
+                targetConversation.setMessages(new java.util.ArrayList<>());
+            }
+
+            // Add message to local data
+            targetConversation.getMessages().add(msg);
+
+            if (msg.isFile()) {
+                System.out.println("✓ Added file to local data: " + msg.getFileName());
+            } else {
+                System.out.println("✓ Added message to local data from: " + partner);
+            }
+
+        } catch (Exception e) {
+            System.err.println("✗ Failed to update local conversation: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void updateLocalGroupChat(Message msg) {
+        if (clientData == null || msg == null) {
+            return;
+        }
+
+        try {
+            // Get group ID from message receivers
+            if (msg.getReceivers() == null || msg.getReceivers().isEmpty()) {
+                System.err.println("⚠ Warning: Message has no receivers (not a group message?)");
+                return;
+            }
+
+            // Initialize group chats list if needed
+            if (clientData.getGroupChats() == null) {
+                clientData.setGroupChats(new java.util.ArrayList<>());
+            }
+
+            // Find the group chat by checking if receivers match
+            // This is tricky because we need to find which group this message belongs to
+            Common.Objects.ClientObjects.GroupChat targetGroup = null;
+
+            for (Common.Objects.ClientObjects.GroupChat group : clientData.getGroupChats()) {
+                if (group.getReceivers() != null &&
+                        group.getReceivers().containsAll(msg.getReceivers()) &&
+                        msg.getReceivers().containsAll(group.getReceivers())) {
+                    targetGroup = group;
+                    break;
+                }
+            }
+
+            if (targetGroup == null) {
+                System.err.println("⚠ Warning: Could not find matching group for message");
+                return;
+            }
+
+            // Initialize messages list if needed
+            if (targetGroup.getMessages() == null) {
+                targetGroup.setMessages(new java.util.ArrayList<>());
+            }
+
+            // Add message to local group data
+            targetGroup.getMessages().add(msg);
+
+            if (msg.isFile()) {
+                System.out.println("✓ Added file to local group data: " + msg.getFileName());
+            } else {
+                System.out.println("✓ Added message to local group: " + targetGroup.getGroupName());
+            }
+
+        } catch (Exception e) {
+            System.err.println("✗ Failed to update local group chat: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
 
     public void setOnUsernameChangeSuccess(Runnable handler) {
         this.onUsernameChangeSuccess = handler;
